@@ -47,7 +47,7 @@ puede seguir el progreso desde su cuenta.
 
 
 ### Historias de Usuario
-en el siguiente archivo listamos las épicas y las historias de usuario: [userStories.md](./userStories.md).
+en el siguiente archivo listamos las épicas y las historias de usuario: [userStories.md](./docs/userStories.md).
 
 ### El orden en las epicas que buscaremos seguir
 1. Registro/login de clientes y roles (HU-01, HU-02, HU-05).
