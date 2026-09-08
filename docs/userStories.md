@@ -1,4 +1,4 @@
-# Historias de Usuario — Kiosco La Bajada
+# Historias de Usuario Kiosco La Bajada
 
 Convenciones:
 
@@ -34,23 +34,23 @@ limitados, **para** que puedan operar el sistema sin acceder a funciones adminis
 
 ## Epica 2: Catálogo de productos
 
-### HU-06  Ver catálogo de productos
+### HU-06 Ver catálogo de productos
 **Como** cliente, **quiero** ver el listado de productos disponibles con su nombre, foto, precio
 y descripción, **para** decidir qué comprar.
 
-### HU-07 — Buscar y filtrar productos
+### HU-07 Buscar y filtrar productos
 **Como** cliente, **quiero** buscar productos por nombre o categoría,
 **para** encontrar rápidamente lo que necesito.
 
-### HU-08 — Alta de productos
+### HU-08 Alta de productos
 **Como** dueño, **quiero** cargar nuevos productos indicando nombre, descripción, precio,
 categoría, imagen y stock, **para** que estén disponibles para la venta online.
 
-### HU-09 — Edición y baja de productos
+### HU-09 Edición y baja de productos
 **Como** dueño, **quiero** modificar precio, stock, descripción o imagen de un producto existente,
 y poder desactivarlo o eliminarlo, **para** mantener el catálogo actualizado.
 
-### HU-10 — Control de stock
+### HU-10 Control de stock
 **Como** dueño, **quiero** que el stock de un producto se descuente automáticamente al confirmarse
 un pedido, **para** evitar vender productos que no tengo disponibles.
 
@@ -58,20 +58,20 @@ un pedido, **para** evitar vender productos que no tengo disponibles.
 
 ## Epica 3: Carrito de compras y checkout
 
-### HU-11 — Agregar productos al carrito
+### HU-11  Agregar productos al carrito
 **Como** cliente, **quiero** agregar productos al carrito indicando cantidad,
 **para** ir armando mi pedido antes de confirmarlo.
 
-### HU-12 — Modificar y eliminar ítems del carrito
+### HU-12  Modificar y eliminar ítems del carrito
 **Como** cliente, **quiero** cambiar la cantidad de un producto en el carrito o quitarlo,
 **para** ajustar mi pedido antes de confirmarlo.
 
-### HU-13 — Persistencia del carrito
+### HU-13  Persistencia del carrito
 **Como** cliente, **quiero** que mi carrito se mantenga guardado mientras sigo navegando o si
 cierro y vuelvo a entrar antes de confirmar el pedido, **para** no perder lo que ya elegí.
 
 
-### HU-14 — Confirmar pedido (checkout)
+### HU-14 Confirmar pedido (checkout)
 **Como** cliente, **quiero** revisar mi carrito y confirmar el pedido eligiendo dirección de
 entrega y método de pago, **para** iniciar el proceso de compra.
 
@@ -86,7 +86,7 @@ esto claramente es un NICE TO HAVE BUT NOT NECESSARY
 **para** completar la compra sin necesidad de efectivo al recibirlo.
 
 
-### HU-16  Pago con POS al recibir
+### HU-16 Pago con POS al recibir
 **Como** cliente, **quiero** elegir pagar con posnet al momento de recibir mi pedido en la puerta,
 **para** pagar en el momento de la entrega sin usar MercadoPago.
 
@@ -99,16 +99,15 @@ esto es literamente que ponga pago con pos el empleado al entregar el pedido.
 
 ## Epica 5:  Seguimiento y gestión del estado del pedido
 
-### HU-18  Ver estado del pedido (cliente)
+### HU-18 Ver estado del pedido (cliente)
 **Como** cliente, **quiero** ver en qué etapa se encuentra mi pedido,
 **para** saber cuándo va a llegar.
-
 
 - El cliente puede ver el estado actual entre: *Pedido realizado*, *Preparando tu pedido*,
   *Pedido en reparto*, *Pedido entregado*.
 - El cliente puede acceder al detalle del pedido (productos, total, dirección, método de pago).
 
-### HU-19  Historial de pedidos del cliente
+### HU-19 Historial de pedidos del cliente
 **Como** cliente, **quiero** ver el listado de mis pedidos anteriores,
 **para** consultar compras pasadas y repetir un pedido si quiero.
 
@@ -118,7 +117,7 @@ esto es literamente que ponga pago con pos el empleado al entregar el pedido.
 **para** saber cuáles hay que preparar o entregar.
 
 
-### HU-21  Avanzar el estado de un pedido
+### HU-21 Avanzar el estado de un pedido
 **Como** cajero, **quiero** avanzar el estado de un pedido a la siguiente etapa,
 **para** reflejar el progreso real de la preparación y entrega.
 
