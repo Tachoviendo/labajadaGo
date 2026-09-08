@@ -49,6 +49,13 @@ puede seguir el progreso desde su cuenta.
 ### Historias de Usuario
 en el siguiente archivo listamos las épicas y las historias de usuario: [userStories.md](./docs/userStories.md).
 
+### Modelo de datos
+
+- **Modelo lógico**: entidades, atributos y relaciones en [modelo-logico.md](./docs/modelo-logico.md).
+- **Modelo físico y scripts**: en la carpeta [db](./db):
+  - [schema.sql](./db/schema.sql): script que crea la base de datos.
+  - [seed.sql](./db/seed.sql): script con datos de prueba.
+
 ### El orden en las epicas que buscaremos seguir
 1. Registro/login de clientes y roles (HU-01, HU-02, HU-05).
 2. Catálogo de productos y su administración (HU-06, HU-08, HU-09).
