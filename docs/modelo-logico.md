@@ -1,4 +1,4 @@
-# Modelo lógico — Kiosco La Bajada
+# Modelo lógico Kiosco La Bajada
 
 Diagrama entidad-relación y atributos de las entidades del sistema, en base a las
 [historias de usuario](./userStories.md).
@@ -22,11 +22,11 @@ Diagrama entidad-relación y atributos de las entidades del sistema, en base a l
 
 ## Relaciones (cardinalidad)
 
-- Usuario 1 — N Direccion
-- Categoria 1 — N Producto
-- Usuario 1 — 1 Carrito
-- Carrito 1 — N Carrito_item — N — 1 Producto
-- Usuario 1 — N Pedido, Direccion 1 — N Pedido
-- Pedido 1 — N Pedido_item — N — 1 Producto
-- Pedido 1 — N Pedido_estado_historial, Usuario 1 — N Pedido_estado_historial
-- Pedido 1 — 1 Pago
+- Usuario 1 - N Direccion
+- Categoria 1 - N Producto
+- Usuario 1 - 1 Carrito
+- Carrito 1 - N Carrito_item . N - 1 Producto
+- Usuario 1 - N Pedido, Direccion 1 - N Pedido
+- Pedido 1 - N Pedido_item - N - 1 Producto
+- Pedido 1 - N Pedido_estado_historial, Usuario 1 - N Pedido_estado_historial
+- Pedido 1 - 1 Pago
