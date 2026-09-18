@@ -5,6 +5,7 @@ import cartRoutes from "./cart.routes.js";
 import orderRoutes from "./orders.routes.js";
 import paymentRoutes from "./payments.routes.js";
 import addressRoutes from "./addresses.routes.js";
+import authRoutes from "./auth.routes.js";
 
 export default async function routes(app) {
   await app.register(userRoutes);
@@ -14,4 +15,5 @@ export default async function routes(app) {
   await app.register(orderRoutes);
   await app.register(paymentRoutes);
   await app.register(addressRoutes);
+  await app.register(authRoutes);
 }
