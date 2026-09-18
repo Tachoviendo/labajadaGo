@@ -1,36 +1,55 @@
+import {
+  RegisterBody,
+  LoginBody,
+  LoginResponse,
+  registerSchema,
+  loginSchema,
+  logoutSchema,
+  RegisterResponse,
+} from "../schemas/index.js";
+
 export default async function authRoutes(app) {
   // Registrar usuario
-  app.post("/auth/register", async () => {
-    return {
-      message: "Registrar usuario",
-    };
-  });
+  app.post(
+    "/auth/register",
+    {
+      schema: {
+        body: RegisterBody,
+        response: {
+          201: RegisterResponse,
+        },
+      },
+    },
+    async () => {
+      return {
+        message: "Registrar usuario",
+      };
+    },
+  );
 
   // Iniciar sesión
-  app.post("/auth/login", async () => {
-    return {
-      message: "Iniciar sesión",
-    };
-  });
+  app.post(
+    "/auth/login",
+    {
+      schema: loginSchema,
+    },
+    async () => {
+      return {
+        message: "Iniciar sesión",
+      };
+    },
+  );
 
   // Cerrar sesión
-  app.post("/auth/logout", async () => {
-    return {
-      message: "Cerrar sesión",
-    };
-  });
-
-  // Solicitar recuperación de contraseña
-  app.post("/auth/forgot-password", async () => {
-    return {
-      message: "Solicitar recuperación de contraseña",
-    };
-  });
-
-  // Restablecer contraseña
-  app.post("/auth/reset-password", async () => {
-    return {
-      message: "Restablecer contraseña",
-    };
-  });
+  app.post(
+    "/auth/logout",
+    {
+      schema: logoutSchema,
+    },
+    async () => {
+      return {
+        message: "Cerrar sesión",
+      };
+    },
+  );
 }
