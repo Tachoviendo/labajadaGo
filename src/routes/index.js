@@ -3,6 +3,7 @@ import categoryRoutes from "./categories.routes.js";
 import productRoutes from "./products.routes.js";
 import cartRoutes from "./cart.routes.js";
 import orderRoutes from "./orders.routes.js";
+import paymentRoutes from "./payments.routes.js";
 
 export default async function routes(app) {
   await app.register(userRoutes);
@@ -10,4 +11,5 @@ export default async function routes(app) {
   await app.register(productRoutes);
   await app.register(cartRoutes);
   await app.register(orderRoutes);
+  await app.register(paymentRoutes);
 }
