@@ -1,51 +1,107 @@
+import {
+  CreateOrderBody,
+  OrderSchema,
+  OrderFiltersQuery,
+  OrderStatusChangeBody,
+  IdParam,
+} from "../schemas/index.js";
+
 export default async function orderRoutes(app) {
   // Listar pedidos
-  // Cliente: sus propios pedidos.
-  // Cajero/Dueño: pedidos activos y filtros.
-  app.get("/pedidos", async (request) => {
-    return {
-      message: "Listar pedidos",
-      query: request.query,
-    };
-  });
+  app.get(
+    "/pedidos",
+    {
+      schema: {
+        querystring: OrderFiltersQuery,
+        response: {
+          200: {
+            type: "array",
+            items: OrderSchema,
+          },
+        },
+      },
+    },
+    async (request) => {
+      return {
+        message: "Listar pedidos",
+        query: request.query,
+      };
+    },
+  );
 
-  // Crear pedido / checkout
-  // Los productos se toman del carrito del usuario.
-  app.post("/pedidos", async () => {
-    return {
-      message: "Crear pedido",
-    };
-  });
+  // Crear pedido
+  app.post(
+    "/pedidos",
+    {
+      schema: {
+        body: CreateOrderBody,
+        response: {
+          201: OrderSchema,
+        },
+      },
+    },
+    async () => {
+      return {
+        id: 1,
+      };
+    },
+  );
 
-  // Obtener detalle de un pedido
-  app.get("/pedidos/:id", async (request) => {
-    const { id } = request.params;
+  // Obtener pedido
+  app.get(
+    "/pedidos/:id",
+    {
+      schema: {
+        params: IdParam,
+        response: {
+          200: OrderSchema,
+        },
+      },
+    },
+    async (request) => {
+      const { id } = request.params;
 
-    return {
-      message: "Obtener pedido",
-      id: Number(id),
-    };
-  });
+      return {
+        id: Number(id),
+      };
+    },
+  );
 
-  // Cambiar estado de un pedido
-  // Cajero/Dueño
-  app.patch("/pedidos/:id/estado", async (request) => {
-    const { id } = request.params;
+  // Cambiar estado del pedido
+  app.patch(
+    "/pedidos/:id/estado",
+    {
+      schema: {
+        params: IdParam,
+        body: OrderStatusChangeBody,
+        response: {
+          200: OrderSchema,
+        },
+      },
+    },
+    async (request) => {
+      const { id } = request.params;
 
-    return {
-      message: "Cambiar estado del pedido",
-      id: Number(id),
-    };
-  });
+      return {
+        id: Number(id),
+      };
+    },
+  );
 
   // Cancelar pedido
-  // Cliente, mientras corresponda según el estado.
-  app.delete("/pedidos/:id", async (request) => {
-    const { id } = request.params;
+  app.delete(
+    "/pedidos/:id",
+    {
+      schema: {
+        params: IdParam,
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params;
 
-    return {
-      message: "Cancelar pedido",
-      id: Number(id),
-    };
-  });
+      console.log(`Cancelando pedido ${id}`);
+
+      return reply.code(204).send();
+    },
+  );
 }
