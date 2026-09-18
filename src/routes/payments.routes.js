@@ -1,28 +1,66 @@
-export default async function paymentRoutes(app) {
-  // Obtener información de un pago
-  app.get("/pagos/:id", async (request) => {
-    const { id } = request.params;
+import {
+  PaymentSchema,
+  RegisterPosPaymentBody,
+  MercadoPagoInitResponse,
+  IdParam,
+} from "../schemas/index.js";
 
-    return {
-      message: "Obtener pago",
-      id: Number(id),
-    };
-  });
+export default async function paymentRoutes(app) {
+  // Obtener pago
+  app.get(
+    "/pagos/:id",
+    {
+      schema: {
+        params: IdParam,
+        response: {
+          200: PaymentSchema,
+        },
+      },
+    },
+    async (request) => {
+      const { id } = request.params;
+
+      return {
+        id: Number(id),
+      };
+    },
+  );
 
   // Iniciar pago con MercadoPago
-  app.post("/pagos/mercadopago", async () => {
-    return {
-      message: "Iniciar pago con MercadoPago",
-    };
-  });
+  app.post(
+    "/pagos/mercadopago",
+    {
+      schema: {
+        response: {
+          201: MercadoPagoInitResponse,
+        },
+      },
+    },
+    async () => {
+      return {
+        message: "Iniciar pago con MercadoPago",
+      };
+    },
+  );
 
-  // Registrar pago con POS al momento de la entrega
-  app.patch("/pagos/:id/pos", async (request) => {
-    const { id } = request.params;
+  // Registrar pago POS
+  app.patch(
+    "/pagos/:id/pos",
+    {
+      schema: {
+        params: IdParam,
+        body: RegisterPosPaymentBody,
+        response: {
+          200: PaymentSchema,
+        },
+      },
+    },
+    async (request) => {
+      const { id } = request.params;
 
-    return {
-      message: "Registrar pago POS",
-      id: Number(id),
-    };
-  });
+      return {
+        id: Number(id),
+      };
+    },
+  );
 }
