@@ -56,6 +56,11 @@ en el siguiente archivo listamos las épicas y las historias de usuario: [userSt
   - [schema.sql](./db/schema.sql): script que crea la base de datos.
   - [seed.sql](./db/seed.sql): script con datos de prueba.
 
+### Documentación de la API
+
+Documentación por recurso de cada ruta (autenticación, roles y códigos de
+respuesta): [docs/api](./docs/api/README.md).
+
 ### El orden en las epicas que buscaremos seguir
 1. Registro/login de clientes y roles (HU-01, HU-02, HU-05).
 2. Catálogo de productos y su administración (HU-06, HU-08, HU-09).
