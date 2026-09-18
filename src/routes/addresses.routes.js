@@ -1,35 +1,85 @@
+import {
+  AddressSchema,
+  AddressCreateBody,
+  AddressUpdateBody,
+  IdParam,
+} from "../schemas/index.js";
+
 export default async function addressRoutes(app) {
-  // Listar direcciones del usuario autenticado
-  app.get("/direcciones", async () => {
-    return {
-      message: "Listar direcciones",
-    };
-  });
+  // Listar direcciones
+  app.get(
+    "/direcciones",
+    {
+      schema: {
+        response: {
+          200: {
+            type: "array",
+            items: AddressSchema,
+          },
+        },
+      },
+    },
+    async () => {
+      return [];
+    },
+  );
 
-  // Obtener una dirección
-  app.get("/direcciones/:id", async (request) => {
-    const { id } = request.params;
+  // Obtener dirección por ID
+  app.get(
+    "/direcciones/:id",
+    {
+      schema: {
+        params: IdParam,
+        response: {
+          200: AddressSchema,
+        },
+      },
+    },
+    async (request) => {
+      const { id } = request.params;
 
-    return {
-      message: "Obtener dirección",
-      id: Number(id),
-    };
-  });
+      return {
+        id: Number(id),
+      };
+    },
+  );
 
-  // Crear una dirección
-  app.post("/direcciones", async () => {
-    return {
-      message: "Crear dirección",
-    };
-  });
+  // Crear dirección
+  app.post(
+    "/direcciones",
+    {
+      schema: {
+        body: AddressCreateBody,
+        response: {
+          201: AddressSchema,
+        },
+      },
+    },
+    async () => {
+      return {
+        id: 1,
+      };
+    },
+  );
 
-  // Modificar una dirección
-  app.patch("/direcciones/:id", async (request) => {
-    const { id } = request.params;
+  // Modificar dirección
+  app.patch(
+    "/direcciones/:id",
+    {
+      schema: {
+        params: IdParam,
+        body: AddressUpdateBody,
+        response: {
+          200: AddressSchema,
+        },
+      },
+    },
+    async (request) => {
+      const { id } = request.params;
 
-    return {
-      message: "Modificar dirección",
-      id: Number(id),
-    };
-  });
+      return {
+        id: Number(id),
+      };
+    },
+  );
 }
