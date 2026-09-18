@@ -1,18 +1,18 @@
-export default async function userRoutes(fastify) {
+export default async function userRoutes(app) {
   // Registrar usuario
-  fastify.post("/usuarios", async (request, reply) => {
+  app.post("/usuarios", async (request, reply) => {
     return reply.code(201).send({
       message: "Usuario creado",
     });
   });
 
   // Listar usuarios
-  fastify.get("/usuarios", async (request, reply) => {
+  app.get("/usuarios", async (request, reply) => {
     return reply.send([]);
   });
 
   // Obtener usuario por ID
-  fastify.get("/usuarios/:id", async (request, reply) => {
+  app.get("/usuarios/:id", async (request, reply) => {
     const { id } = request.params;
 
     return reply.send({
@@ -21,7 +21,7 @@ export default async function userRoutes(fastify) {
   });
 
   // Modificar usuario
-  fastify.patch("/usuarios/:id", async (request, reply) => {
+  app.patch("/usuarios/:id", async (request, reply) => {
     const { id } = request.params;
 
     return reply.send({
@@ -31,7 +31,7 @@ export default async function userRoutes(fastify) {
   });
 
   // Desactivar usuario
-  fastify.delete("/usuarios/:id", async (request, reply) => {
+  app.delete("/usuarios/:id", async (request, reply) => {
     const { id } = request.params;
 
     return reply.code(204).send();
