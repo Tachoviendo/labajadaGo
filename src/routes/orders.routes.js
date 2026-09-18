@@ -4,7 +4,7 @@ import {
   OrderFiltersQuery,
   OrderStatusChangeBody,
   IdParam,
-} from "../schemas/index.js";
+} from "../../schemas/index.js";
 
 export default async function orderRoutes(app) {
   // Listar pedidos

@@ -1,5 +1,5 @@
 import userRoutes from "./users.routes.js";
-import categoryRoutes from "./categories.routes.js";
+import categoryRoutes from "./categoria.routes.js";
 import productRoutes from "./products.routes.js";
 import cartRoutes from "./cart.routes.js";
 import orderRoutes from "./orders.routes.js";

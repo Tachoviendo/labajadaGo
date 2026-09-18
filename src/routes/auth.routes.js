@@ -6,7 +6,7 @@ import {
   loginSchema,
   logoutSchema,
   RegisterResponse,
-} from "../schemas/index.js";
+} from "../../schemas/index.js";
 
 export default async function authRoutes(app) {
   // Registrar usuario

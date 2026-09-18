@@ -4,7 +4,7 @@ import {
   AddCartItemBody,
   UpdateCartItemBody,
   IdParam,
-} from "../schemas/index.js";
+} from "../../schemas/index.js";
 
 export default async function cartRoutes(app) {
   // Obtener carrito

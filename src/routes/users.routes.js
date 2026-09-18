@@ -4,7 +4,7 @@ import {
   UserAdminUpdateBody,
   UserFiltersQuery,
   IdParam,
-} from "../schemas/index.js";
+} from "../../schemas/index.js";
 
 export default async function userRoutes(app) {
   // Listar usuarios

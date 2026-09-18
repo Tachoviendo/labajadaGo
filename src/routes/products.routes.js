@@ -4,7 +4,7 @@ import {
   ProductFiltersQuery,
   ProductSchema,
   IdParam,
-} from "../schemas/index.js";
+} from "../../schemas/index.js";
 
 export default async function productRoutes(app) {
   // Listar y filtrar productos

@@ -3,7 +3,7 @@ import {
   RegisterPosPaymentBody,
   MercadoPagoInitResponse,
   IdParam,
-} from "../schemas/index.js";
+} from "../../schemas/index.js";
 
 export default async function paymentRoutes(app) {
   // Obtener pago

@@ -3,7 +3,7 @@ import {
   AddressCreateBody,
   AddressUpdateBody,
   IdParam,
-} from "../schemas/index.js";
+} from "../../schemas/index.js";
 
 export default async function addressRoutes(app) {
   // Listar direcciones
