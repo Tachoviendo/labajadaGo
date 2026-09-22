@@ -5,7 +5,7 @@ CREATE TABLE usuario (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
-    password VARCHAR(20) NOT NULL,
+    password VARCHAR(255) NOT NULL,
     telefono VARCHAR(30),
     rol VARCHAR(20) NOT NULL DEFAULT 'cliente',
     activo BOOLEAN DEFAULT TRUE,

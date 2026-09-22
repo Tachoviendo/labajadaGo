@@ -5,19 +5,24 @@ import {
   UserFiltersQuery,
   IdParam,
 } from "../../schemas/index.js";
+import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
 
 export default async function userRoutes(app) {
-  // Listar usuarios
+  //listar usuarios - solo dueño
   app.get(
     "/usuarios",
     {
+      preHandler: [app.authenticate, app.authorize("dueno")],
       schema: {
+        security: [{ bearerAuth: [] }],
         querystring: UserFiltersQuery,
         response: {
           200: {
             type: "array",
             items: UserSchema,
           },
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -26,14 +31,18 @@ export default async function userRoutes(app) {
     },
   );
 
-  // Obtener usuario por ID
+  //obtener usuario por id - cualquier rol logueado (ownership: implementar cuando haya service real)
   app.get(
     "/usuarios/:id",
     {
+      preHandler: [app.authenticate],
       schema: {
+        security: [{ bearerAuth: [] }],
         params: IdParam,
         response: {
           200: UserSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -46,15 +55,19 @@ export default async function userRoutes(app) {
     },
   );
 
-  // Modificar usuario
+  //modificar usuario - cualquier rol logueado, solo su propio perfil (ownership: implementar cuando haya service real)
   app.patch(
     "/usuarios/:id",
     {
+      preHandler: [app.authenticate],
       schema: {
+        security: [{ bearerAuth: [] }],
         params: IdParam,
         body: UserUpdateBody,
         response: {
           200: UserSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -67,15 +80,19 @@ export default async function userRoutes(app) {
     },
   );
 
-  // Modificar usuario como administrador
+  //modificar usuario como administrador - solo dueño
   app.patch(
     "/usuarios/:id/admin",
     {
+      preHandler: [app.authenticate, app.authorize("dueno")],
       schema: {
+        security: [{ bearerAuth: [] }],
         params: IdParam,
         body: UserAdminUpdateBody,
         response: {
           200: UserSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -88,12 +105,19 @@ export default async function userRoutes(app) {
     },
   );
 
-  // Desactivar usuario
+  //desactivar usuario - solo dueño
   app.delete(
     "/usuarios/:id",
     {
+      preHandler: [app.authenticate, app.authorize("dueno")],
       schema: {
+        security: [{ bearerAuth: [] }],
         params: IdParam,
+        response: {
+          204: { type: "null" },
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
+        },
       },
     },
     async (request, reply) => {

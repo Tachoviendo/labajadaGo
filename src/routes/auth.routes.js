@@ -1,15 +1,14 @@
 import {
   RegisterBody,
   LoginBody,
-  LoginResponse,
-  registerSchema,
-  loginSchema,
-  logoutSchema,
   RegisterResponse,
+  LoginResponse,
 } from "../../schemas/index.js";
+import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
+import * as authService from "../../services/auth.service.js";
 
 export default async function authRoutes(app) {
-  // Registrar usuario
+  //registrar usuario
   app.post(
     "/auth/register",
     {
@@ -17,39 +16,52 @@ export default async function authRoutes(app) {
         body: RegisterBody,
         response: {
           201: RegisterResponse,
+          400: ErrorResponseSchema,
+          409: ErrorResponseSchema,
         },
       },
     },
-    async () => {
-      return {
-        message: "Registrar usuario",
-      };
+    async (request, reply) => {
+      const resultado = await authService.register(app, request.body);
+      reply.code(201);
+      return resultado;
     },
   );
 
-  // Iniciar sesión
+  //iniciar sesion
   app.post(
     "/auth/login",
     {
-      schema: loginSchema,
+      schema: {
+        body: LoginBody,
+        response: {
+          200: LoginResponse,
+          400: ErrorResponseSchema,
+          401: ErrorResponseSchema,
+        },
+      },
     },
-    async () => {
-      return {
-        message: "Iniciar sesión",
-      };
+    async (request) => {
+      const { email, password } = request.body;
+      return authService.login(app, email, password);
     },
   );
 
-  // Cerrar sesión
+  //cerrar sesion
   app.post(
     "/auth/logout",
     {
-      schema: logoutSchema,
+      preHandler: [app.authenticate],
+      schema: {
+        security: [{ bearerAuth: [] }],
+        response: {
+          204: { type: "null" },
+          401: ErrorResponseSchema,
+        },
+      },
     },
-    async () => {
-      return {
-        message: "Cerrar sesión",
-      };
+    async (request, reply) => {
+      return reply.code(204).send();
     },
   );
 }

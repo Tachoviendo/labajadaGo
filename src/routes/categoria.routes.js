@@ -4,9 +4,10 @@ import {
   CategoryUpdateBody,
   IdParam,
 } from "../../schemas/index.js";
+import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
 
 export default async function categoryRoutes(app) {
-  // Listar categorías
+  //listar categorias - publica
   app.get(
     "/categorias",
     {
@@ -24,7 +25,7 @@ export default async function categoryRoutes(app) {
     },
   );
 
-  // Obtener categoría por ID
+  //obtener categoria por id - publica
   app.get(
     "/categorias/:id",
     {
@@ -45,14 +46,18 @@ export default async function categoryRoutes(app) {
     },
   );
 
-  // Crear categoría
+  //crear categoria - solo dueño
   app.post(
     "/categorias",
     {
+      preHandler: [app.authenticate, app.authorize("dueno")],
       schema: {
+        security: [{ bearerAuth: [] }],
         body: CategoryCreateBody,
         response: {
           201: CategorySchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -63,15 +68,19 @@ export default async function categoryRoutes(app) {
     },
   );
 
-  // Modificar categoría
+  //modificar categoria - solo dueño
   app.patch(
     "/categorias/:id",
     {
+      preHandler: [app.authenticate, app.authorize("dueno")],
       schema: {
+        security: [{ bearerAuth: [] }],
         params: IdParam,
         body: CategoryUpdateBody,
         response: {
           200: CategorySchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
