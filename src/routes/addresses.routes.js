@@ -4,18 +4,25 @@ import {
   AddressUpdateBody,
   IdParam,
 } from "../../schemas/index.js";
+import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
 
 export default async function addressRoutes(app) {
-  // Listar direcciones
+  //todo /direcciones es cliente logueado
+
+  //listar direcciones
   app.get(
     "/direcciones",
     {
+      preHandler: [app.authenticate, app.authorize("cliente")],
       schema: {
+        security: [{ bearerAuth: [] }],
         response: {
           200: {
             type: "array",
             items: AddressSchema,
           },
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -24,14 +31,18 @@ export default async function addressRoutes(app) {
     },
   );
 
-  // Obtener dirección por ID
+  //obtener direccion por id
   app.get(
     "/direcciones/:id",
     {
+      preHandler: [app.authenticate, app.authorize("cliente")],
       schema: {
+        security: [{ bearerAuth: [] }],
         params: IdParam,
         response: {
           200: AddressSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -44,14 +55,18 @@ export default async function addressRoutes(app) {
     },
   );
 
-  // Crear dirección
+  //crear direccion
   app.post(
     "/direcciones",
     {
+      preHandler: [app.authenticate, app.authorize("cliente")],
       schema: {
+        security: [{ bearerAuth: [] }],
         body: AddressCreateBody,
         response: {
           201: AddressSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -62,15 +77,19 @@ export default async function addressRoutes(app) {
     },
   );
 
-  // Modificar dirección
+  //modificar direccion
   app.patch(
     "/direcciones/:id",
     {
+      preHandler: [app.authenticate, app.authorize("cliente")],
       schema: {
+        security: [{ bearerAuth: [] }],
         params: IdParam,
         body: AddressUpdateBody,
         response: {
           200: AddressSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },

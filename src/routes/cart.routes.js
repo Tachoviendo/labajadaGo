@@ -5,15 +5,22 @@ import {
   UpdateCartItemBody,
   IdParam,
 } from "../../schemas/index.js";
+import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
 
 export default async function cartRoutes(app) {
-  // Obtener carrito
+  //todo /carrito es cliente logueado
+
+  //obtener carrito
   app.get(
     "/carrito",
     {
+      preHandler: [app.authenticate, app.authorize("cliente")],
       schema: {
+        security: [{ bearerAuth: [] }],
         response: {
           200: CartSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -24,14 +31,18 @@ export default async function cartRoutes(app) {
     },
   );
 
-  // Agregar producto al carrito
+  //agregar producto al carrito
   app.post(
     "/carrito/items",
     {
+      preHandler: [app.authenticate, app.authorize("cliente")],
       schema: {
+        security: [{ bearerAuth: [] }],
         body: AddCartItemBody,
         response: {
           201: CartItemSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -42,15 +53,19 @@ export default async function cartRoutes(app) {
     },
   );
 
-  // Modificar cantidad
+  //modificar cantidad
   app.patch(
     "/carrito/items/:productoId",
     {
+      preHandler: [app.authenticate, app.authorize("cliente")],
       schema: {
+        security: [{ bearerAuth: [] }],
         params: IdParam,
         body: UpdateCartItemBody,
         response: {
           200: CartItemSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -63,12 +78,19 @@ export default async function cartRoutes(app) {
     },
   );
 
-  // Eliminar producto del carrito
+  //eliminar producto del carrito
   app.delete(
     "/carrito/items/:productoId",
     {
+      preHandler: [app.authenticate, app.authorize("cliente")],
       schema: {
+        security: [{ bearerAuth: [] }],
         params: IdParam,
+        response: {
+          204: { type: "null" },
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
+        },
       },
     },
     async (request, reply) => {

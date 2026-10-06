@@ -5,9 +5,10 @@ import {
   ProductSchema,
   IdParam,
 } from "../../schemas/index.js";
+import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
 
 export default async function productRoutes(app) {
-  // Listar y filtrar productos
+  //listar y filtrar productos - publica
   app.get(
     "/productos",
     {
@@ -29,7 +30,7 @@ export default async function productRoutes(app) {
     },
   );
 
-  // Obtener producto por ID
+  //obtener producto por id - publica
   app.get(
     "/productos/:id",
     {
@@ -49,14 +50,18 @@ export default async function productRoutes(app) {
     },
   );
 
-  // Crear producto
+  //crear producto - solo dueño
   app.post(
     "/productos",
     {
+      preHandler: [app.authenticate, app.authorize("dueno")],
       schema: {
+        security: [{ bearerAuth: [] }],
         body: ProductCreateBody,
         response: {
           201: ProductSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -67,15 +72,19 @@ export default async function productRoutes(app) {
     },
   );
 
-  // Modificar producto
+  //modificar producto - solo dueño
   app.patch(
     "/productos/:id",
     {
+      preHandler: [app.authenticate, app.authorize("dueno")],
       schema: {
+        security: [{ bearerAuth: [] }],
         params: IdParam,
         body: ProductUpdateBody,
         response: {
           200: ProductSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
@@ -88,12 +97,19 @@ export default async function productRoutes(app) {
     },
   );
 
-  // Desactivar producto
+  //desactivar producto - solo dueño
   app.delete(
     "/productos/:id",
     {
+      preHandler: [app.authenticate, app.authorize("dueno")],
       schema: {
+        security: [{ bearerAuth: [] }],
         params: IdParam,
+        response: {
+          204: { type: "null" },
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
+        },
       },
     },
     async (request, reply) => {
