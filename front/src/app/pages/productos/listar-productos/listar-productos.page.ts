@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './listar-productos.page.css',
 })
 export class ListarProductosPage {}
+
+export default ListarProductosPage;

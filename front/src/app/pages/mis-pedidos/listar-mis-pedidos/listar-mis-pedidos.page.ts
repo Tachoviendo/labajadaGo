@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './listar-mis-pedidos.page.css',
 })
 export class ListarMisPedidosPage {}
+
+export default ListarMisPedidosPage;

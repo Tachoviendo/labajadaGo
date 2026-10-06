@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './pedidos-entrantes.page.css',
 })
 export class PedidosEntrantesPage {}
+
+export default PedidosEntrantesPage;

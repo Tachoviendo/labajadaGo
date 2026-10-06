@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './confirmar-pedido.page.css',
 })
 export class ConfirmarPedidoPage {}
+
+export default ConfirmarPedidoPage;

@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './mis-direcciones.page.css',
 })
 export class MisDireccionesPage {}
+
+export default MisDireccionesPage;

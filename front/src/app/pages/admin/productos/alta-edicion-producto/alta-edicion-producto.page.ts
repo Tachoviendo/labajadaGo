@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './alta-edicion-producto.page.css',
 })
 export class AltaEdicionProductoPage {}
+
+export default AltaEdicionProductoPage;

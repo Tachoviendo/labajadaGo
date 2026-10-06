@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './registro.page.css',
 })
 export class RegistroPage {}
+
+export default RegistroPage;

@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './admin-categorias.page.css',
 })
 export class AdminCategoriasPage {}
+
+export default AdminCategoriasPage;

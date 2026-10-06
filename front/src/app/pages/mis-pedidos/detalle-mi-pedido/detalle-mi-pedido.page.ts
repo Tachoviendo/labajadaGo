@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './detalle-mi-pedido.page.css',
 })
 export class DetalleMiPedidoPage {}
+
+export default DetalleMiPedidoPage;

@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './detalle-producto.page.css',
 })
 export class DetalleProductoPage {}
+
+export default DetalleProductoPage;

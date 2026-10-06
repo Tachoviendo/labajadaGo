@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './panel.page.css',
 })
 export class PanelPage {}
+
+export default PanelPage;

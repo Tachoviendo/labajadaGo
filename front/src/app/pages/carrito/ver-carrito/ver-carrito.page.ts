@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './ver-carrito.page.css',
 })
 export class VerCarritoPage {}
+
+export default VerCarritoPage;

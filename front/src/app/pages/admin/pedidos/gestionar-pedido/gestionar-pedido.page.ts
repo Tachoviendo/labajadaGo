@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './gestionar-pedido.page.css',
 })
 export class GestionarPedidoPage {}
+
+export default GestionarPedidoPage;

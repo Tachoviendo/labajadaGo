@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './mi-perfil.page.css',
 })
 export class MiPerfilPage {}
+
+export default MiPerfilPage;

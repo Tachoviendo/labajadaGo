@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './recuperar-password.page.css',
 })
 export class RecuperarPasswordPage {}
+
+export default RecuperarPasswordPage;

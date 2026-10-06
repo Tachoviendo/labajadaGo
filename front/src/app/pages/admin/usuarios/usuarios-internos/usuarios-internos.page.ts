@@ -7,3 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './usuarios-internos.page.css',
 })
 export class UsuariosInternosPage {}
+
+export default UsuariosInternosPage;
