@@ -106,7 +106,7 @@ cuentas) es solo dueño.
 
 ## Pendiente
 
-`schemas/user.schema.js` ya tiene `CreateInternalUserBody` (alta de
+`api/schemas/user.schema.js` ya tiene `CreateInternalUserBody` (alta de
 cajero/dueño por el dueño, HU-05) pero todavía no hay una ruta `POST
-/usuarios` en `src/routes/users.routes.js` que la use. Falta documentar
+/usuarios` en `api/src/routes/users.routes.js` que la use. Falta documentar
 cuando se implemente.

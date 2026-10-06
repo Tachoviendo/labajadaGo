@@ -66,4 +66,4 @@ pero sirve para cualquier rol, ya que cierra tu propia sesión.
 ## Pendiente
 
 HU-03 (recuperar contraseña) todavía no tiene ruta hecha en
-`src/routes/auth.routes.js`. Falta documentar cuando se agregue.
+`api/src/routes/auth.routes.js`. Falta documentar cuando se agregue.
