@@ -61,6 +61,13 @@ en el siguiente archivo listamos las épicas y las historias de usuario: [userSt
 Documentación por recurso de cada ruta (autenticación, roles y códigos de
 respuesta): [docs/api](./docs/api/README.md).
 
+### Mapa de navegación
+
+Páginas del front, sus rutas y cómo se conectan según el rol:
+
+- [Ver en Google Drive](https://drive.google.com/file/d/1QAfjA_V0KMEgS-NTQ5ihrXJliVpGKGnq/view?usp=sharing)
+- [Archivo draw.io en el repo](./docs/mapa-navegacion.drawio)
+
 ### El orden en las epicas que buscaremos seguir
 1. Registro/login de clientes y roles (HU-01, HU-02, HU-05).
 2. Catálogo de productos y su administración (HU-06, HU-08, HU-09).
