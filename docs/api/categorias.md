@@ -96,7 +96,7 @@ La ruta:
 `/categorias/{id}`
 
 utiliza `{id}` para identificar una categoría específica. Es un entero
-positivo (`IdParam` en `schemas/common.schema.js`).
+positivo (`IdParam` en `api/schemas/common.schema.js`).
 
 ## Permisos
 

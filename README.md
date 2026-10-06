@@ -1,6 +1,31 @@
 # labajadaGo
 Proyecto de dw2026
 
+## Estructura del repo
+
+```
+/api      backend (Fastify): src, schemas, errors, plugins, services, package.json
+/front    frontend (Angular)
+/db       scripts de la base: schema.sql y seed.sql
+/docs     documentación (historias de usuario, modelo, API, mapa de navegación)
+docker-compose.yaml   levanta Postgres y carga /db
+.env.example          variables compartidas por docker-compose y la api
+```
+
+## Cómo levantar el proyecto
+
+1. Copiar `.env.example` a `.env` en la raíz del repo.
+2. Levantar la base: `docker compose up -d` (desde la raíz). La primera vez que se crea
+   el volumen corre `db/schema.sql` y después `db/seed.sql`. Para recargarlos:
+   `docker compose down -v` y volver a levantar.
+3. Levantar la api:
+   ```
+   cd api
+   npm install
+   npm run dev
+   ```
+   Queda en `http://localhost:3000/api` y la doc en `http://localhost:3000/docs`.
+
 ## Idea del proyecto
 
 **Kiosco La Bajada** Busca realizar pedidos online pero como en bella unión no está pedidos ya el proyecto busca generar una webde **pedidos online**, que permita a los clientes comprar sin tener que ir presencialmente o llamar por teléfono, y que le dé al kiosco

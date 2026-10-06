@@ -1,7 +1,7 @@
 # Documentación de la API — Kiosco La Bajada
 
 Acá está la doc de cada recurso, sacada de las rutas en
-`src/routes/*.routes.js`. Por cada ruta se cuenta: qué hace, si necesita
+`api/src/routes/*.routes.js`. Por cada ruta se cuenta: qué hace, si necesita
 login, qué rol puede usarla, y todos los códigos que puede devolver.
 
 Algunas cosas que se repiten en casi todas las rutas y no vale la pena
@@ -19,7 +19,7 @@ repetir en cada archivo:
   stock insuficiente, o un cambio de estado de pedido/pago que no tiene
   sentido.
 - 500 puede pasar siempre por algún error no contemplado, pero no lo
-  repetimos en cada ruta (está mapeado en `errors/response.errors.js`).
+  repetimos en cada ruta (está mapeado en `api/errors/response.errors.js`).
 
 ## Recursos
 
@@ -34,7 +34,7 @@ repetir en cada archivo:
 
 ## Roles
 
-`cliente`, `cajero`, `dueno` (ver `schemas/enums.schema.js`). Quién puede
+`cliente`, `cajero`, `dueno` (ver `api/schemas/enums.schema.js`). Quién puede
 usar cada ruta está en la sección de permisos de cada archivo.
 
 ## Cosas que quedaron pendientes mientras documentaba
