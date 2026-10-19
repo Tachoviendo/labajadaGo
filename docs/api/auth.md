@@ -31,11 +31,18 @@ Se relaciona con HU-02.
 
 Pública también, obvio.
 
+- Las contraseñas se almacenan como hashes scrypt con sal aleatoria.
 - 200: credenciales bien, devuelve usuario + token.
 - 400: falta `email` o `password` en el body, o el email no tiene formato
   válido.
 - 401: el email no existe, la password está mal, o el usuario está
   desactivado (`activo: false`).
+
+En una base ya inicializada antes de este cambio, hacer un respaldo y ejecutar
+`npm run migrate:passwords` desde `api/` en una ventana controlada, evitando
+inicios de sesión concurrentes durante la operación. El comando usa una
+transacción y no muestra las contraseñas. En bases nuevas, `db/seed.sql` ya
+inserta hashes compatibles y mantiene las credenciales de prueba.
 
 ---
 

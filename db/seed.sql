@@ -1,10 +1,10 @@
 -- Datos de prueba - Kiosco La Bajada
 
 INSERT INTO usuario (nombre, email, password, telefono, rol) VALUES
-('Marcos Dueno', 'marcos@labajada.com', 'admin123', '099111111', 'dueno'),
-('Lucia Cajera', 'lucia@labajada.com', 'cajera123', '099222222', 'cajero'),
-('Juan Cliente', 'juan@gmail.com', 'juan123', '099333333', 'cliente'),
-('Ana Cliente', 'ana@gmail.com', 'ana123', '099444444', 'cliente');
+('Marcos Dueno', 'marcos@labajada.com', 'scrypt$16384$8$1$F3dpXK-tBJTw_Sz8aLPGQw$SZfEA68IJQUbM7VcOlOUhwvJZ7YibR1ZKWzlhMeYeTMN0HcEDBQjklE26PzZCzLigD7j1e1oMoCUgSkcOY7ElA', '099111111', 'dueno'),
+('Lucia Cajera', 'lucia@labajada.com', 'scrypt$16384$8$1$QLmd9Nl31dLLZ2i4I5Mzng$cRIVSocNKUD1d5wxqmTd6iVe1b6z3gDeDLW3yZovYRPa9g-rFjq8T8bj2TDsVXNnwaR51aHf1pzR1wzIWomRdA', '099222222', 'cajero'),
+('Juan Cliente', 'juan@gmail.com', 'scrypt$16384$8$1$bZKkerV9UMGTyMYbrnMSSQ$6MzGFaKj8IfEYilnCZcwqBaPEERRJSPilpwFNzUH1gbUHR0SAKjW9oeoc9rx83RnjRXXZgfZg0fPnelahlJw8A', '099333333', 'cliente'),
+('Ana Cliente', 'ana@gmail.com', 'scrypt$16384$8$1$ctGysG0GhW8n-7imyGi1Qw$bx1GWuzag5C4x5R01XngxYwV96CDoZkHBWJ9bTmjMQaNQjWtMzydi1HslgioVpTXz6GqWM4xOfycgXrXpGVmjw', '099444444', 'cliente');
 
 INSERT INTO direccion (calle, numero, ciudad, referencia) VALUES
 ('18 de Julio', '1234', 'Bella Union', 'Casa con porton azul'),
