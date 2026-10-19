@@ -2,12 +2,12 @@ import {
   UnAuthenticatedError,
   ConflictError,
 } from "../errors/response.errors.js";
-
-//proyecto experimental: password en texto plano, sin hashear
+import { hashPassword, verifyPassword } from "./password.service.js";
 
 export async function login(app, email, password) {
   const { rows } = await app.pg.query(
-    "SELECT * FROM usuario WHERE email = $1",
+    `SELECT id, nombre, email, password, telefono, rol, activo, fecha_creacion
+     FROM usuario WHERE email = $1`,
     [email],
   );
   const usuario = rows[0];
@@ -16,7 +16,7 @@ export async function login(app, email, password) {
     throw new UnAuthenticatedError("credenciales inválidas");
   }
 
-  if (password !== usuario.password) {
+  if (!(await verifyPassword(password, usuario.password))) {
     throw new UnAuthenticatedError("credenciales inválidas");
   }
 
@@ -34,11 +34,12 @@ export async function register(app, { nombre, email, password, telefono }) {
     throw new ConflictError("ya existe una cuenta con ese email");
   }
 
+  const passwordHash = await hashPassword(password);
   const { rows } = await app.pg.query(
     `INSERT INTO usuario (nombre, email, password, telefono, rol)
      VALUES ($1, $2, $3, $4, 'cliente')
      RETURNING *`,
-    [nombre, email, password, telefono || null],
+    [nombre, email, passwordHash, telefono || null],
   );
   const usuario = rows[0];
 

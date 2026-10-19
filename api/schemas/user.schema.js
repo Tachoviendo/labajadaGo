@@ -23,7 +23,7 @@ export const UserUpdateBody = Type.Object(
     password: Type.Optional(
       Type.String({
         minLength: 8,
-        maxLength: 72, //limite practico de bcrypt, ver nota sobre columna password
+        maxLength: 72,
         description: "Nueva contraseña en texto plano; el server la hashea",
       }),
     ),

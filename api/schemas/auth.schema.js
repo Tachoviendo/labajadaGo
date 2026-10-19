@@ -6,8 +6,7 @@ import { ErrorResponseSchema } from "./errors.schema.js";
 //solo crea usuarios con rol "cliente", los roles internos se crean
 //via POST /users (ver user.schema.js -> CreateInternalUserBody), no aca
 
-//nota importante: en db/schema.sql la columna password es VARCHAR(20).
-//Hay que cambiarlo a esto.
+//La columna password almacena el hash, no la contraseña en texto plano.
 export const RegisterBody = Type.Object({
   nombre: Type.String({ minLength: 2, maxLength: 100 }),
   email: Type.String({ format: "email", maxLength: 150 }),
