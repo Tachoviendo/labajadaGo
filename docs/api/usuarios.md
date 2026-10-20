@@ -14,7 +14,9 @@ Se relaciona con HU-05.
 
 Solo dueño.
 
-- 200: devuelve el listado según los filtros.
+- 200: devuelve `{ data, pagination }`. `data` son los usuarios y
+  `pagination.total` la cantidad total que cumple los filtros. Acepta
+  `page` y `limit` (máximo 100).
 - 400: `rol` con un valor que no corresponde, `activo` que no es booleano.
 - 401: sin token.
 - 403: no sos dueño.
@@ -35,6 +37,23 @@ cualquiera.
 - 401: sin token.
 - 403: no sos dueño y el `{id}` no es tu propio perfil.
 - 404: no existe ese usuario.
+
+---
+
+### POST /usuarios
+
+Crea una cuenta interna (cajero o dueño). Los clientes no se crean acá,
+se registran con `/auth/register`.
+
+Se relaciona con HU-05.
+
+Solo para dueño.
+
+- 201: creado, devuelve el usuario.
+- 400: algún campo mal, o `rol` que no es `cajero`/`dueno`.
+- 401: sin token.
+- 403: no sos dueño.
+- 409: ya existe una cuenta con ese email.
 
 ---
 
@@ -78,14 +97,16 @@ Solo dueño.
 
 ### DELETE /usuarios/{id}
 
-Desactiva un usuario (`activo` pasa a `false`, baja lógica, no se borra el
-registro).
+Da de baja un usuario. Por la Ley 18.331 se borran sus datos personales
+(nombre, email y teléfono quedan anónimos) y la cuenta queda desactivada.
+No se borra el registro porque los pedidos y pagos lo siguen usando.
 
-Solo dueño.
+ Para el propio usuario (darse de baja) o el dueño.
 
-- 204: desactivado, no devuelve nada.
+- 204: dado de baja, no devuelve nada.
+- 400: `{id}` no es un número.
 - 401: sin token.
-- 403: no sos dueño.
+- 403: no sos dueño y el `{id}` no es el tuyo.
 - 404: no existe ese usuario.
 
 ---
@@ -103,10 +124,3 @@ Solo dueño.
 Cada uno edita/ve lo suyo, salvo el dueño que tiene acceso a todo. Lo que
 es exclusivamente administrativo (listar todos, cambiar rol, desactivar
 cuentas) es solo dueño.
-
-## Pendiente
-
-`api/schemas/user.schema.js` ya tiene `CreateInternalUserBody` (alta de
-cajero/dueño por el dueño, HU-05) pero todavía no hay una ruta `POST
-/usuarios` en `api/src/routes/users.routes.js` que la use. Falta documentar
-cuando se implemente.
