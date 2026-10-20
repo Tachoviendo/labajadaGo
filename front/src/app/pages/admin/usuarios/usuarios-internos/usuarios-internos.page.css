@@ -15,3 +15,11 @@ td {
 .error {
   color: indigo;
 }
+.exito {
+  color: green;
+}
+
+.peligro {
+  color: white;
+  background-color: darkred;
+}

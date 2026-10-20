@@ -129,7 +129,6 @@ test("las rutas administrativas requieren autenticación y rol dueño", async ()
       url: "/api/usuarios/1/admin",
       payload: { activo: true },
     },
-    { method: "DELETE", url: "/api/usuarios/1" },
     {
       method: "POST",
       url: "/api/productos",
@@ -154,6 +153,17 @@ test("las rutas administrativas requieren autenticación y rol dueño", async ()
   ];
 
   await assertRoleMatrix(app, ownerRoutes, ["dueno"], ["cliente", "cajero"]);
+});
+
+//ley 18331: cualquier usuario logueado puede darse de baja, asi que la ruta no exige rol.
+test("DELETE /usuarios/:id pide login pero no exige rol dueño", async () => {
+  const app = await createApp();
+  const route = { method: "DELETE", url: "/api/usuarios/1" };
+
+  assertError(await request(app, route), 401, "UNAUTHENTICATED");
+  for (const rol of ["cliente", "cajero", "dueno"]) {
+    assertAuthorizationPassed(await request(app, route, rol), route, rol);
+  }
 });
 
 test("cambios de estado y pagos POS permiten solo cajero o dueño", async () => {

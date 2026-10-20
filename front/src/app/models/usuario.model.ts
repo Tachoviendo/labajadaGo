@@ -28,3 +28,22 @@ export type ListaUsuarios = {
     totalPages: number;
   };
 };
+
+//api/schemas/user.schema.js -> UserUpdateBody (solo datos propios, sin rol ni activo)
+export type ActualizarPerfilBody = {
+  nombre?: string;
+  email?: string;
+  telefono?: string;
+};
+
+//api/schemas/user.schema.js -> UserAdminUpdateBody (solo dueño)
+export type ActualizarAdminBody = {
+  activo?: boolean;
+  rol?: 'cajero' | 'dueno';
+};
+
+//api/schemas/auth.schema.js -> PasswordChangeBody
+export type CambiarPasswordBody = {
+  passwordActual: string;
+  passwordNueva: string;
+};

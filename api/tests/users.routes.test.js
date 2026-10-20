@@ -162,6 +162,17 @@ test("PATCH /usuarios/:id modifica solo los datos del perfil propio", async () =
   }
 });
 
+test("DELETE /usuarios/:id no permite dar de baja a otro usuario salvo al dueño", async () => {
+  const { app, calls } = await createApp();
+
+  for (const [id, rol] of [[7, "cliente"], [8, "cajero"]]) {
+    const previousCalls = calls.length;
+    const denied = await request(app, "DELETE", "/api/usuarios/9", id, rol);
+    assert.equal(denied.statusCode, 403);
+    assert.equal(calls.length, previousCalls);
+  }
+});
+
 test("PATCH /usuarios/:id no permite cambiar la contraseña", async () => {
   const { app, calls } = await createApp();
   const response = await request(app, "PATCH", "/api/usuarios/7", 7, "cliente", {
