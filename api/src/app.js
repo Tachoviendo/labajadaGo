@@ -14,7 +14,6 @@ export function buildApp() {
 
 
   app.register(corsPlugin);
-  app.register(dbPlugin); 
   app.register(dbPlugin);
   app.register(jwtPlugin);
   app.register(errorHandlerPlugin);
