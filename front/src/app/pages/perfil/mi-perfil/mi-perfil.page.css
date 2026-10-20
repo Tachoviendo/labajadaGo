@@ -1,0 +1,23 @@
+form {
+  width: 320px;
+  margin-bottom: 20px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.error {
+  color: red;
+}
+
+.exito {
+  color: green;
+}
+
+.peligro {
+  color: white;
+  background-color: darkred;
+}

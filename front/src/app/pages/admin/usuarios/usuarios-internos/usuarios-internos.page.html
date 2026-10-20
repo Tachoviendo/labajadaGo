@@ -2,6 +2,13 @@
 
 <a routerLink="/admin/usuarios/nuevo">Nuevo usuario interno</a>
 
+@if (mensajeExito()) {
+  <p class="exito">{{ mensajeExito() }}</p>
+}
+@if (mensajeError()) {
+  <p class="error">{{ mensajeError() }}</p>
+}
+
 <div class="filtro">
   <label for="filtro-rol">Rol:</label>
   <select id="filtro-rol" (change)="cambiarFiltro($event)">
@@ -31,6 +38,7 @@
         <th>Rol</th>
         <th>Activo</th>
         <th>Alta</th>
+        <th>Acciones</th>
       </tr>
     </thead>
     <tbody>
@@ -40,13 +48,30 @@
           <td>{{ usuario.nombre }}</td>
           <td>{{ usuario.email }}</td>
           <td>{{ usuario.telefono ?? '-' }}</td>
-          <td>{{ usuario.rol }}</td>
+          <td>
+            @if (usuario.rol === 'cliente' || usuario.id === idPropio || estaEliminado(usuario)) {
+              {{ usuario.rol }}
+            } @else {
+              <select (change)="cambiarRol(usuario, $event)">
+                <option value="cajero" [selected]="usuario.rol === 'cajero'">cajero</option>
+                <option value="dueno" [selected]="usuario.rol === 'dueno'">dueno</option>
+              </select>
+            }
+          </td>
           <td>{{ usuario.activo ? 'Sí' : 'No' }}</td>
           <td>{{ usuario.fechaCreacion | date: 'dd/MM/yyyy' }}</td>
+          <td>
+            @if (usuario.id !== idPropio && !estaEliminado(usuario)) {
+              <button type="button" (click)="cambiarActivo(usuario)">
+                {{ usuario.activo ? 'Desactivar' : 'Activar' }}
+              </button>
+              <button type="button" class="peligro" (click)="darDeBaja(usuario)">Dar de baja</button>
+            }
+          </td>
         </tr>
       } @empty {
         <tr>
-          <td colspan="7">No hay usuarios.</td>
+          <td colspan="8">No hay usuarios.</td>
         </tr>
       }
     </tbody>

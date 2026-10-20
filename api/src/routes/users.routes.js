@@ -153,7 +153,7 @@ export default async function userRoutes(app) {
   app.delete(
     "/usuarios/:id",
     {
-      preHandler: [app.authenticate, app.authorize("dueno")],
+      preHandler: [app.authenticate],
       schema: {
         security: [{ bearerAuth: [] }],
         params: IdParam,
@@ -168,6 +168,8 @@ export default async function userRoutes(app) {
     },
     async (request, reply) => {
       const { id } = request.params;
+      //ley 18331: cualquier usuario puede darse de baja a si mismo, el dueño a cualquiera
+      verificarPropio(request, id, true);
       await usersService.eliminar(app, id);
       return reply.code(204).send();
     },

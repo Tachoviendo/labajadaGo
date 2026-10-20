@@ -1,1 +1,89 @@
-<p>mi perfil route works!</p>
+<h1>Mi perfil</h1>
+
+@if (idUsuario === null) {
+  <p>Tenés que <a routerLink="/login">iniciar sesión</a> para ver tu perfil.</p>
+} @else if (perfil.isLoading()) {
+  <p>Cargando...</p>
+} @else if (perfil.error()) {
+  <p class="error">{{ mensajeDeError(perfil.error()) }}</p>
+} @else if (perfil.hasValue()) {
+  @if (mensajeExito()) {
+    <p class="exito">{{ mensajeExito() }}</p>
+  }
+  @if (mensajeError()) {
+    <p class="error">{{ mensajeError() }}</p>
+  }
+
+  <p><b>Rol:</b> {{ perfil.value().rol }}</p>
+
+  <h2>Mis datos</h2>
+  <form novalidate (submit)="guardarPerfil($event)">
+    <div class="campo">
+      <label for="nombre">Nombre:</label>
+      <input id="nombre" type="text" [formField]="perfilForm.nombre" />
+      @if (perfilForm.nombre().touched() && perfilForm.nombre().errors().length > 0) {
+        <small class="error">{{ perfilForm.nombre().errors()[0].message }}</small>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="email">Email:</label>
+      <input id="email" type="email" [formField]="perfilForm.email" />
+      @if (perfilForm.email().touched() && perfilForm.email().errors().length > 0) {
+        <small class="error">{{ perfilForm.email().errors()[0].message }}</small>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="telefono">Teléfono:</label>
+      <input id="telefono" type="text" [formField]="perfilForm.telefono" />
+      @if (perfilForm.telefono().touched() && perfilForm.telefono().errors().length > 0) {
+        <small class="error">{{ perfilForm.telefono().errors()[0].message }}</small>
+      }
+    </div>
+
+    <button type="submit">Guardar cambios</button>
+  </form>
+
+  <h2>Cambiar contraseña</h2>
+  <form novalidate (submit)="cambiarPassword($event)">
+    <div class="campo">
+      <label for="passwordActual">Contraseña actual:</label>
+      <input id="passwordActual" type="password" [formField]="passwordForm.passwordActual" />
+      @if (
+        passwordForm.passwordActual().touched() && passwordForm.passwordActual().errors().length > 0
+      ) {
+        <small class="error">{{ passwordForm.passwordActual().errors()[0].message }}</small>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="passwordNueva">Contraseña nueva:</label>
+      <input id="passwordNueva" type="password" [formField]="passwordForm.passwordNueva" />
+      @if (
+        passwordForm.passwordNueva().touched() && passwordForm.passwordNueva().errors().length > 0
+      ) {
+        <small class="error">{{ passwordForm.passwordNueva().errors()[0].message }}</small>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="confirmacion">Repetir contraseña nueva:</label>
+      <input id="confirmacion" type="password" [formField]="passwordForm.confirmacion" />
+      @if (
+        passwordForm.confirmacion().touched() && passwordForm.confirmacion().errors().length > 0
+      ) {
+        <small class="error">{{ passwordForm.confirmacion().errors()[0].message }}</small>
+      }
+    </div>
+
+    <button type="submit">Cambiar contraseña</button>
+  </form>
+
+  <h2>Dar de baja mi cuenta</h2>
+  <p>
+    Se borran tus datos personales (nombre, email y teléfono) y no vas a poder volver a entrar.
+    Tus pedidos quedan registrados sin datos que te identifiquen.
+  </p>
+  <button type="button" class="peligro" (click)="darDeBaja()">Dar de baja mi cuenta</button>
+}
