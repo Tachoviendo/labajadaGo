@@ -33,6 +33,16 @@ schemas de la API.
   `fechaCreacion`.
 - Error: `{ statusCode, code, message }`. El front muestra `message`.
 
+## Códigos HTTP
+
+| Código | Cuándo | Qué hace el front |
+|---|---|---|
+| 400 | algún dato no cumple el schema | muestra `message` |
+| 401 | sin token, token vencido o credenciales incorrectas | muestra `message`; si estaba logueado, cierra sesión y va a `/login` |
+| 403 | el rol no tiene permiso | muestra `message` |
+| 404 | no existe el recurso | muestra `message` |
+| 409 | conflicto, por ejemplo email repetido | muestra `message` |
+
 ## Permisos por rol
 
 | Acción | Sin login | cliente | cajero | dueno |

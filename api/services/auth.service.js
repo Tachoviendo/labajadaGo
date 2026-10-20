@@ -56,7 +56,7 @@ function firmarToken(app, usuario) {
 }
 
 //quita el password y adapta los nombres de columna al shape publico (UserSchema)
-function aPublico(usuario) {
+export function aPublico(usuario) {
   return {
     id: usuario.id,
     nombre: usuario.nombre,
