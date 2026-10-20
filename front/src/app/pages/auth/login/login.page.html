@@ -1,1 +1,35 @@
-<p>login route works!</p>
+<h1>Iniciar sesión</h1>
+
+@if (mensajeError()) {
+  <p class="error">{{ mensajeError() }}</p>
+}
+
+<form novalidate (submit)="iniciarSesion($event)">
+  <div class="campo">
+    <label for="email">Email:</label>
+    <input id="email" type="email" autocomplete="email" [formField]="loginForm.email" />
+    @if (loginForm.email().touched() && loginForm.email().errors().length > 0) {
+      <small class="error">{{ loginForm.email().errors()[0].message }}</small>
+    }
+  </div>
+
+  <div class="campo">
+    <label for="password">Contraseña:</label>
+    <input
+      id="password"
+      type="password"
+      autocomplete="current-password"
+      [formField]="loginForm.password"
+    />
+    @if (loginForm.password().touched() && loginForm.password().errors().length > 0) {
+      <small class="error">{{ loginForm.password().errors()[0].message }}</small>
+    }
+  </div>
+
+  <button type="submit" [disabled]="loginForm().submitting()">
+    {{ loginForm().submitting() ? 'Ingresando...' : 'Ingresar' }}
+  </button>
+</form>
+
+<p><a routerLink="/recuperar">¿Olvidaste tu contraseña?</a></p>
+<p>¿No tenés cuenta? <a routerLink="/registro">Registrate</a></p>

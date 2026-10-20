@@ -1,8 +1,14 @@
 <nav>
+  @if (usuario(); as usuario) {
+    <span>Hola, {{ usuario.nombre }} ({{ usuario.rol }})</span>
+    <button type="button" (click)="cerrarSesion()">Cerrar sesión</button><br />
+  }
   <a routerLink="/">Inicio</a><br />
-  <a routerLink="/login">Login</a><br />
-  <a routerLink="/registro">Registro</a><br />
-  <a routerLink="/recuperar">Recuperar contraseña</a><br />
+  @if (!usuario()) {
+    <a routerLink="/login">Login</a><br />
+    <a routerLink="/registro">Registro</a><br />
+    <a routerLink="/recuperar">Recuperar contraseña</a><br />
+  }
   <a routerLink="/productos">Productos</a><br />
   <a routerLink="/carrito">Carrito</a><br />
   <a routerLink="/checkout">Checkout</a><br />
