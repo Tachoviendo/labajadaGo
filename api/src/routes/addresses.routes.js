@@ -5,10 +5,9 @@ import {
   IdParam,
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
+import * as addressesService from "../../services/addresses.service.js";
 
 export default async function addressRoutes(app) {
-  //todo /direcciones es cliente logueado
-
   //listar direcciones
   app.get(
     "/direcciones",
@@ -26,9 +25,7 @@ export default async function addressRoutes(app) {
         },
       },
     },
-    async () => {
-      return [];
-    },
+    async (request) => addressesService.listForUser(app, request.user.id),
   );
 
   //obtener direccion por id
@@ -43,16 +40,12 @@ export default async function addressRoutes(app) {
           200: AddressSchema,
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
         },
       },
     },
-    async (request) => {
-      const { id } = request.params;
-
-      return {
-        id: Number(id),
-      };
-    },
+    async (request) =>
+      addressesService.getById(app, request.params.id, request.user.id),
   );
 
   //crear direccion
@@ -65,15 +58,20 @@ export default async function addressRoutes(app) {
         body: AddressCreateBody,
         response: {
           201: AddressSchema,
+          400: ErrorResponseSchema,
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
         },
       },
     },
-    async () => {
-      return {
-        id: 1,
-      };
+    async (request, reply) => {
+      const direccion = await addressesService.create(
+        app,
+        request.user.id,
+        request.body,
+      );
+      reply.code(201);
+      return direccion;
     },
   );
 
@@ -90,15 +88,17 @@ export default async function addressRoutes(app) {
           200: AddressSchema,
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
+          400: ErrorResponseSchema,
+          404: ErrorResponseSchema,
         },
       },
     },
-    async (request) => {
-      const { id } = request.params;
-
-      return {
-        id: Number(id),
-      };
-    },
+    async (request) =>
+      addressesService.update(
+        app,
+        request.params.id,
+        request.user.id,
+        request.body,
+      ),
   );
 }

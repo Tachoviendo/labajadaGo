@@ -6,6 +6,7 @@ import {
   IdParam,
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
+import * as ordersService from "../../services/orders.service.js";
 
 export default async function orderRoutes(app) {
   //listar pedidos - cualquier rol logueado (el alcance cambia segun el rol, eso se resuelve en el service)
@@ -25,12 +26,8 @@ export default async function orderRoutes(app) {
         },
       },
     },
-    async (request) => {
-      return {
-        message: "Listar pedidos",
-        query: request.query,
-      };
-    },
+    async (request) =>
+      ordersService.listForUser(app, request.user, request.query),
   );
 
   //crear pedido - cliente logueado (checkout)
@@ -45,17 +42,22 @@ export default async function orderRoutes(app) {
           201: OrderSchema,
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+          409: ErrorResponseSchema,
         },
       },
     },
-    async () => {
-      return {
-        id: 1,
-      };
+    async (request, reply) => {
+      const pedido = await ordersService.createFromCart(
+        app,
+        request.user.id,
+        request.body,
+      );
+      return reply.code(201).send(pedido);
     },
   );
 
-  //obtener pedido - cualquier rol logueado, cliente solo el suyo (ownership: implementar cuando haya service real)
+  //obtener pedido - cualquier rol logueado, cliente solo el suyo
   app.get(
     "/pedidos/:id",
     {
@@ -67,16 +69,12 @@ export default async function orderRoutes(app) {
           200: OrderSchema,
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
         },
       },
     },
-    async (request) => {
-      const { id } = request.params;
-
-      return {
-        id: Number(id),
-      };
-    },
+    async (request) =>
+      ordersService.getById(app, request.params.id, request.user),
   );
 
   //cambiar estado del pedido - cajero o dueño
@@ -92,19 +90,23 @@ export default async function orderRoutes(app) {
           200: OrderSchema,
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+          409: ErrorResponseSchema,
         },
       },
     },
     async (request) => {
-      const { id } = request.params;
-
-      return {
-        id: Number(id),
-      };
+      await ordersService.changeStatus(
+        app,
+        request.params.id,
+        request.user.id,
+        request.body.estado,
+      );
+      return ordersService.getById(app, request.params.id, request.user);
     },
   );
 
-  //cancelar pedido - cliente logueado, solo su propio pedido (ownership: implementar cuando haya service real)
+  //cancelar pedido - cliente logueado, solo su propio pedido
   app.delete(
     "/pedidos/:id",
     {
@@ -116,14 +118,13 @@ export default async function orderRoutes(app) {
           204: { type: "null" },
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+          409: ErrorResponseSchema,
         },
       },
     },
     async (request, reply) => {
-      const { id } = request.params;
-
-      console.log(`Cancelando pedido ${id}`);
-
+      await ordersService.cancelByUser(app, request.params.id, request.user.id);
       return reply.code(204).send();
     },
   );

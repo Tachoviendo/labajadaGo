@@ -69,7 +69,6 @@ export async function crear(app, { nombre, email, password, telefono, rol }) {
 
 //edicion del propio perfil: nombre, email, telefono y password
 export async function actualizar(app, id, { nombre, email, telefono, password }) {
-  await obtener(app, id);
   if (email !== undefined) {
     await verificarEmailLibre(app, email, id);
   }
@@ -135,5 +134,8 @@ async function guardarCambios(app, id, cambios) {
      RETURNING ${COLUMNAS}`,
     valores,
   );
+  if (!rows[0]) {
+    throw new NotFoundError("no existe un usuario con ese id");
+  }
   return aPublico(rows[0]);
 }
