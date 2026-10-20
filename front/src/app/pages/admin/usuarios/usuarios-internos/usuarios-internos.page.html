@@ -1,1 +1,54 @@
-<p>Usuarios internos route works!</p>
+<h1>Usuarios</h1>
+
+<a routerLink="/admin/usuarios/nuevo">Nuevo usuario interno</a>
+
+<div class="filtro">
+  <label for="filtro-rol">Rol:</label>
+  <select id="filtro-rol" (change)="cambiarFiltro($event)">
+    <option value="">Todos</option>
+    <option value="cliente">Cliente</option>
+    <option value="cajero">Cajero</option>
+    <option value="dueno">Dueño</option>
+  </select>
+</div>
+
+@if (usuarios.isLoading()) {
+  <p>Cargando...</p>
+} @else if (usuarios.error()) {
+  <p class="error">{{ mensajeDeError(usuarios.error()) }}</p>
+} @else if (usuarios.hasValue()) {
+  <p>
+    <b>Cantidad de usuarios:</b> {{ usuarios.value().pagination.total }}
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Id</th>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th>Teléfono</th>
+        <th>Rol</th>
+        <th>Activo</th>
+        <th>Alta</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (usuario of usuarios.value().data; track usuario.id) {
+        <tr>
+          <td>{{ usuario.id }}</td>
+          <td>{{ usuario.nombre }}</td>
+          <td>{{ usuario.email }}</td>
+          <td>{{ usuario.telefono ?? '-' }}</td>
+          <td>{{ usuario.rol }}</td>
+          <td>{{ usuario.activo ? 'Sí' : 'No' }}</td>
+          <td>{{ usuario.fechaCreacion | date: 'dd/MM/yyyy' }}</td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="7">No hay usuarios.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

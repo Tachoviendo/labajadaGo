@@ -43,10 +43,15 @@ export const adminRoutes: Routes = [
     title: 'Categorías',
     loadComponent: () => import('./pages/admin/categorias/admin-categorias/admin-categorias.page'),
   },
-  {
+    {
     path: 'usuarios',
-    title: 'Usuarios internos',
+    title: 'Usuarios',
     loadComponent: () => import('./pages/admin/usuarios/usuarios-internos/usuarios-internos.page'),
+  },
+  {
+    path: 'usuarios/nuevo',
+    title: 'Nuevo usuario',
+    loadComponent: () => import('./pages/admin/usuarios/alta-usuario/alta-usuario.page'),
   },
 ];
 

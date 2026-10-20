@@ -26,6 +26,15 @@ docker-compose.yaml   levanta Postgres y carga /db
    ```
    Queda en `http://localhost:3000/api` y la doc en `http://localhost:3000/docs`.
 
+   4. Levantar el front (en otra terminal):
+```
+   cd front
+   npm install
+   npm start
+```
+   Queda en `http://localhost:4200`. La api ya permite llamadas desde ese
+   origen (CORS, variable `CORS_ORIGIN` del `.env`).
+
 ## Idea del proyecto
 
 **Kiosco La Bajada** Busca realizar pedidos online pero como en bella unión no está pedidos ya el proyecto busca generar una webde **pedidos online**, que permita a los clientes comprar sin tener que ir presencialmente o llamar por teléfono, y que le dé al kiosco
@@ -43,6 +52,36 @@ Construir un sistema donde:
 - El **cajero/empleado** pueda operar el día a día: ver los pedidos entrantes y actualizar el
   estado de cada uno a medida que se van preparando y entregando, con un nivel de acceso más
   acotado que el del dueño.
+
+## Usuarios de prueba
+
+Se cargan con `db/seed.sql`. Son solo para desarrollo.
+
+| Rol | Email | Contraseña |
+|---|---|---|
+| Dueño | `marcos@labajada.com` | `admin123` |
+| Cajero | `lucia@labajada.com` | `cajera123` |
+| Cliente | `juan@gmail.com` | `juan123` |
+| Cliente | `ana@gmail.com` | `ana123` |
+
+## Cómo probar la autenticación
+
+**Desde Swagger** (`http://localhost:3000/docs`):
+
+1. `POST /auth/login` con el email y la contraseña de un usuario de prueba.
+2. Copiar el `token` de la respuesta, tocar **Authorize** y pegarlo.
+3. Probar rutas protegidas. Por ejemplo `GET /usuarios`: con el dueño da 200,
+   con un cliente da 403 y sin token da 401.
+
+**Desde el front** (`http://localhost:4200`):
+
+1. Entrar a `/login` con un usuario de prueba.
+2. Según el rol, se redirige a `/` (cliente), `/admin/pedidos` (cajero) o
+   `/admin` (dueño).
+3. Las páginas de otro rol no se pueden abrir (las bloquean los guards).
+
+El contrato completo (token, roles y permisos) está en
+[docs/api/contrato-auth.md](./docs/api/contrato-auth.md).
 
 ### Roles del sistema
 

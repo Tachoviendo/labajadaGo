@@ -1,0 +1,13 @@
+form {
+  width: 320px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.error {
+  color: indigo;
+}
