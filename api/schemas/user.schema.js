@@ -1,5 +1,6 @@
 import { Type } from "@fastify/type-provider-typebox";
 import { RolEnum } from "./enums.schema.js";
+import { paginated } from "./common.schema.js";
 
 //representacion publica de un usuario (nunca incluye password/password_hash)
 export const UserSchema = Type.Object({
@@ -52,8 +53,14 @@ export const CreateInternalUserBody = Type.Object({
   }),
 });
 
-//query params para que el dueño liste usuarios internos, filtrando por rol/activo
+//query params para que el dueño liste usuarios, filtrando por rol/activo, con paginacion
 export const UserFiltersQuery = Type.Object({
   rol: Type.Optional(RolEnum),
   activo: Type.Optional(Type.Boolean()),
+  page: Type.Optional(Type.Integer({ minimum: 1, default: 1 })),
+  limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
 });
+
+//respuesta del listado: { data: [...usuarios], pagination: { page, limit, total, totalPages } }
+//pagination.total es la cantidad total de usuarios que cumplen los filtros
+export const UserListResponse = paginated(UserSchema);

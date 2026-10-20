@@ -115,6 +115,16 @@ test("las rutas administrativas requieren autenticación y rol dueño", async ()
   const ownerRoutes = [
     { method: "GET", url: "/api/usuarios" },
     {
+      method: "POST",
+      url: "/api/usuarios",
+      payload: {
+        nombre: "Empleado",
+        email: "empleado@example.com",
+        password: "password-segura",
+        rol: "cajero",
+      },
+    },
+    {
       method: "PATCH",
       url: "/api/usuarios/1/admin",
       payload: { activo: true },
