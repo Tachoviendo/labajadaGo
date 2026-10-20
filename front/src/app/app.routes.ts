@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard, rolGuard } from './guards/auth.guard';
 import { InicioPage } from './pages/inicio/inicio.page';
 
 export const routes: Routes = [
@@ -32,26 +33,37 @@ export const routes: Routes = [
   {
     path: 'carrito',
     title: 'Carrito',
+    canActivate: [rolGuard('cliente')],
     loadComponent: () => import('./pages/carrito/ver-carrito/ver-carrito.page'),
   },
   {
     path: 'checkout',
     title: 'Checkout',
+    canActivate: [rolGuard('cliente')],
     loadComponent: () => import('./pages/checkout/confirmar-pedido/confirmar-pedido.page'),
   },
   {
     path: 'mis-pedidos',
+    canActivate: [rolGuard('cliente')],
     loadChildren: () => import('./mis-pedidos.routes'),
   },
   {
     path: 'perfil',
+    canActivate: [authGuard],
     loadChildren: () => import('./perfil.routes'),
   },
 
   //cajero y dueño
   {
     path: 'admin',
+    canActivate: [rolGuard('cajero', 'dueno')],
     loadChildren: () => import('./admin.routes'),
+  },
+
+  {
+    path: 'sin-permisos',
+    title: 'Sin permisos',
+    loadComponent: () => import('./pages/sin-permisos/sin-permisos.page'),
   },
 
   //cualquier ruta que no exista
