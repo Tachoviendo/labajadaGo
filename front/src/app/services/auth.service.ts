@@ -56,6 +56,11 @@ export class AuthService {
     return this.http.post<void>(`${environment.apiUrl}/auth/logout`, {}, { headers });
   }
 
+  //borra la sesion local sin llamar a la api (ej: el token ya vencio)
+  limpiarSesion(): void {
+    this.saveAuth(null);
+  }
+
   private saveAuth(auth: AuthResponse | null): void {
     if (auth) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
