@@ -1,0 +1,51 @@
+<h1>Nuevo usuario interno</h1>
+
+<a routerLink="/admin/usuarios">Volver</a>
+
+<form novalidate (submit)="submitForm($event)">
+  <div class="campo">
+    <label for="nombre">Nombre:</label>
+    <input id="nombre" type="text" [formField]="usuarioForm.nombre" />
+    @if (usuarioForm.nombre().touched() && usuarioForm.nombre().errors().length > 0) {
+      <small class="error">{{ usuarioForm.nombre().errors()[0].message }}</small>
+    }
+  </div>
+
+  <div class="campo">
+    <label for="email">Email:</label>
+    <input id="email" type="email" [formField]="usuarioForm.email" />
+    @if (usuarioForm.email().touched() && usuarioForm.email().errors().length > 0) {
+      <small class="error">{{ usuarioForm.email().errors()[0].message }}</small>
+    }
+  </div>
+
+  <div class="campo">
+    <label for="password">Contraseña:</label>
+    <input id="password" type="password" [formField]="usuarioForm.password" />
+    @if (usuarioForm.password().touched() && usuarioForm.password().errors().length > 0) {
+      <small class="error">{{ usuarioForm.password().errors()[0].message }}</small>
+    }
+  </div>
+
+  <div class="campo">
+    <label for="telefono">Teléfono (opcional):</label>
+    <input id="telefono" type="text" [formField]="usuarioForm.telefono" />
+    @if (usuarioForm.telefono().touched() && usuarioForm.telefono().errors().length > 0) {
+      <small class="error">{{ usuarioForm.telefono().errors()[0].message }}</small>
+    }
+  </div>
+
+  <div class="campo">
+    <label for="rol">Rol:</label>
+    <select id="rol" [formField]="usuarioForm.rol">
+      <option value="cajero">Cajero</option>
+      <option value="dueno">Dueño</option>
+    </select>
+  </div>
+
+  @if (errorApi()) {
+    <p class="error">{{ errorApi() }}</p>
+  }
+
+  <button type="submit">Crear usuario</button>
+</form>
