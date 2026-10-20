@@ -14,6 +14,7 @@ CREATE TABLE usuario (
 
 CREATE TABLE direccion (
     id SERIAL PRIMARY KEY,
+    usuario_id INTEGER REFERENCES usuario(id),
     calle VARCHAR(150) NOT NULL,
     numero VARCHAR(20),
     ciudad VARCHAR(100) NOT NULL,
@@ -64,6 +65,7 @@ CREATE TABLE pedido_item (
     id SERIAL PRIMARY KEY,
     pedido_id INTEGER NOT NULL REFERENCES pedido(id),
     producto_id INTEGER NOT NULL REFERENCES producto(id),
+    nombre_producto VARCHAR(150) NOT NULL,
     cantidad INTEGER NOT NULL,
     precio_unitario INTEGER NOT NULL
 );

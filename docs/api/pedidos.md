@@ -41,8 +41,9 @@ Cliente logueado.
   `direccionId` que falta o no es número.
 - 401: sin token.
 - 404: la `direccionId` no existe o no es del usuario.
-- 409: el carrito está vacío, o algún item se quedó sin stock justo al
-  confirmar (pudo cambiar desde que lo agregaste al carrito).
+- 409: el carrito está vacío, algún item se quedó sin stock justo al
+  confirmar (pudo cambiar desde que lo agregaste al carrito), o un producto
+  del carrito fue desactivado antes de confirmar.
 
 ---
 
@@ -98,6 +99,13 @@ Cliente, y tiene que ser su propio pedido.
 - 404: no existe ese pedido.
 - 409: el pedido ya pasó de estado (`en_reparto`, `entregado`) o ya estaba
   cancelado, así que no se puede cancelar de nuevo.
+- 409: el pedido ya tiene un pago registrado como `pagado`, hay más de un
+  pago asociado, los métodos de pedido y pago no coinciden o no se puede
+  verificar que un pago MercadoPago esté impago (`pendiente` no es suficiente).
+
+Al cancelar, se repone el stock de los ítems y se registra `cancelado` en el
+historial dentro de la misma transacción. Si falla cualquier escritura, la
+cancelación y la reposición se revierten juntas.
 
 ---
 

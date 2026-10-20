@@ -6,6 +6,8 @@ import {
   IdParam,
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
+import * as usersService from "../../services/users.service.js";
+import { BadRequestError } from "../../errors/response.errors.js";
 
 export default async function userRoutes(app) {
   //listar usuarios - solo dueño
@@ -31,7 +33,7 @@ export default async function userRoutes(app) {
     },
   );
 
-  //obtener usuario por id - cualquier rol logueado (ownership: implementar cuando haya service real)
+  //obtener usuario por id - propio para cualquier rol; dueno puede consultar cualquiera
   app.get(
     "/usuarios/:id",
     {
@@ -43,23 +45,27 @@ export default async function userRoutes(app) {
           200: UserSchema,
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
         },
       },
     },
-    async (request) => {
-      const { id } = request.params;
-
-      return {
-        id: Number(id),
-      };
-    },
+    async (request) =>
+      usersService.getById(app, request.params.id, request.user),
   );
 
-  //modificar usuario - cualquier rol logueado, solo su propio perfil (ownership: implementar cuando haya service real)
+  //modificar usuario - cualquier rol logueado, solo su propio perfil
   app.patch(
     "/usuarios/:id",
     {
       preHandler: [app.authenticate],
+      preValidation: async (request) => {
+        const campoNoPermitido = Object.keys(request.body ?? {}).find(
+          (campo) => !Object.hasOwn(UserUpdateBody.properties, campo),
+        );
+        if (campoNoPermitido) {
+          throw new BadRequestError(`el campo '${campoNoPermitido}' no está permitido`);
+        }
+      },
       schema: {
         security: [{ bearerAuth: [] }],
         params: IdParam,
@@ -68,16 +74,17 @@ export default async function userRoutes(app) {
           200: UserSchema,
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
         },
       },
     },
-    async (request) => {
-      const { id } = request.params;
-
-      return {
-        id: Number(id),
-      };
-    },
+    async (request) =>
+      usersService.updateProfile(
+        app,
+        request.params.id,
+        request.user,
+        request.body,
+      ),
   );
 
   //modificar usuario como administrador - solo dueño

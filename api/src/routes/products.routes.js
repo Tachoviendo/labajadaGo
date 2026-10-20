@@ -12,6 +12,12 @@ export default async function productRoutes(app) {
   app.get(
     "/productos",
     {
+      preHandler: async (request, reply) => {
+        if (request.query.activo === false) {
+          await app.authenticate(request, reply);
+          await app.authorize("dueno")(request, reply);
+        }
+      },
       schema: {
         querystring: ProductFiltersQuery,
         response: {
@@ -19,6 +25,8 @@ export default async function productRoutes(app) {
             type: "array",
             items: ProductSchema,
           },
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
         },
       },
     },
