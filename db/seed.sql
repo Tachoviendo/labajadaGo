@@ -34,10 +34,10 @@ INSERT INTO carrito_item (carrito_id, producto_id, cantidad) VALUES
 INSERT INTO pedido (usuario_id, direccion_id, estado, metodo_pago, total) VALUES
 (4, 2, 'preparando', 'mercadopago', 210);
 
-INSERT INTO pedido_item (pedido_id, producto_id, cantidad, precio_unitario) VALUES
-(1, 4, 2, 55),
-(1, 2, 1, 60),
-(1, 3, 1, 90);
+INSERT INTO pedido_item (pedido_id, producto_id, nombre_producto, cantidad, precio_unitario) VALUES
+(1, 4, 'Alfajor Cofler', 2, 55),
+(1, 2, 'Agua saborizada', 1, 60),
+(1, 3, 'Papas Lays', 1, 90);
 
 INSERT INTO pedido_estado_historial (pedido_id, estado, usuario_id) VALUES
 (1, 'realizado', 4),

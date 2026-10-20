@@ -44,7 +44,7 @@ usar cada ruta está en la sección de permisos de cada archivo.
   usa en ninguna ruta (HU-05). Ver [usuarios.md](./usuarios.md).
 - HU-03 (recuperar contraseña) no tiene ruta todavía. Ver
   [auth.md](./auth.md).
-- Los handlers hoy son stubs, devuelven datos de prueba y todavía no
-  validan de verdad el token, el rol, ni las reglas de negocio (stock,
-  transición de estados, unicidad). Esta doc describe el contrato
-  esperado según los schemas y las historias de usuario.
+- Varias rutas todavía tienen handlers stub. Los hooks de autenticación y
+  rol, y los controles de propiedad implementados, se aplican en el backend;
+  la documentación describe el contrato esperado, pero no todas las
+  operaciones tienen persistencia implementada.

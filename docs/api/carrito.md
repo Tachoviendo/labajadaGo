@@ -14,6 +14,10 @@ Se relaciona con HU-13.
 
 Necesita login, rol cliente.
 
+Cada item devuelve `producto` con los campos del producto. `categoria` es
+texto nullable, como en la tabla fÃ­sica actual `producto`; no se devuelve un
+objeto `CategorySchema` porque la tabla todavÃ­a no tiene `categoria_id`.
+
 - 200: devuelve el carrito (vacío si todavía no cargó nada).
 - 401: sin token o inválido.
 

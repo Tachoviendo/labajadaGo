@@ -35,6 +35,14 @@ export const LoginBody = Type.Object({
   password: Type.String({ minLength: 1 }),
 });
 
+export const PasswordChangeBody = Type.Object(
+  {
+    passwordActual: Type.String({ minLength: 1, maxLength: 72 }),
+    passwordNueva: Type.String({ minLength: 8, maxLength: 72 }),
+  },
+  { additionalProperties: false },
+);
+
 export const LoginResponse = Type.Object({
   usuario: UserSchema,
   token: Type.String(),

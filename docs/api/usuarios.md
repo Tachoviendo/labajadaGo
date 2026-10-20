@@ -59,8 +59,9 @@ Solo para dueño.
 
 ### PATCH /usuarios/{id}
 
-Deja que un usuario edite sus propios datos (nombre, email, teléfono,
-password). No se puede cambiar `rol` ni `activo` acá, eso es aparte, con
+Deja que un usuario edite sus propios datos (nombre, email y teléfono).
+La contraseña se cambia con `PATCH /auth/password`. No se puede cambiar
+`rol` ni `activo` acá, eso es aparte, con
 `/admin`.
 
 Se relaciona con HU-04.
@@ -68,8 +69,7 @@ Se relaciona con HU-04.
 Cualquier rol, pero solo sobre su propio perfil.
 
 - 200: perfil actualizado.
-- 400: `{id}` inválido, body vacío, o algún campo mal (email inválido,
-  password corta, etc.).
+- 400: `{id}` inválido, body vacío, o algún campo mal (email inválido, etc.).
 - 401: sin token.
 - 403: el `{id}` no es el tuyo.
 - 404: no existe ese usuario.

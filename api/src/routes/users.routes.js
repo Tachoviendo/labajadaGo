@@ -8,7 +8,10 @@ import {
   IdParam,
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
-import { ForbiddenError } from "../../errors/response.errors.js";
+import {
+  BadRequestError,
+  ForbiddenError,
+} from "../../errors/response.errors.js";
 import * as usersService from "../../services/users.service.js";
 
 //un usuario solo puede operar sobre su propio perfil, salvo el dueño si se permite
@@ -94,6 +97,14 @@ export default async function userRoutes(app) {
     "/usuarios/:id",
     {
       preHandler: [app.authenticate],
+      preValidation: async (request) => {
+        const campoNoPermitido = Object.keys(request.body ?? {}).find(
+          (campo) => !Object.hasOwn(UserUpdateBody.properties, campo),
+        );
+        if (campoNoPermitido) {
+          throw new BadRequestError(`el campo '${campoNoPermitido}' no está permitido`);
+        }
+      },
       schema: {
         security: [{ bearerAuth: [] }],
         params: IdParam,
@@ -142,7 +153,7 @@ export default async function userRoutes(app) {
   app.delete(
     "/usuarios/:id",
     {
-      preHandler: [app.authenticate],
+      preHandler: [app.authenticate, app.authorize("dueno")],
       schema: {
         security: [{ bearerAuth: [] }],
         params: IdParam,
@@ -157,7 +168,6 @@ export default async function userRoutes(app) {
     },
     async (request, reply) => {
       const { id } = request.params;
-      verificarPropio(request, id, true);
       await usersService.eliminar(app, id);
       return reply.code(204).send();
     },

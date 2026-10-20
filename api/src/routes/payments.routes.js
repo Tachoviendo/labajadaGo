@@ -5,9 +5,10 @@ import {
   IdParam,
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
+import * as paymentsService from "../../services/payments.service.js";
 
 export default async function paymentRoutes(app) {
-  //obtener pago - cualquier rol logueado, cliente solo el de su pedido (ownership: implementar cuando haya service real)
+  //obtener pago - cualquier rol logueado, cliente solo el de su pedido
   app.get(
     "/pagos/:id",
     {
@@ -19,16 +20,11 @@ export default async function paymentRoutes(app) {
           200: PaymentSchema,
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
         },
       },
     },
-    async (request) => {
-      const { id } = request.params;
-
-      return {
-        id: Number(id),
-      };
-    },
+    async (request) => paymentsService.getById(app, request.params.id, request.user),
   );
 
   //iniciar pago con mercadopago - cliente logueado, dueño del pedido a pagar
@@ -65,15 +61,17 @@ export default async function paymentRoutes(app) {
           200: PaymentSchema,
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+          409: ErrorResponseSchema,
         },
       },
     },
-    async (request) => {
-      const { id } = request.params;
-
-      return {
-        id: Number(id),
-      };
-    },
+    async (request) =>
+      paymentsService.registerPos(
+        app,
+        request.params.id,
+        request.user.id,
+        request.body,
+      ),
   );
 }
