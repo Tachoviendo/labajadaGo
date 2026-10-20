@@ -21,13 +21,6 @@ export const UserUpdateBody = Type.Object(
     nombre: Type.Optional(Type.String({ minLength: 2, maxLength: 100 })),
     email: Type.Optional(Type.String({ format: "email", maxLength: 150 })),
     telefono: Type.Optional(Type.String({ maxLength: 30 })),
-    password: Type.Optional(
-      Type.String({
-        minLength: 8,
-        maxLength: 72,
-        description: "Nueva contraseña en texto plano; el server la hashea",
-      }),
-    ),
   },
   { minProperties: 1, additionalProperties: false },
 );

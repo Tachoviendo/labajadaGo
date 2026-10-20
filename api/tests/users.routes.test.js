@@ -137,25 +137,20 @@ test("GET /usuarios/:id permite el perfil propio y limita perfiles ajenos por ro
   assert.deepEqual(calls.at(-1).values, [999]);
 });
 
-test("PATCH /usuarios/:id modifica solo el perfil propio y hashea la contraseña", async () => {
+test("PATCH /usuarios/:id modifica solo los datos del perfil propio", async () => {
   const { app, calls, users } = await createApp();
   const response = await request(app, "PATCH", "/api/usuarios/7", 7, "cliente", {
     nombre: "Nombre actualizado",
-    password: "nueva-password-segura",
   });
 
   assert.equal(response.statusCode, 200);
   assertPublicUser(response, 7);
   assert.equal(response.json().nombre, "Nombre actualizado");
-  assert.match(users.get(7).password, /^scrypt\$16384\$8\$1\$/);
-  assert.notEqual(users.get(7).password, "nueva-password-segura");
   assert.match(calls[0].sql, /nombre = \$1/);
-  assert.match(calls[0].sql, /password = \$2/);
-  assert.match(calls[0].sql, /WHERE id = \$3/);
+  assert.match(calls[0].sql, /WHERE id = \$2/);
   assert.equal(calls[0].values[0], "Nombre actualizado");
-  assert.match(calls[0].values[1], /^scrypt\$16384\$8\$1\$/);
-  assert.equal(calls[0].values[2], 7);
-  assert.equal(JSON.stringify(calls[0].values).includes("nueva-password-segura"), false);
+  assert.equal(calls[0].values[1], 7);
+  assert.equal(users.get(7).password, "scrypt$hash-privado");
 
   for (const [id, rol] of [[7, "cliente"], [9, "dueno"]]) {
     const previousCalls = calls.length;
@@ -165,6 +160,16 @@ test("PATCH /usuarios/:id modifica solo el perfil propio y hashea la contraseña
     assert.equal(denied.statusCode, 403);
     assert.equal(calls.length, previousCalls);
   }
+});
+
+test("PATCH /usuarios/:id no permite cambiar la contraseña", async () => {
+  const { app, calls } = await createApp();
+  const response = await request(app, "PATCH", "/api/usuarios/7", 7, "cliente", {
+    password: "nueva-password-segura",
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(calls.length, 0);
 });
 
 test("PATCH /usuarios/:id rechaza cambios de rol y estado por schema", async () => {

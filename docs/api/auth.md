@@ -59,6 +59,20 @@ Necesita token. Cualquier rol logueado puede usarla.
 
 ---
 
+### PATCH /auth/password
+
+Cambia la contraseña de la cuenta autenticada. El body recibe
+`{ passwordActual, passwordNueva }`; la nueva contraseña debe tener entre
+8 y 72 caracteres. El usuario se obtiene del JWT y no se acepta un ID en el
+body. La API verifica la contraseña actual y almacena solo el nuevo hash.
+
+- 204: contraseña cambiada, sin contenido.
+- 400: body inválido o contraseña actual incorrecta.
+- 401: falta un token válido.
+- 404: la cuenta autenticada ya no existe.
+
+---
+
 ## Relación con historias de usuario
 
 - POST `/auth/register` → HU-01, registro de cliente.

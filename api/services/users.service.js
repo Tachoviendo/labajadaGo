@@ -67,17 +67,13 @@ export async function crear(app, { nombre, email, password, telefono, rol }) {
   return aPublico(rows[0]);
 }
 
-//edicion del propio perfil: nombre, email, telefono y password
-export async function actualizar(app, id, { nombre, email, telefono, password }) {
+//edicion del propio perfil: nombre, email y telefono
+export async function actualizar(app, id, { nombre, email, telefono }) {
   if (email !== undefined) {
     await verificarEmailLibre(app, email, id);
   }
 
-  const cambios = { nombre, email, telefono };
-  if (password !== undefined) {
-    cambios.password = await hashPassword(password);
-  }
-  return guardarCambios(app, id, cambios);
+  return guardarCambios(app, id, { nombre, email, telefono });
 }
 
 //cambios administrativos: activar/desactivar o cambiar el rol
