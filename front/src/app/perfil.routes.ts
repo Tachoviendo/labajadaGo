@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { rolGuard } from './guards/auth.guard';
 
 export const perfilRoutes: Routes = [
   {
@@ -10,6 +11,8 @@ export const perfilRoutes: Routes = [
   {
     path: 'direcciones',
     title: 'Mis direcciones',
+    //las direcciones son solo del cliente (igual que en la api)
+    canActivate: [rolGuard('cliente')],
     loadComponent: () => import('./pages/perfil/mis-direcciones/mis-direcciones.page'),
   },
 ];
