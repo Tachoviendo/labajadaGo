@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, map, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AuthResponse, LoginBody, Rol, Usuario } from '../models/auth.model';
+import { AuthResponse, LoginBody, RegisterBody, Rol, Usuario } from '../models/auth.model';
 
 const STORAGE_KEY = 'labajadaGo.auth';
 const ROLES: Rol[] = ['cliente', 'cajero', 'dueno'];
@@ -41,6 +41,13 @@ export class AuthService {
   login(body: LoginBody): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(`${environment.apiUrl}/auth/login`, body)
+      .pipe(tap((auth) => this.saveAuth(auth)));
+  }
+
+  //la api crea un cliente y responde igual que el login, asi queda logueado
+  register(body: RegisterBody): Observable<AuthResponse> {
+    return this.http
+      .post<AuthResponse>(`${environment.apiUrl}/auth/register`, body)
       .pipe(tap((auth) => this.saveAuth(auth)));
   }
 

@@ -4,7 +4,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { AuthResponse, LoginBody } from '../models/auth.model';
+import { AuthResponse, LoginBody, RegisterBody } from '../models/auth.model';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 
@@ -73,6 +73,27 @@ describe('AuthService', () => {
     expect(error?.status).toBe(401);
     expect(error?.error.message).toBe('Credenciales inválidas');
     expect(service.estaAutenticado).toBe(false);
+  });
+
+  it('envía el registro a la API y deja la sesión iniciada', () => {
+    const body: RegisterBody = {
+      nombre: auth.usuario.nombre,
+      email: auth.usuario.email,
+      password: 'secreto123',
+    };
+    let respuesta: AuthResponse | undefined;
+
+    service.register(body).subscribe((result) => (respuesta = result));
+
+    const request = http.expectOne(`${environment.apiUrl}/auth/register`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(body);
+    request.flush(auth, { status: 201, statusText: 'Created' });
+
+    expect(respuesta).toEqual(auth);
+    expect(service.usuarioActual).toEqual(auth.usuario);
+    expect(service.tokenActual).toBe(auth.token);
+    expect(JSON.parse(localStorage.getItem('labajadaGo.auth')!)).toEqual(auth);
   });
 
   it('recupera la sesión persistida y permite cerrar sesión en la API', () => {
