@@ -45,7 +45,7 @@ async function createApp() {
               cantidad: 2, precio_unitario: 50,
             }] };
           }
-          if (statement.includes("FROM pedido p JOIN direccion d")) {
+          if (statement.includes("FROM pedido p")) {
             if (statement.includes("WHERE p.id = $1")) {
               return { rows: orders.filter((order) => order.id === values[0]) };
             }
@@ -101,7 +101,7 @@ test("GET /pedidos limita clientes al usuario del token y permite el listado adm
   const clientList = await request(app, "cliente", 1, "GET", "/api/pedidos?usuarioId=2");
   assert.equal(clientList.statusCode, 200);
   assert.deepEqual(clientList.json().map((order) => order.usuarioId), [1]);
-  const clientQuery = calls.find(({ sql }) => sql.includes("FROM pedido p JOIN direccion d"));
+  const clientQuery = calls.find(({ sql }) => sql.includes("FROM pedido p"));
   assert.match(clientQuery.sql, /WHERE p\.usuario_id = \$1/);
   assert.equal(clientQuery.values[0], 1);
 

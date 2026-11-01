@@ -1,5 +1,5 @@
 import { Type } from "@fastify/type-provider-typebox";
-// Producto tal como se persiste hoy en db/schema.sql: categoria es texto nullable.
+// Producto tal como se persiste hoy en db/01_schema.sql: categoria es texto nullable.
 export const CartProductSchema = Type.Object({
   id: Type.Integer(),
   nombre: Type.String(),

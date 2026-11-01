@@ -86,31 +86,21 @@ async function createApp(options = {}) {
           let rows = [];
           if (statement.startsWith("SELECT id, producto_id, nombre_producto")) {
             rows = state.items.filter((item) => item.pedido_id === values[0]);
-          } else if (statement.includes("FROM pedido p JOIN direccion d") && statement.includes("WHERE p.id = $1")) {
+          } else if (statement.includes("FROM pedido p") && statement.includes("WHERE p.id = $1")) {
             rows = state.orders.filter((order) => order.id === values[0]);
           } else if (statement.includes("FROM pedido WHERE id = $1 FOR UPDATE")) {
             rows = state.orders.filter((order) => order.id === values[0]);
           } else if (statement.includes("FROM pago") && statement.includes("pedido_id = $1") && statement.includes("ORDER BY id FOR UPDATE")) {
             rows = state.payments.filter((payment) => payment.pedido_id === values[0]);
-          } else if (statement.startsWith("SELECT producto_id, SUM(cantidad)::integer AS cantidad")) {
-            const groups = new Map();
-            for (const item of state.items.filter((entry) => entry.pedido_id === values[0])) {
-              groups.set(item.producto_id, (groups.get(item.producto_id) ?? 0) + item.cantidad);
-            }
-            rows = [...groups].map(([producto_id, cantidad]) => ({ producto_id, cantidad }));
-          } else if (statement.includes("FROM producto") && statement.includes("FOR UPDATE")) {
-            rows = state.products.filter((product) => values[0].includes(product.id));
-          } else if (statement.startsWith("UPDATE producto SET stock = stock + $1")) {
-            const product = state.products.find((entry) => entry.id === values[1]);
-            if (product) {
-              product.stock += values[0];
-              rows = [{ id: product.id }];
-            }
           } else if (statement.startsWith("UPDATE pedido SET estado = 'cancelado'")) {
             const order = state.orders.find((entry) => entry.id === values[0] && entry.estado === values[1]);
             if (order) {
               order.estado = "cancelado";
               rows = [{ id: order.id }];
+              //simula el trigger pedido_reponer_stock
+              for (const item of state.items.filter((entry) => entry.pedido_id === order.id)) {
+                state.products.find((product) => product.id === item.producto_id).stock += item.cantidad;
+              }
             }
           } else if (statement.startsWith("UPDATE pedido SET estado = $1")) {
             const order = state.orders.find((entry) => entry.id === values[1]);
@@ -193,7 +183,7 @@ test("DELETE rechaza pedido ajeno, inexistente, ya cancelado, pagado o con pago 
 });
 
 test("DELETE hace rollback total ante un fallo al reponer stock", async () => {
-  const { app, calls, getState } = await createApp({ failOn: "UPDATE producto SET stock = stock + $1" });
+  const { app, calls, getState } = await createApp({ failOn: "UPDATE pedido SET estado = 'cancelado'" });
   const before = structuredClone(getState());
   const response = await request(app, "cliente", 5, "DELETE", "/api/pedidos/10");
   assert.equal(response.statusCode, 500);

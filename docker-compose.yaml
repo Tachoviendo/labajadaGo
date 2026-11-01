@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      #corre los .sql de /db en orden alfabetico (schema.sql y despues seed.sql) la primera vez que se crea la base
+      #corre los .sql de /db en orden alfabetico (01_schema, 02_triggers, 03_seed) la primera vez que se crea la base
       - ./db:/docker-entrypoint-initdb.d
       - pgdata:/var/lib/postgresql/data  # descomentar para persistir datos entre reinicios
 

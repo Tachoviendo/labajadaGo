@@ -2,7 +2,7 @@ import { Type } from "@fastify/type-provider-typebox";
 
 // un cliente puede tener varias direcciones
 
-// db/schema.sql todavia no persiste es_predeterminada; queda pendiente.
+// db/01_schema.sql todavia no persiste es_predeterminada; queda pendiente.
 export const AddressSchema = Type.Object({
   id: Type.Integer(),
   usuarioId: Type.Integer(),

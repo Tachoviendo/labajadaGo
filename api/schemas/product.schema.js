@@ -3,10 +3,10 @@ import { CategorySchema } from "./category.schema.js";
 import { PaginationQuery } from "./common.schema.js";
 
 
-//nota: db/schema.sql define producto.categoria como VARCHAR(100) suelto,
+//nota: db/01_schema.sql define producto.categoria como VARCHAR(100) suelto,
 //pero docs/modelo-logico.md dice categoria_id (FK a la tabla categoria).
 //este schema sigue el modelo logico (FK).
-//hay que actualizar schema.sql: reemplazar la columna categoria por
+//hay que actualizar 01_schema.sql: reemplazar la columna categoria por
 //categoria_id INTEGER REFERENCES categoria(id)
 export const ProductSchema = Type.Object({
   id: Type.Integer(),

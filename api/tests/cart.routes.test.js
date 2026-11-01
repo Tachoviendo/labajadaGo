@@ -16,13 +16,14 @@ afterEach(async () => {
 
 function initialState() {
   return {
+    //el carrito no tiene id propio: carrito_item.carrito_id es el usuario_id
     carts: [
-      { id: 11, usuario_id: 1, fecha_actualizacion: new Date("2026-01-01T00:00:00Z") },
-      { id: 22, usuario_id: 2, fecha_actualizacion: new Date("2026-01-02T00:00:00Z") },
+      { usuario_id: 1, fecha_actualizacion: new Date("2026-01-01T00:00:00Z") },
+      { usuario_id: 2, fecha_actualizacion: new Date("2026-01-02T00:00:00Z") },
     ],
     items: [
-      { id: 31, carrito_id: 11, producto_id: 1, cantidad: 7 },
-      { id: 32, carrito_id: 22, producto_id: 1, cantidad: 2 },
+      { carrito_id: 1, producto_id: 1, cantidad: 7 },
+      { carrito_id: 2, producto_id: 1, cantidad: 2 },
     ],
     products: [
       { id: 1, nombre: "Agua", descripcion: null, precio: 30, categoria: "Bebidas", imagen_url: null, stock: 10, activo: true },
@@ -39,8 +40,6 @@ async function createApp(options = {}) {
   const calls = [];
   let state = initialState();
   let snapshot;
-  let nextCartId = 23;
-  let nextItemId = 33;
 
   app.decorate("pg", {
     async connect() {
@@ -66,7 +65,7 @@ async function createApp(options = {}) {
           let rowCount;
           if (statement.startsWith("INSERT INTO carrito (usuario_id)")) {
             if (!state.carts.some((cart) => cart.usuario_id === values[0])) {
-              state.carts.push({ id: nextCartId++, usuario_id: values[0], fecha_actualizacion: new Date() });
+              state.carts.push({ usuario_id: values[0], fecha_actualizacion: new Date() });
             }
           } else if (statement.includes("FROM carrito") && statement.includes("WHERE usuario_id = $1 FOR UPDATE")) {
             rows = state.carts.filter((cart) => cart.usuario_id === values[0]);
@@ -74,49 +73,44 @@ async function createApp(options = {}) {
             rows = state.products
               .filter((product) => product.id === values[0])
               .map((product) => ({ ...product, producto_id: product.id }));
-          } else if (statement.startsWith("SELECT id, cantidad FROM carrito_item")) {
-            rows = state.items
-              .filter((item) => item.carrito_id === values[0] && item.producto_id === values[1])
-              .sort((a, b) => a.id - b.id);
-          } else if (statement.startsWith("SELECT MIN(ci.id)")) {
+          } else if (statement.startsWith("SELECT cantidad FROM carrito_item")) {
+            rows = state.items.filter((item) => item.carrito_id === values[0] && item.producto_id === values[1]);
+          } else if (statement.startsWith("SELECT p.id AS producto_id")) {
             const cartId = values[0];
             const productId = values[1];
-            const grouped = new Map();
-            for (const item of state.items) {
-              if (item.carrito_id !== cartId || (productId !== undefined && item.producto_id !== productId)) continue;
-              const product = state.products.find((entry) => entry.id === item.producto_id);
-              if (!product) continue;
-              const current = grouped.get(product.id);
-              if (current) current.cantidad += item.cantidad;
-              else grouped.set(product.id, {
-                id: item.id,
-                producto_id: product.id,
-                nombre: product.nombre,
-                descripcion: product.descripcion,
-                precio: product.precio,
-                categoria: product.categoria,
-                imagen_url: product.imagen_url,
-                stock: product.stock,
-                activo: product.activo,
-                cantidad: item.cantidad,
-              });
-            }
-            rows = [...grouped.values()].sort((a, b) => a.producto_id - b.producto_id);
+            rows = state.items
+              .filter((item) => item.carrito_id === cartId && (productId === undefined || item.producto_id === productId))
+              .map((item) => {
+                const product = state.products.find((entry) => entry.id === item.producto_id);
+                return product && {
+                  producto_id: product.id,
+                  nombre: product.nombre,
+                  descripcion: product.descripcion,
+                  precio: product.precio,
+                  categoria: product.categoria,
+                  imagen_url: product.imagen_url,
+                  stock: product.stock,
+                  activo: product.activo,
+                  cantidad: item.cantidad,
+                };
+              })
+              .filter(Boolean)
+              .sort((a, b) => a.producto_id - b.producto_id);
           } else if (statement.startsWith("UPDATE carrito_item SET cantidad")) {
-            const item = state.items.find((entry) => entry.id === values[1] && entry.carrito_id === values[2]);
+            const item = state.items.find((entry) => entry.carrito_id === values[1] && entry.producto_id === values[2]);
             if (item) item.cantidad = values[0];
-          } else if (statement.startsWith("DELETE FROM carrito_item") && statement.includes("id <> $3")) {
-            state.items = state.items.filter((item) => !(item.carrito_id === values[0] && item.producto_id === values[1] && item.id !== values[2]));
           } else if (statement.startsWith("INSERT INTO carrito_item")) {
-            const item = { id: nextItemId++, carrito_id: values[0], producto_id: values[1], cantidad: values[2] };
-            state.items.push(item);
-            rows = [{ id: item.id }];
+            //la pk (carrito_id, producto_id) no permite repetir el producto
+            if (state.items.some((item) => item.carrito_id === values[0] && item.producto_id === values[1])) {
+              throw Object.assign(new Error("duplicate key"), { code: "23505" });
+            }
+            state.items.push({ carrito_id: values[0], producto_id: values[1], cantidad: values[2] });
           } else if (statement.startsWith("DELETE FROM carrito_item")) {
             const before = state.items.length;
             state.items = state.items.filter((item) => !(item.carrito_id === values[0] && item.producto_id === values[1]));
             rowCount = before - state.items.length;
           } else if (statement.startsWith("UPDATE carrito SET fecha_actualizacion")) {
-            const cart = state.carts.find((entry) => entry.id === values[0]);
+            const cart = state.carts.find((entry) => entry.usuario_id === values[0]);
             if (cart) cart.fecha_actualizacion = new Date();
           } else {
             throw new Error(`Consulta inesperada: ${statement}`);
@@ -149,7 +143,7 @@ test("GET /carrito devuelve solamente el carrito del usuario autenticado", async
   const { app, calls } = await createApp();
   const response = await request(app, 2, "GET", "/api/carrito");
   assert.equal(response.statusCode, 200);
-  assert.equal(response.json().id, 22);
+  assert.equal(response.json().id, 2);
   assert.equal(response.json().usuarioId, 2);
   assert.deepEqual(response.json().items.map((item) => [item.producto.id, item.cantidad]), [[1, 2]]);
   assert.equal(response.json().total, 60);
@@ -160,9 +154,11 @@ test("POST agrega y suma el item del carrito del token, validando stock y parám
   const { app, calls, getState } = await createApp();
   const response = await request(app, 2, "POST", "/api/carrito/items", { productoId: 1, cantidad: 3 });
   assert.equal(response.statusCode, 201);
+  assert.equal(response.json().id, 1);
   assert.equal(response.json().cantidad, 5);
   assert.equal(response.json().subtotal, 150);
-  assert.equal(getState().items.find((item) => item.carrito_id === 22 && item.producto_id === 1).cantidad, 5);
+  assert.equal(getState().items.filter((item) => item.carrito_id === 2 && item.producto_id === 1).length, 1);
+  assert.equal(getState().items.find((item) => item.carrito_id === 2 && item.producto_id === 1).cantidad, 5);
   assert.ok(calls.every(({ sql }) => !/\$\{/.test(sql)));
   assert.deepEqual(calls.find(({ sql }) => sql.includes("WHERE usuario_id = $1 FOR UPDATE")).values, [2]);
   assert.ok(calls.some(({ sql, values }) => sql.includes("FROM producto WHERE id = $1") && values[0] === 1));
@@ -176,8 +172,8 @@ test("PATCH actualiza y DELETE elimina solo el item del carrito propio", async (
   assert.equal(updated.json().cantidad, 4);
   const deleted = await request(app, 2, "DELETE", "/api/carrito/items/1");
   assert.equal(deleted.statusCode, 204);
-  assert.equal(getState().items.some((item) => item.carrito_id === 22 && item.producto_id === 1), false);
-  assert.equal(getState().items.find((item) => item.carrito_id === 11 && item.producto_id === 1).cantidad, 7);
+  assert.equal(getState().items.some((item) => item.carrito_id === 2 && item.producto_id === 1), false);
+  assert.equal(getState().items.find((item) => item.carrito_id === 1 && item.producto_id === 1).cantidad, 7);
 });
 
 test("GET crea un carrito vacío propio y devuelve categoría textual nullable", async () => {
@@ -217,5 +213,5 @@ test("las escrituras toman el bloqueo del carrito antes de producto o items, igu
   const itemMutation = calls.findIndex(({ sql }) => sql.startsWith("UPDATE carrito_item") || sql.startsWith("INSERT INTO carrito_item"));
   assert.ok(cartLock >= 0 && productLock > cartLock && itemMutation > productLock);
   assert.equal(calls.find(({ sql }) => sql.includes("WHERE usuario_id = $1 FOR UPDATE")).sql,
-    "SELECT id, usuario_id, fecha_actualizacion FROM carrito\n       WHERE usuario_id = $1 FOR UPDATE");
+    "SELECT usuario_id, fecha_actualizacion FROM carrito\n       WHERE usuario_id = $1 FOR UPDATE");
 });

@@ -28,10 +28,9 @@ function initialState(options = {}) {
       ciudad: "Bella Unión",
       referencia: null,
     },
-    cart: options.cart === undefined ? { id: 20, usuario_id: 5, fecha_actualizacion: new Date() } : options.cart,
+    cart: options.cart === undefined ? { usuario_id: 5, fecha_actualizacion: new Date() } : options.cart,
     cartItems: cartItems ?? [
-      { producto_id: 2, cantidad: 2 },
-      { producto_id: 2, cantidad: 3 },
+      { producto_id: 2, cantidad: 5 },
       { producto_id: 4, cantidad: 1 },
     ],
     products: products ?? [
@@ -73,16 +72,10 @@ async function createApp(options = {}) {
       }
 
       let rows = [];
-      if (statement.includes("SELECT id FROM carrito WHERE usuario_id = $1")) {
-        rows = state.cart?.usuario_id === values[0] ? [{ id: state.cart.id }] : [];
+      if (statement.includes("SELECT usuario_id FROM carrito WHERE usuario_id = $1")) {
+        rows = state.cart?.usuario_id === values[0] ? [{ usuario_id: state.cart.usuario_id }] : [];
       } else if (statement.startsWith("SELECT") && statement.includes("FROM carrito_item WHERE carrito_id = $1")) {
-        const agrupados = new Map();
-        for (const item of state.cartItems) {
-          agrupados.set(item.producto_id, (agrupados.get(item.producto_id) ?? 0) + item.cantidad);
-        }
-        rows = [...agrupados]
-          .sort(([a], [b]) => a - b)
-          .map(([producto_id, cantidad]) => ({ producto_id, cantidad }));
+        rows = [...state.cartItems].sort((a, b) => a.producto_id - b.producto_id);
       } else if (statement.includes("FROM direccion WHERE id = $1 AND usuario_id = $2")) {
         rows = state.address?.id === values[0] && state.address.usuario_id === values[1]
           ? [state.address]
@@ -93,29 +86,32 @@ async function createApp(options = {}) {
           .filter((product) => ids.has(product.id))
           .sort((a, b) => a.id - b.id);
       } else if (statement.includes("INSERT INTO pedido (")) {
-        const [usuario_id, direccion_id, metodo_pago, total] = values;
+        const [
+          usuario_id, direccion_id, direccion_calle, direccion_numero,
+          direccion_ciudad, direccion_referencia, metodo_pago, total,
+        ] = values;
         const pedido = {
-          id: orderId++, usuario_id, direccion_id,
-          estado: "realizado", metodo_pago, total,
+          id: orderId++, usuario_id, direccion_id, direccion_calle, direccion_numero,
+          direccion_ciudad, direccion_referencia, estado: "realizado", metodo_pago, total,
           fecha_creacion: new Date("2026-01-02T03:04:05.000Z"),
         };
         state.orders.push(pedido);
         rows = [pedido];
       } else if (statement.includes("INSERT INTO pedido_item")) {
         const [pedido_id, producto_id, nombre_producto, cantidad, precio_unitario] = values;
+        //simula el trigger pedido_item_descontar_stock
+        const product = state.products.find((entry) => entry.id === producto_id);
+        //failStockOn simula que el stock cambio entre el chequeo de la api y el insert
+        if (!product || product.stock < cantidad || options.failStockOn === producto_id) {
+          throw Object.assign(new Error("stock insuficiente"), { code: "23514" });
+        }
+        product.stock -= cantidad;
         const item = {
           id: state.orderItems.length + 1,
           pedido_id, producto_id, nombre_producto, cantidad, precio_unitario,
         };
         state.orderItems.push(item);
         rows = [item];
-      } else if (statement.includes("UPDATE producto SET stock = stock - $1")) {
-        const [cantidad, productoId] = values;
-        const product = state.products.find((entry) => entry.id === productoId);
-        if (product?.activo && product.stock >= cantidad) {
-          product.stock -= cantidad;
-          rows = [{ id: product.id }];
-        }
       } else if (statement.includes("INSERT INTO pedido_estado_historial")) {
         state.history.push({ pedido_id: values[0], estado: "realizado", usuario_id: values[1] });
       } else if (statement.includes("DELETE FROM carrito_item WHERE carrito_id = $1")) {
@@ -164,7 +160,7 @@ function request(app, userId = 5, payload = { direccionId: 10, metodoPago: "pos"
   });
 }
 
-test("POST /pedidos crea el checkout, agrupa items y deriva datos de PostgreSQL y del token", async () => {
+test("POST /pedidos crea el checkout, copia la dirección y deriva datos de PostgreSQL y del token", async () => {
   const { app, calls, getState, getReleased } = await createApp();
   const response = await request(app, 5, {
     direccionId: 10,
@@ -199,8 +195,11 @@ test("POST /pedidos crea el checkout, agrupa items y deriva datos de PostgreSQL 
   });
   const state = getState();
   assert.deepEqual(state.orders[0], {
-    id: 70, usuario_id: 5, direccion_id: 10, estado: "realizado",
-    metodo_pago: "pos", total: 240, fecha_creacion: new Date("2026-01-02T03:04:05.000Z"),
+    id: 70, usuario_id: 5, direccion_id: 10,
+    direccion_calle: "18 de Julio", direccion_numero: "123",
+    direccion_ciudad: "Bella Unión", direccion_referencia: null,
+    estado: "realizado", metodo_pago: "pos", total: 240,
+    fecha_creacion: new Date("2026-01-02T03:04:05.000Z"),
   });
   assert.deepEqual(state.orderItems.map(({ producto_id, nombre_producto, cantidad, precio_unitario }) =>
     ({ producto_id, nombre_producto, cantidad, precio_unitario })), [
@@ -215,7 +214,9 @@ test("POST /pedidos crea el checkout, agrupa items y deriva datos de PostgreSQL 
   assert.deepEqual(state.cartItems, []);
   assert.deepEqual(calls.find(({ sql }) => sql.includes("FROM carrito WHERE usuario_id" )).values, [5]);
   assert.deepEqual(calls.find(({ sql }) => sql.includes("FROM direccion WHERE id" )).values, [10, 5]);
-  assert.deepEqual(calls.find(({ sql }) => sql.includes("INSERT INTO pedido (" )).values, [5, 10, "pos", 240]);
+  assert.deepEqual(calls.find(({ sql }) => sql.includes("INSERT INTO pedido (" )).values, [
+    5, 10, "18 de Julio", "123", "Bella Unión", null, "pos", 240,
+  ]);
   assert.match(calls.find(({ sql }) => sql.includes("nombre_producto" )).sql, /\$1[\s\S]*\$5/);
   assert.deepEqual(calls.filter(({ sql }) => /FOR UPDATE/.test(sql)).map(({ sql }) => sql.includes("carrito")), [true, false]);
   assert.equal(calls.at(-1).sql, "COMMIT");
@@ -252,7 +253,7 @@ test("el carrito se busca por el usuario del token y no se puede elegir otro usu
   assert.deepEqual(calls.find(({ sql }) => sql.includes("FROM carrito WHERE usuario_id")).values, [6]);
   assert.equal(calls.some(({ sql }) => sql.includes("FROM carrito_item")), false);
   assert.equal(getState().orders.length, 0);
-  assert.equal(getState().cartItems.length, 3);
+  assert.equal(getState().cartItems.length, 2);
 });
 
 test("carrito vacío, stock insuficiente y producto inactivo devuelven 409", async () => {
@@ -268,15 +269,26 @@ test("carrito vacío, stock insuficiente y producto inactivo devuelven 409", asy
     assert.equal(response.json().code, "CONFLICT");
     assert.equal(getState().orders.length, 0);
     assert.equal(getState().orderItems.length, 0);
-    assert.equal(getState().cartItems.length, options.cartItems?.length ?? 3);
+    assert.equal(getState().cartItems.length, options.cartItems?.length ?? 2);
   }
+});
+
+test("si el trigger de stock rechaza un item, el checkout responde 409 y revierte todo", async () => {
+  const { app, calls, getState } = await createApp({ failStockOn: 4 });
+  const response = await request(app);
+  assert.equal(response.statusCode, 409);
+  assert.equal(response.json().code, "CONFLICT");
+  assert.equal(getState().orders.length, 0);
+  assert.equal(getState().orderItems.length, 0);
+  assert.deepEqual(getState().products.map(({ stock }) => stock), [20, 5]);
+  assert.equal(getState().cartItems.length, 2);
+  assert.equal(calls.at(-1).sql, "ROLLBACK");
 });
 
 test("cada fallo después de una escritura hace rollback de todo el checkout", async () => {
   for (const failAfter of [
     "INSERT INTO pedido (",
     "INSERT INTO pedido_item",
-    "UPDATE producto SET stock",
     "INSERT INTO pedido_estado_historial",
     "DELETE FROM carrito_item",
     "UPDATE carrito SET fecha_actualizacion",
@@ -288,7 +300,7 @@ test("cada fallo después de una escritura hace rollback de todo el checkout", a
     assert.equal(getState().orderItems.length, 0, failAfter);
     assert.equal(getState().history.length, 0, failAfter);
     assert.deepEqual(getState().products.map(({ stock }) => stock), [20, 5], failAfter);
-    assert.equal(getState().cartItems.length, 3, failAfter);
+    assert.equal(getState().cartItems.length, 2, failAfter);
     assert.equal(calls.at(-1).sql, "ROLLBACK", failAfter);
     assert.equal(getReleased(), 1, failAfter);
   }
