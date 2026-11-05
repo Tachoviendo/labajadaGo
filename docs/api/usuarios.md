@@ -98,7 +98,8 @@ Solo dueño.
 ### DELETE /usuarios/{id}
 
 Da de baja un usuario. Por la Ley 18.331 se borran sus datos personales
-(nombre, email y teléfono quedan anónimos) y la cuenta queda desactivada.
+(nombre, email, teléfono y direcciones quedan anónimos, también la copia de
+la dirección guardada en cada pedido) y la cuenta queda desactivada.
 No se borra el registro porque los pedidos y pagos lo siguen usando.
 
  Para el propio usuario (darse de baja) o el dueño.
@@ -108,6 +109,7 @@ No se borra el registro porque los pedidos y pagos lo siguen usando.
 - 401: sin token.
 - 403: no sos dueño y el `{id}` no es el tuyo.
 - 404: no existe ese usuario.
+- 409: el usuario tiene un pedido en curso (realizado, preparando o en reparto).
 
 ---
 

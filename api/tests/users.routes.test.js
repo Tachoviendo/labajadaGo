@@ -26,7 +26,7 @@ afterEach(async () => {
   }
 });
 
-async function createApp() {
+async function createApp({ pedidoEnCurso = false, fallarEn } = {}) {
   process.env.FASTIFY_SECRET = "users-route-test-secret";
   const app = Fastify();
   const calls = [];
@@ -36,9 +36,20 @@ async function createApp() {
     [9, usuario(9, "dueno")],
   ]);
 
-  app.decorate("pg", {
+  const pg = {
     async query(sql, values) {
       calls.push({ sql, values });
+      if (fallarEn && sql.includes(fallarEn)) throw new Error("fallo simulado");
+      if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.includes("SELECT id FROM usuario WHERE id = $1 FOR UPDATE")) {
+        return { rows: users.has(values[0]) ? [{ id: values[0] }] : [] };
+      }
+      if (sql.includes("SELECT id FROM pedido")) {
+        return { rows: pedidoEnCurso ? [{ id: 1 }] : [] };
+      }
+      if (/^UPDATE (usuario\s+SET nombre = 'Usuario eliminado'|direccion|pedido)/.test(sql)) {
+        return { rows: [] };
+      }
       if (sql.includes("SELECT id, nombre, email, telefono, rol, activo, fecha_creacion")) {
         const row = users.get(values[0]);
         return { rows: row ? [row] : [] };
@@ -60,7 +71,11 @@ async function createApp() {
 
       throw new Error(`Consulta inesperada: ${sql}`);
     },
-  });
+    async connect() {
+      return { query: pg.query, release() {} };
+    },
+  };
+  app.decorate("pg", pg);
 
   app.register(errorHandler);
   app.register(jwtPlugin);
@@ -171,6 +186,46 @@ test("DELETE /usuarios/:id no permite dar de baja a otro usuario salvo al dueño
     assert.equal(denied.statusCode, 403);
     assert.equal(calls.length, previousCalls);
   }
+});
+
+test("DELETE /usuarios/:id anonimiza usuario, direcciones y la copia de la dirección en sus pedidos", async () => {
+  const { app, calls } = await createApp();
+  const response = await request(app, "DELETE", "/api/usuarios/7", 7, "cliente");
+
+  assert.equal(response.statusCode, 204);
+  const direccion = calls.find(({ sql }) => sql.startsWith("UPDATE direccion"));
+  const pedido = calls.find(({ sql }) => sql.startsWith("UPDATE pedido"));
+  assert.match(direccion.sql, /calle = 'Eliminada', numero = NULL, ciudad = 'Eliminada', referencia = NULL/);
+  assert.deepEqual(direccion.values, [7]);
+  assert.match(pedido.sql, /direccion_calle = 'Eliminada', direccion_numero = NULL/);
+  assert.match(pedido.sql, /direccion_ciudad = 'Eliminada', direccion_referencia = NULL/);
+  assert.deepEqual(pedido.values, [7]);
+  assert.equal(calls.at(-1).sql, "COMMIT");
+});
+
+test("DELETE /usuarios/:id con un pedido en curso responde 409 y no anonimiza nada", async () => {
+  const { app, calls } = await createApp({ pedidoEnCurso: true });
+  const response = await request(app, "DELETE", "/api/usuarios/7", 7, "cliente");
+
+  assert.equal(response.statusCode, 409);
+  assert.equal(calls.some(({ sql }) => sql.startsWith("UPDATE")), false);
+  assert.equal(calls.at(-1).sql, "ROLLBACK");
+});
+
+test("DELETE /usuarios/:id de un usuario inexistente responde 404", async () => {
+  const { app, calls } = await createApp();
+  const response = await request(app, "DELETE", "/api/usuarios/999", 9, "dueno");
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(calls.at(-1).sql, "ROLLBACK");
+});
+
+test("DELETE /usuarios/:id revierte toda la baja si falla una actualización", async () => {
+  const { app, calls } = await createApp({ fallarEn: "UPDATE pedido" });
+  const response = await request(app, "DELETE", "/api/usuarios/7", 7, "cliente");
+
+  assert.equal(response.statusCode, 500);
+  assert.equal(calls.at(-1).sql, "ROLLBACK");
 });
 
 test("PATCH /usuarios/:id no permite cambiar la contraseña", async () => {
