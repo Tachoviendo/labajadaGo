@@ -1,1 +1,125 @@
-<p>mis direcciones route works!</p>
+<div class="pagina">
+  <h1>Mis direcciones</h1>
+
+  @if (mensajeExito()) {
+    <ion-text color="success"><p>{{ mensajeExito() }}</p></ion-text>
+  }
+
+  @if (editando() === null) {
+    <ion-button (click)="nueva()">
+      <ion-icon slot="start" name="add-outline" />
+      Agregar dirección
+    </ion-button>
+  } @else {
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          {{ editando() === 'nueva' ? 'Nueva dirección' : 'Editar dirección' }}
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <form novalidate (submit)="guardar($event)">
+          <div class="campo">
+            <ion-input
+              label="Calle"
+              labelPlacement="stacked"
+              fill="outline"
+              autocomplete="address-line1"
+              [formField]="direccionForm.calle"
+            />
+          </div>
+          @if (direccionForm.calle().touched() && direccionForm.calle().errors().length > 0) {
+            <ion-note color="danger">{{ direccionForm.calle().errors()[0].message }}</ion-note>
+          }
+
+          <div class="campo">
+            <ion-input
+              label="Número (opcional)"
+              labelPlacement="stacked"
+              fill="outline"
+              [formField]="direccionForm.numero"
+            />
+          </div>
+          @if (direccionForm.numero().touched() && direccionForm.numero().errors().length > 0) {
+            <ion-note color="danger">{{ direccionForm.numero().errors()[0].message }}</ion-note>
+          }
+
+          <div class="campo">
+            <ion-input
+              label="Ciudad"
+              labelPlacement="stacked"
+              fill="outline"
+              autocomplete="address-level2"
+              [formField]="direccionForm.ciudad"
+            />
+          </div>
+          @if (direccionForm.ciudad().touched() && direccionForm.ciudad().errors().length > 0) {
+            <ion-note color="danger">{{ direccionForm.ciudad().errors()[0].message }}</ion-note>
+          }
+
+          <div class="campo">
+            <ion-input
+              label="Referencia (opcional)"
+              labelPlacement="stacked"
+              fill="outline"
+              placeholder="Ej: casa con portón azul"
+              [formField]="direccionForm.referencia"
+            />
+          </div>
+          @if (
+            direccionForm.referencia().touched() && direccionForm.referencia().errors().length > 0
+          ) {
+            <ion-note color="danger">{{ direccionForm.referencia().errors()[0].message }}</ion-note>
+          }
+
+          @if (mensajeError()) {
+            <ion-text color="danger"><p>{{ mensajeError() }}</p></ion-text>
+          }
+
+          <div class="acciones">
+            <ion-button type="submit" [disabled]="direccionForm().submitting()">
+              {{ direccionForm().submitting() ? 'Guardando...' : 'Guardar' }}
+            </ion-button>
+            <ion-button type="button" fill="outline" color="medium" (click)="cancelar()">
+              Cancelar
+            </ion-button>
+          </div>
+        </form>
+      </ion-card-content>
+    </ion-card>
+  }
+
+  @if (direcciones.isLoading()) {
+    <div class="estado"><ion-spinner /></div>
+  } @else if (direcciones.error()) {
+    <div class="estado">
+      <ion-text color="danger"><p>{{ mensajeDeError(direcciones.error()) }}</p></ion-text>
+      <ion-button fill="outline" (click)="direcciones.reload()">Reintentar</ion-button>
+    </div>
+  } @else if (direcciones.hasValue()) {
+    @for (direccion of direcciones.value(); track direccion.id) {
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="location-outline" color="secondary" aria-hidden="true" />
+            {{ direccion.calle }} {{ direccion.numero }}
+          </ion-card-title>
+          <ion-card-subtitle>{{ direccion.ciudad }}</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          @if (direccion.referencia) {
+            <p>{{ direccion.referencia }}</p>
+          }
+          <ion-button fill="clear" size="small" (click)="editar(direccion)">
+            <ion-icon slot="start" name="create-outline" />
+            Editar
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+    } @empty {
+      <div class="estado">
+        <p>Todavía no agregaste ninguna dirección.</p>
+      </div>
+    }
+  }
+</div>

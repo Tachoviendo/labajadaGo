@@ -1,0 +1,38 @@
+.filtro {
+  --padding-start: 0;
+  --background: transparent;
+  max-width: 320px;
+  margin-bottom: 8px;
+}
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.detalle {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.detalle strong {
+  color: var(--ion-text-color);
+}
+
+.paginas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.icono-vacio {
+  font-size: 48px;
+  color: var(--ion-color-primary);
+}

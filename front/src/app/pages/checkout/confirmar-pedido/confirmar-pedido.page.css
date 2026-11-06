@@ -1,0 +1,24 @@
+/* en escritorio el resumen queda al costado; en celular abajo */
+.columnas {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .columnas {
+    grid-template-columns: 3fr 2fr;
+  }
+}
+
+ion-item {
+  --padding-start: 0;
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0;
+  font-size: 1.2rem;
+  color: var(--ion-text-color);
+}

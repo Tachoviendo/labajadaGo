@@ -1,1 +1,117 @@
-/* You can add global styles to this file, and also import other style files */
+/* estilos base de Ionic */
+@import '@ionic/angular/css/core.css';
+@import '@ionic/angular/css/normalize.css';
+@import '@ionic/angular/css/structure.css';
+@import '@ionic/angular/css/typography.css';
+@import '@ionic/angular/css/padding.css';
+@import '@ionic/angular/css/flex-utils.css';
+@import '@ionic/angular/css/text-alignment.css';
+@import '@ionic/angular/css/display.css';
+
+/* paleta de la app: la usan todas las pantallas a traves de los colores de Ionic */
+:root {
+  --ion-font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+
+  --ion-background-color: #f5f7fa;
+  --ion-background-color-rgb: 245, 247, 250;
+  --ion-text-color: #263238;
+  --ion-text-color-rgb: 38, 50, 56;
+
+  /* azul principal */
+  --ion-color-primary: #173b68;
+  --ion-color-primary-rgb: 23, 59, 104;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #14345c;
+  --ion-color-primary-tint: #2e4f77;
+
+  /* naranja secundario. el texto va oscuro porque el blanco sobre naranja casi no se lee */
+  --ion-color-secondary: #f28c28;
+  --ion-color-secondary-rgb: 242, 140, 40;
+  --ion-color-secondary-contrast: #263238;
+  --ion-color-secondary-contrast-rgb: 38, 50, 56;
+  --ion-color-secondary-shade: #d57b23;
+  --ion-color-secondary-tint: #f4983e;
+
+  /* verde mas oscuro que el de Ionic, para que los mensajes de exito se lean sobre el fondo claro */
+  --ion-color-success: #2e7d32;
+  --ion-color-success-rgb: 46, 125, 50;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #286e2c;
+  --ion-color-success-tint: #438a47;
+
+  /* tarjetas e items en blanco sobre el fondo gris claro */
+  --ion-card-background: #ffffff;
+  --ion-item-background: #ffffff;
+}
+
+/* margen de todas las paginas (el host de cada pagina va al lado del router-outlet) */
+ion-content > router-outlet ~ * {
+  display: block;
+  padding: 16px;
+}
+
+/* contenedor comun de cada pagina: mismo ancho en todas */
+.pagina {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* encabezado comun de cada pagina */
+.pagina h1 {
+  margin: 8px 0 16px;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--ion-color-primary);
+}
+
+/* estados de carga, vacio y error iguales en todas las pantallas */
+.estado {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--ion-color-medium-shade);
+}
+
+.estado ion-button {
+  margin-top: 12px;
+}
+
+/* importes a la derecha de una lista (subtotales), legibles y con el color del texto */
+ion-item ion-note[slot='end'] {
+  font-size: 1rem;
+  color: var(--ion-text-color);
+}
+
+/* compatibilidad: el css base de Ionic le saca el estilo a los botones y campos nativos.
+   esto mantiene usables (y con la misma paleta) las paginas que todavia no usan
+   componentes de Ionic, como login, registro y perfil. se puede borrar cuando se migren */
+button:not([disabled]) {
+  cursor: pointer;
+}
+
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
+  font-weight: 500;
+}
+
+button[disabled] {
+  opacity: 0.5;
+}
+
+input,
+select {
+  padding: 8px;
+  border: 1px solid #b0bec5;
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--ion-text-color);
+}
+
+a {
+  color: var(--ion-color-primary);
+}

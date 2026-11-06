@@ -1,1 +1,85 @@
-<p>listar mis pedidos route works!</p>
+<div class="pagina">
+  <h1>Mis pedidos</h1>
+
+  <ion-item class="filtro" lines="none">
+    <ion-select
+      label="Estado"
+      labelPlacement="stacked"
+      fill="outline"
+      interface="popover"
+      [value]="filtroEstado()"
+      (ionChange)="cambiarFiltro($event)"
+    >
+      <ion-select-option value="">Todos</ion-select-option>
+      <ion-select-option value="realizado">{{ estados.realizado.texto }}</ion-select-option>
+      <ion-select-option value="preparando">{{ estados.preparando.texto }}</ion-select-option>
+      <ion-select-option value="en_reparto">{{ estados.en_reparto.texto }}</ion-select-option>
+      <ion-select-option value="entregado">{{ estados.entregado.texto }}</ion-select-option>
+      <ion-select-option value="cancelado">{{ estados.cancelado.texto }}</ion-select-option>
+    </ion-select>
+  </ion-item>
+
+  @if (pedidos.isLoading()) {
+    <div class="estado"><ion-spinner /></div>
+  } @else if (pedidos.error()) {
+    <div class="estado">
+      <ion-text color="danger"><p>{{ mensajeDeError(pedidos.error()) }}</p></ion-text>
+      <ion-button fill="outline" (click)="pedidos.reload()">Reintentar</ion-button>
+    </div>
+  } @else if (pedidos.hasValue()) {
+    @for (pedido of pedidos.value(); track pedido.id) {
+      <ion-card button [routerLink]="['/mis-pedidos', pedido.id]">
+        <ion-card-header>
+          <div class="encabezado">
+            <ion-card-title>Pedido #{{ pedido.id }}</ion-card-title>
+            <ion-badge [color]="estados[pedido.estado].color">
+              {{ estados[pedido.estado].texto }}
+            </ion-badge>
+          </div>
+          <ion-card-subtitle>{{ pedido.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="detalle">
+            <span>
+              {{ pedido.items.length }} {{ pedido.items.length === 1 ? 'producto' : 'productos' }}
+              · {{ metodosPago[pedido.metodoPago] }}
+            </span>
+            <strong>{{ pedido.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</strong>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    } @empty {
+      <div class="estado">
+        <ion-icon name="receipt-outline" class="icono-vacio" aria-hidden="true" />
+        @if (filtroEstado() || pagina() > 1) {
+          <p>No hay pedidos para mostrar.</p>
+        } @else {
+          <p>Todavía no hiciste ningún pedido.</p>
+          <ion-button routerLink="/productos">Ver productos</ion-button>
+        }
+      </div>
+    }
+
+    @if (pagina() > 1 || pedidos.value().length === porPagina) {
+      <div class="paginas">
+        <ion-button
+          fill="outline"
+          [disabled]="pagina() === 1"
+          (click)="irAPagina(pagina() - 1)"
+        >
+          <ion-icon slot="start" name="chevron-back-outline" />
+          Anterior
+        </ion-button>
+        <span>Página {{ pagina() }}</span>
+        <ion-button
+          fill="outline"
+          [disabled]="pedidos.value().length < porPagina"
+          (click)="irAPagina(pagina() + 1)"
+        >
+          Siguiente
+          <ion-icon slot="end" name="chevron-forward-outline" />
+        </ion-button>
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,19 @@
+ion-card-title ion-icon {
+  vertical-align: -3px;
+}
+
+.campo {
+  margin-bottom: 12px;
+}
+
+ion-note {
+  display: block;
+  margin: -8px 0 12px;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}

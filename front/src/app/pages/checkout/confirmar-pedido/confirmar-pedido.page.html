@@ -1,1 +1,140 @@
-<p>confirmar pedido route works!</p>
+<div class="pagina">
+  <h1>Confirmar pedido</h1>
+
+  @if (carrito.isLoading() || direcciones.isLoading()) {
+    <div class="estado"><ion-spinner /></div>
+  } @else if (carrito.error() || direcciones.error()) {
+    <div class="estado">
+      <ion-text color="danger">
+        <p>{{ mensajeDeError(carrito.error() ?? direcciones.error()) }}</p>
+      </ion-text>
+      <ion-button fill="outline" (click)="carrito.reload(); direcciones.reload()">
+        Reintentar
+      </ion-button>
+    </div>
+  } @else if (carrito.hasValue() && direcciones.hasValue()) {
+    @let datos = carrito.value();
+
+    @if (datos.items.length === 0) {
+      <div class="estado">
+        <p>Tu carrito está vacío, no hay nada para confirmar.</p>
+        <ion-button routerLink="/productos">Ver productos</ion-button>
+      </div>
+    } @else {
+      <div class="columnas">
+        <div>
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Dirección de entrega</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              @if (direcciones.value().length === 0) {
+                <p>Necesitás una dirección para recibir el pedido.</p>
+                <ion-button
+                  routerLink="/perfil/direcciones"
+                  [queryParams]="{ volver: '/checkout' }"
+                >
+                  Agregar dirección
+                </ion-button>
+              } @else {
+                <ion-radio-group [value]="direccionId()" (ionChange)="elegirDireccion($event)">
+                  <ion-list lines="none">
+                    @for (direccion of direcciones.value(); track direccion.id) {
+                      <ion-item>
+                        <ion-radio [value]="direccion.id" justify="start" labelPlacement="end">
+                          <ion-label class="ion-text-wrap">
+                            <h3>{{ direccion.calle }} {{ direccion.numero }}</h3>
+                            <p>
+                              {{ direccion.ciudad }}
+                              @if (direccion.referencia) {
+                                · {{ direccion.referencia }}
+                              }
+                            </p>
+                          </ion-label>
+                        </ion-radio>
+                      </ion-item>
+                    }
+                  </ion-list>
+                </ion-radio-group>
+                <ion-button
+                  fill="clear"
+                  size="small"
+                  routerLink="/perfil/direcciones"
+                  [queryParams]="{ volver: '/checkout' }"
+                >
+                  Agregar otra dirección
+                </ion-button>
+              }
+            </ion-card-content>
+          </ion-card>
+
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Método de pago</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-radio-group [value]="metodoPago()" (ionChange)="elegirMetodo($event)">
+                <ion-list lines="none">
+                  <ion-item>
+                    <ion-radio value="pos" justify="start" labelPlacement="end">
+                      <ion-label class="ion-text-wrap">
+                        <h3>POS al recibir</h3>
+                        <p>Pagás con tarjeta cuando te llega el pedido.</p>
+                      </ion-label>
+                    </ion-radio>
+                  </ion-item>
+                  <ion-item>
+                    <ion-radio value="mercadopago" justify="start" labelPlacement="end" disabled>
+                      <ion-label class="ion-text-wrap">
+                        <h3>MercadoPago</h3>
+                        <p>Próximamente.</p>
+                      </ion-label>
+                    </ion-radio>
+                  </ion-item>
+                </ion-list>
+              </ion-radio-group>
+            </ion-card-content>
+          </ion-card>
+        </div>
+
+        <ion-card class="resumen">
+          <ion-card-header>
+            <ion-card-title>Resumen</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-list lines="none">
+              @for (item of datos.items; track item.id) {
+                <ion-item>
+                  <ion-label class="ion-text-wrap">{{ item.cantidad }} × {{ item.producto.nombre }}</ion-label>
+                  <ion-note slot="end">
+                    {{ item.subtotal | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
+                  </ion-note>
+                </ion-item>
+              }
+            </ion-list>
+            <div class="total">
+              <span>Total</span>
+              <strong>{{ datos.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</strong>
+            </div>
+
+            @if (mensajeError()) {
+              <ion-text color="danger"><p>{{ mensajeError() }}</p></ion-text>
+            }
+
+            <ion-button
+              expand="block"
+              color="secondary"
+              [disabled]="direccionId() === null || confirmando()"
+              (click)="confirmar()"
+            >
+              {{ confirmando() ? 'Confirmando...' : 'Confirmar pedido' }}
+            </ion-button>
+            <ion-button expand="block" fill="clear" routerLink="/carrito">
+              Volver al carrito
+            </ion-button>
+          </ion-card-content>
+        </ion-card>
+      </div>
+    }
+  }
+</div>

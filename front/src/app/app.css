@@ -1,0 +1,9 @@
+/* link del menu de la pagina actual */
+ion-item.link-activo {
+  --color: var(--ion-color-primary);
+  font-weight: 500;
+}
+
+ion-item.link-activo ion-icon {
+  color: var(--ion-color-secondary);
+}

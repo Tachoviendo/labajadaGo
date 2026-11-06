@@ -1,0 +1,58 @@
+/* cada producto: datos a la izquierda y cantidad a la derecha; en celular la cantidad baja */
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ion-color-light-shade);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.info h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--ion-text-color);
+}
+
+.info p {
+  margin: 4px 0 0;
+}
+
+.cantidad {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.numero {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 500;
+  color: var(--ion-text-color);
+}
+
+.subtotal {
+  min-width: 64px;
+  text-align: right;
+  font-weight: 500;
+  color: var(--ion-text-color);
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  color: var(--ion-text-color);
+}
+
+.icono-vacio {
+  font-size: 48px;
+  color: var(--ion-color-primary);
+}
