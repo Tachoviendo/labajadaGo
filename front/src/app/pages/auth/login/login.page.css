@@ -1,14 +1,135 @@
-form {
-  width: 320px;
-  margin-bottom: 20px;
+.login-content {
+  --background: #f5f7fa;
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+  padding: 32px 16px 60px;
+  overflow: visible;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+ion-card-header {
+  padding: 32px 24px 16px;
+  text-align: center;
+}
+
+.login-logo {
+  margin-bottom: 24px;
+  color: #173b68;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+ion-card-title {
+  color: #263238;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.login-subtitle {
+  margin-top: 8px;
+  color: #718096;
+  font-size: 14px;
+}
+
+ion-card-content {
+  padding: 16px 24px 28px;
 }
 
 .campo {
   display: flex;
   flex-direction: column;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.campo label {
+  color: #263238;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.campo input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 14px;
+  border: 1px solid #d9e0e8;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #263238;
+  font-size: 14px;
+  outline: none;
+}
+
+.campo input:focus {
+  border-color: #173b68;
+}
+
+.campo input::placeholder {
+  color: #a0aab5;
 }
 
 .error {
-  color: red;
+  color: #d93025;
+  font-size: 12px;
+}
+
+.error-message {
+  margin-bottom: 20px;
+  padding: 12px;
+  border-radius: 6px;
+  background: #fdecec;
+  color: #b42318;
+  font-size: 13px;
+}
+
+ion-button {
+  --background: #173b68;
+  --background-hover: #102d50;
+  --border-radius: 7px;
+  --box-shadow: none;
+  --color: #ffffff;
+  margin-top: 8px;
+  height: 46px;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.login-links {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.login-links a {
+  color: #173b68;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-links p {
+  margin-top: 18px;
+  color: #718096;
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 20px 12px 32px;
+  }
+
+  ion-card-header {
+    padding-top: 26px;
+  }
 }
