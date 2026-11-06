@@ -88,7 +88,7 @@ No hay forma de ver/editar la dirección de otro usuario.
 
 ## Direcciones históricas y bases existentes
 
-`db/schema.sql` agrega `usuario_id` nullable para conservar direcciones cuyo
+`db/01_schema.sql` agrega `usuario_id` nullable para conservar direcciones cuyo
 propietario no se puede demostrar. No se asigna propietario por el hecho de
 que un pedido use esa dirección. Las referencias existentes de `pedido` a
 `direccion` se mantienen; una dirección histórica sin dueño queda fuera del

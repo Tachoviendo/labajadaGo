@@ -30,10 +30,21 @@ export const registerSchema = {
 };
 
 // login de cualquier rol (cliente, cajero, dueño)
-export const LoginBody = Type.Object({
-  email: Type.String({ format: "email" }),
-  password: Type.String({ minLength: 1 }),
-});
+//los examples son los usuarios de prueba de db/03_seed.sql, para elegirlos en swagger
+export const LoginBody = Type.Object(
+  {
+    email: Type.String({ format: "email" }),
+    password: Type.String({ minLength: 1 }),
+  },
+  {
+    examples: [
+      { email: "marcos@labajada.com", password: "admin123" },
+      { email: "lucia@labajada.com", password: "cajera123" },
+      { email: "juan@gmail.com", password: "juan123" },
+      { email: "ana@gmail.com", password: "ana123" },
+    ],
+  },
+);
 
 export const PasswordChangeBody = Type.Object(
   {

@@ -12,8 +12,9 @@ async function withLockedCart(app, usuarioId, operation) {
        ON CONFLICT (usuario_id) DO NOTHING`,
       [usuarioId],
     );
+    //el carrito no tiene id propio: su pk (y carrito_item.carrito_id) es el usuario_id
     const { rows } = await client.query(
-      `SELECT id, usuario_id, fecha_actualizacion FROM carrito
+      `SELECT usuario_id, fecha_actualizacion FROM carrito
        WHERE usuario_id = $1 FOR UPDATE`,
       [usuarioId],
     );
@@ -48,9 +49,10 @@ function mapProduct(row) {
   };
 }
 
+//carrito_item no tiene id propio, el item se identifica por su producto
 function mapItem(row) {
   return {
-    id: row.id,
+    id: row.producto_id,
     producto: mapProduct(row),
     cantidad: row.cantidad,
     subtotal: row.precio * row.cantidad,
@@ -62,13 +64,11 @@ async function readItems(client, carritoId, productoId) {
   const productFilter = productoId === undefined ? "" : "AND p.id = $2";
   if (productoId !== undefined) values.push(productoId);
   const { rows } = await client.query(
-    `SELECT MIN(ci.id)::integer AS id, p.id AS producto_id, p.nombre,
-            p.descripcion, p.precio, p.categoria, p.imagen_url, p.stock,
-            p.activo, SUM(ci.cantidad)::integer AS cantidad
+    `SELECT p.id AS producto_id, p.nombre, p.descripcion, p.precio,
+            p.categoria, p.imagen_url, p.stock, p.activo, ci.cantidad
      FROM carrito_item ci
      JOIN producto p ON p.id = ci.producto_id
      WHERE ci.carrito_id = $1 ${productFilter}
-     GROUP BY p.id
      ORDER BY p.id`,
     values,
   );
@@ -91,9 +91,9 @@ async function getProductForUpdate(client, productoId) {
 
 export async function getForUser(app, usuarioId) {
   return withLockedCart(app, usuarioId, async (client, cart) => {
-    const items = await readItems(client, cart.id);
+    const items = await readItems(client, cart.usuario_id);
     return {
-      id: cart.id,
+      id: cart.usuario_id,
       usuarioId: cart.usuario_id,
       items,
       total: items.reduce((total, item) => total + item.subtotal, 0),
@@ -105,82 +105,64 @@ export async function getForUser(app, usuarioId) {
 export async function addItem(app, usuarioId, { productoId, cantidad }) {
   return withLockedCart(app, usuarioId, async (client, cart) => {
     const product = await getProductForUpdate(client, productoId);
-    const { rows: existing } = await client.query(
-      `SELECT id, cantidad FROM carrito_item
-       WHERE carrito_id = $1 AND producto_id = $2
-       ORDER BY id FOR UPDATE`,
-      [cart.id, productoId],
-    );
-    const currentQuantity = existing.reduce((sum, item) => sum + item.cantidad, 0);
-    const newQuantity = currentQuantity + cantidad;
+    const existing = await getItemForUpdate(client, cart.usuario_id, productoId);
+    const newQuantity = (existing?.cantidad ?? 0) + cantidad;
     if (product.stock < newQuantity) {
       throw new ConflictError("no hay stock suficiente para esa cantidad");
     }
 
-    let itemId;
-    if (existing.length) {
-      itemId = existing[0].id;
-      await client.query(
-        "UPDATE carrito_item SET cantidad = $1 WHERE id = $2 AND carrito_id = $3",
-        [newQuantity, itemId, cart.id],
-      );
-      if (existing.length > 1) {
-        await client.query(
-          `DELETE FROM carrito_item
-           WHERE carrito_id = $1 AND producto_id = $2 AND id <> $3`,
-          [cart.id, productoId, itemId],
-        );
-      }
+    if (existing) {
+      await setItemQuantity(client, cart.usuario_id, productoId, newQuantity);
     } else {
-      const { rows } = await client.query(
+      await client.query(
         `INSERT INTO carrito_item (carrito_id, producto_id, cantidad)
-         VALUES ($1, $2, $3) RETURNING id`,
-        [cart.id, productoId, cantidad],
+         VALUES ($1, $2, $3)`,
+        [cart.usuario_id, productoId, cantidad],
       );
-      itemId = rows[0].id;
     }
-    await client.query(
-      "UPDATE carrito SET fecha_actualizacion = now() WHERE id = $1",
-      [cart.id],
-    );
-    const items = await readItems(client, cart.id, productoId);
-    return { ...items[0], id: itemId };
+    await touchCart(client, cart.usuario_id);
+    const items = await readItems(client, cart.usuario_id, productoId);
+    return items[0];
   });
+}
+
+async function getItemForUpdate(client, carritoId, productoId) {
+  const { rows } = await client.query(
+    `SELECT cantidad FROM carrito_item
+     WHERE carrito_id = $1 AND producto_id = $2 FOR UPDATE`,
+    [carritoId, productoId],
+  );
+  return rows[0];
+}
+
+async function setItemQuantity(client, carritoId, productoId, cantidad) {
+  await client.query(
+    "UPDATE carrito_item SET cantidad = $1 WHERE carrito_id = $2 AND producto_id = $3",
+    [cantidad, carritoId, productoId],
+  );
+}
+
+async function touchCart(client, carritoId) {
+  await client.query(
+    "UPDATE carrito SET fecha_actualizacion = now() WHERE usuario_id = $1",
+    [carritoId],
+  );
 }
 
 export async function updateItem(app, usuarioId, productoId, cantidad) {
   return withLockedCart(app, usuarioId, async (client, cart) => {
     const product = await getProductForUpdate(client, productoId);
-    const { rows: existing } = await client.query(
-      `SELECT id, cantidad FROM carrito_item
-       WHERE carrito_id = $1 AND producto_id = $2
-       ORDER BY id FOR UPDATE`,
-      [cart.id, productoId],
-    );
-    if (!existing.length) {
+    const existing = await getItemForUpdate(client, cart.usuario_id, productoId);
+    if (!existing) {
       throw new NotFoundError("el producto no está en el carrito");
     }
     if (product.stock < cantidad) {
       throw new ConflictError("no hay stock suficiente para esa cantidad");
     }
-    const itemId = existing[0].id;
-    await client.query(
-      "UPDATE carrito_item SET cantidad = $1 WHERE id = $2 AND carrito_id = $3",
-      [cantidad, itemId, cart.id],
-    );
-    if (existing.length > 1) {
-      await client.query(
-        `DELETE FROM carrito_item
-         WHERE carrito_id = $1 AND producto_id = $2 AND id <> $3`,
-        [cart.id, productoId, itemId],
-      );
-    }
-    await client.query(
-      "UPDATE carrito SET fecha_actualizacion = now() WHERE id = $1",
-      [cart.id],
-    );
-    const items = await readItems(client, cart.id, productoId);
-    return { ...items[0], id: itemId };
+    await setItemQuantity(client, cart.usuario_id, productoId, cantidad);
+    await touchCart(client, cart.usuario_id);
+    const items = await readItems(client, cart.usuario_id, productoId);
+    return items[0];
   });
 }
 
@@ -188,12 +170,9 @@ export async function removeItem(app, usuarioId, productoId) {
   return withLockedCart(app, usuarioId, async (client, cart) => {
     const { rowCount } = await client.query(
       "DELETE FROM carrito_item WHERE carrito_id = $1 AND producto_id = $2",
-      [cart.id, productoId],
+      [cart.usuario_id, productoId],
     );
     if (!rowCount) throw new NotFoundError("el producto no está en el carrito");
-    await client.query(
-      "UPDATE carrito SET fecha_actualizacion = now() WHERE id = $1",
-      [cart.id],
-    );
+    await touchCart(client, cart.usuario_id);
   });
 }

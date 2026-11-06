@@ -5,9 +5,12 @@ import {
 } from "../errors/response.errors.js";
 import { ORDEN_ESTADOS_PEDIDO } from "../schemas/enums.schema.js";
 
+//la direccion sale de la copia guardada en el pedido, no de la tabla direccion,
+//asi el pedido no cambia si el usuario despues edita su direccion
 const orderColumns = `p.id, p.usuario_id, p.fecha_creacion, p.estado,
-  p.metodo_pago, p.total, d.id AS direccion_id, d.usuario_id AS direccion_usuario_id,
-  d.calle, d.numero, d.ciudad, d.referencia`;
+  p.metodo_pago, p.total, p.direccion_id, p.usuario_id AS direccion_usuario_id,
+  p.direccion_calle AS calle, p.direccion_numero AS numero,
+  p.direccion_ciudad AS ciudad, p.direccion_referencia AS referencia`;
 
 async function loadItems(client, pedidoId) {
   const { rows } = await client.query(
@@ -49,7 +52,7 @@ function mapOrder(order, items) {
 async function loadOrder(client, id) {
   const { rows } = await client.query(
     `SELECT ${orderColumns}
-     FROM pedido p JOIN direccion d ON d.id = p.direccion_id
+     FROM pedido p
      WHERE p.id = $1`,
     [id],
   );
@@ -93,7 +96,7 @@ export async function listForUser(app, usuario, filters) {
     const offsetParameter = values.length;
     const { rows } = await client.query(
       `SELECT ${orderColumns}
-       FROM pedido p JOIN direccion d ON d.id = p.direccion_id
+       FROM pedido p
        ${where}
        ORDER BY p.fecha_creacion ${sort}, p.id DESC
        LIMIT $${limitParameter} OFFSET $${offsetParameter}`,
@@ -143,32 +146,7 @@ async function cancelLockedOrder(client, order, actorId) {
     throw new ConflictError("no se puede verificar el estado del pago MercadoPago");
   }
 
-  const { rows: items } = await client.query(
-    `SELECT producto_id, SUM(cantidad)::integer AS cantidad
-     FROM pedido_item WHERE pedido_id = $1
-     GROUP BY producto_id ORDER BY producto_id`,
-    [order.id],
-  );
-  const productoIds = items.map((item) => item.producto_id);
-  if (productoIds.length) {
-    const { rows: products } = await client.query(
-      `SELECT id FROM producto
-       WHERE id = ANY($1::integer[]) ORDER BY id FOR UPDATE`,
-      [productoIds],
-    );
-    if (products.length !== productoIds.length) {
-      throw new ConflictError("no se pudo restituir el stock del pedido");
-    }
-    for (const item of items) {
-      const { rows } = await client.query(
-        `UPDATE producto SET stock = stock + $1
-         WHERE id = $2 RETURNING id`,
-        [item.cantidad, item.producto_id],
-      );
-      if (!rows[0]) throw new ConflictError("no se pudo restituir el stock del pedido");
-    }
-  }
-
+  //el trigger pedido_reponer_stock devuelve el stock al pasar a cancelado
   const { rows: updated } = await client.query(
     `UPDATE pedido SET estado = 'cancelado'
      WHERE id = $1 AND estado = $2 RETURNING id`,
@@ -240,6 +218,25 @@ export async function cancelByUser(app, pedidoId, usuarioId) {
   });
 }
 
+//si el trigger no encuentra stock suficiente corta con check_violation:
+//es el mismo caso que el chequeo previo, asi que se responde igual (409)
+async function insertOrderItem(client, pedidoId, item) {
+  try {
+    return await client.query(
+      `INSERT INTO pedido_item
+         (pedido_id, producto_id, nombre_producto, cantidad, precio_unitario)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, producto_id, nombre_producto, cantidad, precio_unitario`,
+      [pedidoId, item.producto_id, item.nombre, item.cantidad, item.precio],
+    );
+  } catch (error) {
+    if (error.code === "23514") {
+      throw new ConflictError("stock insuficiente para confirmar el pedido");
+    }
+    throw error;
+  }
+}
+
 export async function createFromCart(app, usuarioId, { direccionId, metodoPago }) {
   const client = await app.pg.connect();
   let transactionStarted = false;
@@ -249,16 +246,16 @@ export async function createFromCart(app, usuarioId, { direccionId, metodoPago }
     transactionStarted = true;
 
     const { rows: carritos } = await client.query(
-      "SELECT id FROM carrito WHERE usuario_id = $1 FOR UPDATE",
+      "SELECT usuario_id FROM carrito WHERE usuario_id = $1 FOR UPDATE",
       [usuarioId],
     );
     if (!carritos[0]) throw new ConflictError("el carrito está vacío");
-    const carritoId = carritos[0].id;
+    const carritoId = carritos[0].usuario_id;
 
     const { rows: itemsCarrito } = await client.query(
-      `SELECT producto_id, SUM(cantidad)::integer AS cantidad
+      `SELECT producto_id, cantidad
        FROM carrito_item WHERE carrito_id = $1
-       GROUP BY producto_id ORDER BY producto_id`,
+       ORDER BY producto_id`,
       [carritoId],
     );
     if (itemsCarrito.length === 0) throw new ConflictError("el carrito está vacío");
@@ -293,23 +290,23 @@ export async function createFromCart(app, usuarioId, { direccionId, metodoPago }
       return { ...item, nombre: producto.nombre, precio: producto.precio, subtotal };
     });
 
+    const direccion = direcciones[0];
     const { rows: pedidos } = await client.query(
-      `INSERT INTO pedido (usuario_id, direccion_id, estado, metodo_pago, total)
-       VALUES ($1, $2, 'realizado', $3, $4)
+      `INSERT INTO pedido (usuario_id, direccion_id, direccion_calle, direccion_numero,
+                           direccion_ciudad, direccion_referencia, estado, metodo_pago, total)
+       VALUES ($1, $2, $3, $4, $5, $6, 'realizado', $7, $8)
        RETURNING id, usuario_id, fecha_creacion, estado, metodo_pago, total`,
-      [usuarioId, direccionId, metodoPago, total],
+      [
+        usuarioId, direccionId, direccion.calle, direccion.numero,
+        direccion.ciudad, direccion.referencia, metodoPago, total,
+      ],
     );
     const pedido = pedidos[0];
     const itemsRespuesta = [];
 
+    //el trigger pedido_item_descontar_stock descuenta el stock de cada item
     for (const item of itemsPedido) {
-      const { rows } = await client.query(
-        `INSERT INTO pedido_item
-           (pedido_id, producto_id, nombre_producto, cantidad, precio_unitario)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, producto_id, nombre_producto, cantidad, precio_unitario`,
-        [pedido.id, item.producto_id, item.nombre, item.cantidad, item.precio],
-      );
+      const { rows } = await insertOrderItem(client, pedido.id, item);
       itemsRespuesta.push({
         id: rows[0].id,
         productoId: rows[0].producto_id,
@@ -320,18 +317,6 @@ export async function createFromCart(app, usuarioId, { direccionId, metodoPago }
       });
     }
 
-    for (const item of itemsPedido) {
-      const { rows } = await client.query(
-        `UPDATE producto SET stock = stock - $1
-         WHERE id = $2 AND activo = TRUE AND stock >= $1
-         RETURNING id`,
-        [item.cantidad, item.producto_id],
-      );
-      if (!rows[0]) {
-        throw new ConflictError("stock insuficiente para confirmar el pedido");
-      }
-    }
-
     await client.query(
       `INSERT INTO pedido_estado_historial (pedido_id, estado, usuario_id)
        VALUES ($1, 'realizado', $2)`,
@@ -339,7 +324,7 @@ export async function createFromCart(app, usuarioId, { direccionId, metodoPago }
     );
     await client.query("DELETE FROM carrito_item WHERE carrito_id = $1", [carritoId]);
     await client.query(
-      "UPDATE carrito SET fecha_actualizacion = now() WHERE id = $1",
+      "UPDATE carrito SET fecha_actualizacion = now() WHERE usuario_id = $1",
       [carritoId],
     );
 
@@ -350,12 +335,12 @@ export async function createFromCart(app, usuarioId, { direccionId, metodoPago }
       id: pedido.id,
       usuarioId: pedido.usuario_id,
       direccion: {
-        id: direcciones[0].id,
-        usuarioId: direcciones[0].usuario_id,
-        calle: direcciones[0].calle,
-        numero: direcciones[0].numero,
-        ciudad: direcciones[0].ciudad,
-        referencia: direcciones[0].referencia,
+        id: direccion.id,
+        usuarioId: direccion.usuario_id,
+        calle: direccion.calle,
+        numero: direccion.numero,
+        ciudad: direccion.ciudad,
+        referencia: direccion.referencia,
         esPredeterminada: false,
       },
       items: itemsRespuesta,

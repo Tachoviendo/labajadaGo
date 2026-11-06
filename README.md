@@ -6,7 +6,7 @@ Proyecto de dw2026
 ```
 /api      backend (Fastify): src, schemas, errors, plugins, services, package.json
 /front    frontend (Angular)
-/db       scripts de la base: schema.sql y seed.sql
+/db       scripts de la base: 01_schema.sql, 02_triggers.sql y 03_seed.sql
 /docs     documentación (historias de usuario, modelo, API, mapa de navegación)
 docker-compose.yaml   levanta Postgres y carga /db
 .env.example          variables compartidas por docker-compose y la api
@@ -16,7 +16,8 @@ docker-compose.yaml   levanta Postgres y carga /db
 
 1. Copiar `.env.example` a `.env` en la raíz del repo.
 2. Levantar la base: `docker compose up -d` (desde la raíz). La primera vez que se crea
-   el volumen corre `db/schema.sql` y después `db/seed.sql`. Para recargarlos:
+   el volumen corre los scripts de `db/` en orden (`01_schema.sql`, `02_triggers.sql` y
+   `03_seed.sql`). Para recargarlos:
    `docker compose down -v` y volver a levantar.
 3. Levantar la api:
    ```
@@ -55,7 +56,7 @@ Construir un sistema donde:
 
 ## Usuarios de prueba
 
-Se cargan con `db/seed.sql`. Son solo para desarrollo.
+Se cargan con `db/03_seed.sql`. Son solo para desarrollo.
 
 | Rol | Email | Contraseña |
 |---|---|---|
@@ -76,7 +77,7 @@ Se cargan con `db/seed.sql`. Son solo para desarrollo.
 **Desde el front** (`http://localhost:4200`):
 
 1. Entrar a `/login` con un usuario de prueba.
-2. Según el rol, se redirige a `/` (cliente), `/admin/pedidos` (cajero) o
+2. Según el rol, se redirige a `/productos` (cliente), `/admin/pedidos` (cajero) o
    `/admin` (dueño).
 3. Las páginas de otro rol no se pueden abrir (las bloquean los guards).
 
@@ -117,8 +118,9 @@ en el siguiente archivo listamos las épicas y las historias de usuario: [userSt
 
 - **Modelo lógico**: entidades, atributos y relaciones en [modelo-logico.md](./docs/modelo-logico.md).
 - **Modelo físico y scripts**: en la carpeta [db](./db):
-  - [schema.sql](./db/schema.sql): script que crea la base de datos.
-  - [seed.sql](./db/seed.sql): script con datos de prueba.
+  - [01_schema.sql](./db/01_schema.sql): script que crea la base de datos.
+  - [02_triggers.sql](./db/02_triggers.sql): triggers que descuentan y reponen el stock.
+  - [03_seed.sql](./db/03_seed.sql): script con datos de prueba.
 
 ### Documentación de la API
 

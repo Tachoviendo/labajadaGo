@@ -41,7 +41,7 @@ Pública también, obvio.
 En una base ya inicializada antes de este cambio, hacer un respaldo y ejecutar
 `npm run migrate:passwords` desde `api/` en una ventana controlada, evitando
 inicios de sesión concurrentes durante la operación. El comando usa una
-transacción y no muestra las contraseñas. En bases nuevas, `db/seed.sql` ya
+transacción y no muestra las contraseñas. En bases nuevas, `db/03_seed.sql` ya
 inserta hashes compatibles y mantiene las credenciales de prueba.
 
 ---
