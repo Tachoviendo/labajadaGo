@@ -1,1 +1,122 @@
-<p>detalle mi pedido route works!</p>
+<div class="pagina">
+  <ion-button fill="clear" size="small" routerLink="/mis-pedidos" class="volver">
+    <ion-icon slot="start" name="chevron-back-outline" />
+    Mis pedidos
+  </ion-button>
+
+  @if (pedido.isLoading() && !pedido.hasValue()) {
+    <div class="estado"><ion-spinner /></div>
+  } @else if (pedido.error()) {
+    <div class="estado">
+      <ion-text color="danger"><p>{{ mensajeDeError(pedido.error()) }}</p></ion-text>
+      <ion-button fill="outline" (click)="pedido.reload()">Reintentar</ion-button>
+    </div>
+  } @else if (pedido.hasValue()) {
+    @let datos = pedido.value();
+
+    <div class="encabezado">
+      <h1>Pedido #{{ datos.id }}</h1>
+      <ion-badge [color]="estados[datos.estado].color">{{ estados[datos.estado].texto }}</ion-badge>
+    </div>
+
+    @if (esNuevo && !mensajeExito()) {
+      <ion-text color="success"><p>¡Listo! Recibimos tu pedido.</p></ion-text>
+    }
+    @if (mensajeExito()) {
+      <ion-text color="success"><p>{{ mensajeExito() }}</p></ion-text>
+    }
+    @if (mensajeError()) {
+      <ion-text color="danger"><p>{{ mensajeError() }}</p></ion-text>
+    }
+
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Seguimiento</ion-card-title>
+        <ion-card-subtitle>Hecho el {{ datos.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        @if (datos.estado === 'cancelado') {
+          <p>Este pedido fue cancelado.</p>
+        } @else {
+          <ion-list lines="none">
+            @for (estado of ordenEstados; track estado; let i = $index) {
+              <ion-item>
+                @if (pasoCompletado(datos, i)) {
+                  <ion-icon slot="start" name="checkmark-circle" color="success" aria-hidden="true" />
+                } @else {
+                  <ion-icon slot="start" name="ellipse-outline" color="medium" aria-hidden="true" />
+                }
+                <ion-label [color]="pasoCompletado(datos, i) ? undefined : 'medium'">
+                  {{ estados[estado].texto }}
+                </ion-label>
+              </ion-item>
+            }
+          </ion-list>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Productos</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list lines="full">
+          @for (item of datos.items; track item.id) {
+            <ion-item>
+              <ion-label class="ion-text-wrap">
+                <h3>{{ item.cantidad }} × {{ item.nombreProducto }}</h3>
+                <p>{{ item.precioUnitario | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }} c/u</p>
+              </ion-label>
+              <ion-note slot="end">
+                {{ item.subtotal | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
+              </ion-note>
+            </ion-item>
+          }
+        </ion-list>
+        <div class="total">
+          <span>Total</span>
+          <strong>{{ datos.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</strong>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Entrega y pago</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list lines="none">
+          <ion-item>
+            <ion-icon slot="start" name="location-outline" color="secondary" aria-hidden="true" />
+            <ion-label class="ion-text-wrap">
+              <h3>{{ datos.direccion.calle }} {{ datos.direccion.numero }}</h3>
+              <p>
+                {{ datos.direccion.ciudad }}
+                @if (datos.direccion.referencia) {
+                  · {{ datos.direccion.referencia }}
+                }
+              </p>
+            </ion-label>
+          </ion-item>
+          <ion-item>
+            <ion-icon slot="start" name="wallet-outline" color="secondary" aria-hidden="true" />
+            <ion-label>{{ metodosPago[datos.metodoPago] }}</ion-label>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+
+    @if (sePuedeCancelar(datos)) {
+      <ion-button
+        expand="block"
+        fill="outline"
+        color="danger"
+        [disabled]="cancelando()"
+        (click)="cancelar(datos)"
+      >
+        {{ cancelando() ? 'Cancelando...' : 'Cancelar pedido' }}
+      </ion-button>
+    }
+  }
+</div>

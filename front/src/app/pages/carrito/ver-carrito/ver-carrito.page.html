@@ -1,1 +1,104 @@
-<p>carrito route works!</p>
+<div class="pagina">
+  <h1>Mi carrito</h1>
+
+  @if (mensajeError()) {
+    <ion-text color="danger"><p>{{ mensajeError() }}</p></ion-text>
+  }
+
+  @if (carrito.isLoading() && !carrito.hasValue()) {
+    <div class="estado"><ion-spinner /></div>
+  } @else if (carrito.error()) {
+    <div class="estado">
+      <ion-text color="danger"><p>{{ mensajeDeError(carrito.error()) }}</p></ion-text>
+      <ion-button fill="outline" (click)="carrito.reload()">Reintentar</ion-button>
+    </div>
+  } @else if (carrito.hasValue()) {
+    @let datos = carrito.value();
+
+    @if (datos.items.length === 0) {
+      <div class="estado">
+        <ion-icon name="cart-outline" class="icono-vacio" aria-hidden="true" />
+        <p>Tu carrito está vacío.</p>
+        <ion-button routerLink="/productos">Ver productos</ion-button>
+      </div>
+    } @else {
+      <ion-card>
+        <ion-card-content>
+          @for (item of datos.items; track item.id) {
+            <div class="item">
+              <div class="info">
+                <h2>{{ item.producto.nombre }}</h2>
+                <p>{{ item.producto.precio | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }} c/u</p>
+                @if (sinDisponibilidad(item)) {
+                  <ion-note color="danger">
+                    {{ item.producto.activo ? 'Solo quedan ' + item.producto.stock : 'Ya no está disponible' }}
+                  </ion-note>
+                }
+              </div>
+
+              <div class="cantidad">
+                <ion-button
+                  fill="outline"
+                  size="small"
+                  aria-label="Restar uno"
+                  [disabled]="item.cantidad <= 1 || modificando() === item.producto.id"
+                  (click)="cambiarCantidad(item, item.cantidad - 1)"
+                >
+                  <ion-icon slot="icon-only" name="remove-outline" />
+                </ion-button>
+                <span class="numero">{{ item.cantidad }}</span>
+                <ion-button
+                  fill="outline"
+                  size="small"
+                  aria-label="Sumar uno"
+                  [disabled]="modificando() === item.producto.id"
+                  (click)="cambiarCantidad(item, item.cantidad + 1)"
+                >
+                  <ion-icon slot="icon-only" name="add-outline" />
+                </ion-button>
+                <span class="subtotal">
+                  {{ item.subtotal | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
+                </span>
+                <ion-button
+                  fill="clear"
+                  color="danger"
+                  size="small"
+                  aria-label="Quitar del carrito"
+                  [disabled]="modificando() === item.producto.id"
+                  (click)="quitar(item)"
+                >
+                  <ion-icon slot="icon-only" name="trash-outline" />
+                </ion-button>
+              </div>
+            </div>
+          }
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-content>
+          <div class="total">
+            <span>Total</span>
+            <strong>{{ datos.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</strong>
+          </div>
+          @if (hayItemsSinDisponibilidad()) {
+            <ion-text color="danger">
+              <p>Ajustá las cantidades marcadas antes de confirmar el pedido.</p>
+            </ion-text>
+          }
+          <ion-button
+            expand="block"
+            color="secondary"
+            routerLink="/checkout"
+            [disabled]="hayItemsSinDisponibilidad()"
+          >
+            Continuar con el pedido
+          </ion-button>
+          <ion-button expand="block" fill="clear" routerLink="/productos">
+            Seguir comprando
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+    }
+  }
+</div>
