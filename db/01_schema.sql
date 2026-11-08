@@ -33,7 +33,7 @@ CREATE TABLE producto (
     nombre VARCHAR(150) NOT NULL,
     descripcion VARCHAR(500),
     precio INTEGER NOT NULL,
-    categoria VARCHAR(100),
+    categoria_id INTEGER NOT NULL REFERENCES categoria(id),
     imagen_url VARCHAR(300),
     -- el stock lo descuentan y reponen los triggers de 02_triggers.sql
     stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),

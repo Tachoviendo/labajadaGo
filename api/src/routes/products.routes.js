@@ -6,6 +6,7 @@ import {
   IdParam,
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
+import * as productsService from "../../services/products.service.js";
 
 export default async function productRoutes(app) {
   //listar y filtrar productos - publica
@@ -31,10 +32,7 @@ export default async function productRoutes(app) {
       },
     },
     async (request) => {
-      return {
-        message: "Listar productos",
-        query: request.query,
-      };
+      return productsService.listar(app, request.query);
     },
   );
 
@@ -50,11 +48,7 @@ export default async function productRoutes(app) {
       },
     },
     async (request) => {
-      const { id } = request.params;
-
-      return {
-        id: Number(id),
-      };
+      return productsService.obtener(app, request.params.id);
     },
   );
 

@@ -7,15 +7,6 @@ import { Rol } from '../../../models/auth.model';
 import { mensajeDeError } from '../../../services/api-error';
 import { AuthService } from '../../../services/auth.service';
 
-import {
-  IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonButton,
-} from '@ionic/angular/standalone';
-
 //a donde va cada rol despues de loguearse (ver docs/mapa-navegacion.drawio)
 const INICIO_POR_ROL: Record<Rol, string> = {
   cliente: '/productos',
@@ -25,16 +16,7 @@ const INICIO_POR_ROL: Record<Rol, string> = {
 
 @Component({
   selector: 'app-login',
-  imports: [
-    FormField,
-    RouterLink,
-    IonContent,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardContent,
-    IonButton,
-  ],
+  imports: [FormField, RouterLink],
   templateUrl: './login.page.html',
   styleUrl: './login.page.css',
 })

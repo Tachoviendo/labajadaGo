@@ -5,7 +5,7 @@ import { Router, RouterLink, RouterOutlet, RouterLinkActive } from '@angular/rou
 import { AuthService } from './services/auth.service';
 
 @Component({
-  imports: [RouterLink, RouterOutlet],
+  imports: [RouterLink, RouterOutlet, RouterLinkActive],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
