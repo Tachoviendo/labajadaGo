@@ -22,6 +22,7 @@
 
   min-height: 65px;
   padding: 8px 4px;
+  background: #fff;
 }
 
 .client-bottom-nav a {
@@ -106,7 +107,6 @@
   }
 
   .client-content {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-bottom: 90px;
   }
 }

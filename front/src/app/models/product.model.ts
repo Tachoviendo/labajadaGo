@@ -24,6 +24,18 @@ export type CrearProductoBody = {
   stock?: number;
 };
 
+export type Pagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type ProductosPaginados = {
+  data: Producto[];
+  pagination: Pagination;
+};
+
 export type FiltrosProductos = {
   nombre?: string;
   categoriaId?: number;
