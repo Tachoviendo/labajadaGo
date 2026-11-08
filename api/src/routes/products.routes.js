@@ -4,6 +4,7 @@ import {
   ProductFiltersQuery,
   ProductSchema,
   IdParam,
+  paginated,
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
 import * as productsService from "../../services/products.service.js";
@@ -22,10 +23,7 @@ export default async function productRoutes(app) {
       schema: {
         querystring: ProductFiltersQuery,
         response: {
-          200: {
-            type: "array",
-            items: ProductSchema,
-          },
+          200: paginated(ProductSchema),
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
         },

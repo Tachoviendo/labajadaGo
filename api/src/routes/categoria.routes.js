@@ -5,6 +5,7 @@ import {
   IdParam,
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
+import * as categoryService from "../../services/category.service.js";
 
 export default async function categoryRoutes(app) {
   //listar categorias - publica
@@ -21,7 +22,7 @@ export default async function categoryRoutes(app) {
       },
     },
     async () => {
-      return [];
+      return categoryService.listar(app);
     },
   );
 

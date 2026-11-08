@@ -45,11 +45,11 @@ export async function listar(app, filters = {}) {
   // Por defecto, el catálogo muestra solamente productos activos.
   addFilter("p.activo = ?", filters.activo ?? true);
 
-  if (filters.nombre) {
-    addFilter("p.nombre ILIKE ?", `%${filters.nombre}%`);
+  if (filters.nombre?.trim()) {
+    addFilter("p.nombre ILIKE ?", `%${filters.nombre.trim()}%`);
   }
 
-  if (filters.categoriaId) {
+  if (filters.categoriaId !== undefined) {
     addFilter("p.categoria_id = ?", filters.categoriaId);
   }
 
@@ -72,25 +72,43 @@ export async function listar(app, filters = {}) {
 
   const sort = sortOptions[filters.sort] ?? sortOptions.nombre_asc;
 
-  const limit = filters.limit ?? 20;
   const page = filters.page ?? 1;
+  const limit = filters.limit ?? 20;
   const offset = (page - 1) * limit;
 
-  values.push(limit);
-  const limitParam = values.length;
+  // Obtener la cantidad total de productos que cumplen los filtros.
+  const countResult = await app.pg.query(
+    `SELECT COUNT(*) AS total
+     FROM producto p
+     INNER JOIN categoria c ON c.id = p.categoria_id
+     ${where}`,
+    values,
+  );
 
-  values.push(offset);
-  const offsetParam = values.length;
+  const total = Number(countResult.rows[0].total);
+
+  // Obtener únicamente los productos de la página solicitada.
+  const dataValues = [...values, limit, offset];
+  const limitParam = dataValues.length - 1;
+  const offsetParam = dataValues.length;
 
   const { rows } = await app.pg.query(
     `${productSelect}
      ${where}
-     ORDER BY ${sort}
+     ORDER BY ${sort}, p.id ASC
      LIMIT $${limitParam} OFFSET $${offsetParam}`,
-    values,
+    dataValues,
   );
 
-  return rows.map(mapProduct);
+  return {
+    data: rows.map(mapProduct),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }
 
 export async function obtener(app, id) {
