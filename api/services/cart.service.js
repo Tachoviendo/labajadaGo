@@ -12,7 +12,7 @@ async function withLockedCart(app, usuarioId, operation) {
        ON CONFLICT (usuario_id) DO NOTHING`,
       [usuarioId],
     );
-    //el carrito no tiene id propio: su pk (y carrito_item.carrito_id) es el usuario_id
+    // El carrito tiene un ID propio y carrito_item.carrito_id referencia carrito.id.
     const { rows } = await client.query(
       `SELECT id, usuario_id, fecha_actualizacion FROM carrito
       WHERE usuario_id = $1 FOR UPDATE`,
@@ -49,10 +49,10 @@ function mapProduct(row) {
   };
 }
 
-//carrito_item no tiene id propio, el item se identifica por su producto
+// Cada artículo del carrito tiene su propio ID.
 function mapItem(row) {
   return {
-    id: row.producto_id,
+    id: row.id,
     producto: mapProduct(row),
     cantidad: row.cantidad,
     subtotal: row.precio * row.cantidad,
@@ -65,6 +65,7 @@ async function readItems(client, carritoId, productoId) {
   if (productoId !== undefined) values.push(productoId);
   const { rows } = await client.query(
     `SELECT
+    ci.id,
     p.id AS producto_id,
     p.nombre,
     p.descripcion,

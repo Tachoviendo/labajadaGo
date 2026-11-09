@@ -37,7 +37,7 @@ CREATE TABLE producto (
     imagen_url VARCHAR(300),
     -- el stock lo descuentan y reponen los triggers de 02_triggers.sql
     stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
-    activo BOOLEAN DEFAULT TRUE
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- un carrito por usuario: la pk es el propio usuario_id

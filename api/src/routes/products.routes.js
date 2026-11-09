@@ -65,10 +65,10 @@ export default async function productRoutes(app) {
         },
       },
     },
-    async () => {
-      return {
-        id: 1,
-      };
+    async (request, reply) => {
+      const producto = await productsService.crear(app, request.body);
+
+      return reply.code(201).send(producto);
     },
   );
 
@@ -91,9 +91,7 @@ export default async function productRoutes(app) {
     async (request) => {
       const { id } = request.params;
 
-      return {
-        id: Number(id),
-      };
+      return productsService.actualizar(app, id, request.body);
     },
   );
 
@@ -115,7 +113,7 @@ export default async function productRoutes(app) {
     async (request, reply) => {
       const { id } = request.params;
 
-      console.log(`Desactivando producto ${id}`);
+      await productsService.desactivar(app, id);
 
       return reply.code(204).send();
     },

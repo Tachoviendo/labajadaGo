@@ -124,3 +124,82 @@ export async function obtener(app, id) {
 
   return mapProduct(rows[0]);
 }
+// Crear un producto.
+export async function crear(app, data) {
+  const { rows } = await app.pg.query(
+    `INSERT INTO producto (
+      nombre,
+      descripcion,
+      precio,
+      categoria_id,
+      imagen_url,
+      stock
+    )
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING id`,
+    [
+      data.nombre,
+      data.descripcion ?? null,
+      data.precio,
+      data.categoriaId,
+      data.imagenUrl ?? null,
+      data.stock ?? 0,
+    ],
+  );
+
+  return obtener(app, rows[0].id);
+}
+
+// Actualizar parcialmente un producto.
+export async function actualizar(app, id, data) {
+  const camposPermitidos = {
+    nombre: "nombre",
+    descripcion: "descripcion",
+    precio: "precio",
+    categoriaId: "categoria_id",
+    imagenUrl: "imagen_url",
+    stock: "stock",
+    activo: "activo",
+  };
+
+  const valores = [];
+  const cambios = [];
+
+  for (const [campo, columna] of Object.entries(camposPermitidos)) {
+    if (Object.hasOwn(data, campo)) {
+      valores.push(data[campo]);
+      cambios.push(`${columna} = $${valores.length}`);
+    }
+  }
+
+  valores.push(id);
+
+  const { rows } = await app.pg.query(
+    `UPDATE producto
+     SET ${cambios.join(", ")}
+     WHERE id = $${valores.length}
+     RETURNING id`,
+    valores,
+  );
+
+  if (!rows[0]) {
+    throw new NotFoundError("el producto no existe");
+  }
+
+  return obtener(app, rows[0].id);
+}
+
+// Desactivar un producto sin eliminarlo de la base de datos.
+export async function desactivar(app, id) {
+  const { rows } = await app.pg.query(
+    `UPDATE producto
+     SET activo = FALSE
+     WHERE id = $1
+     RETURNING id`,
+    [id],
+  );
+
+  if (!rows[0]) {
+    throw new NotFoundError("el producto no existe");
+  }
+}

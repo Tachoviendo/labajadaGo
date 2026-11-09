@@ -2,7 +2,6 @@ import { Type } from "@fastify/type-provider-typebox";
 import { CategorySchema } from "./category.schema.js";
 import { PaginationQuery } from "./common.schema.js";
 
-
 //nota: db/01_schema.sql define producto.categoria como VARCHAR(100) suelto,
 //pero docs/modelo-logico.md dice categoria_id (FK a la tabla categoria).
 //este schema sigue el modelo logico (FK).
@@ -14,7 +13,8 @@ export const ProductSchema = Type.Object({
   descripcion: Type.Union([Type.String(), Type.Null()]),
   precio: Type.Integer({
     minimum: 0,
-    description: "Precio en la unidad monetaria menor (ej: centavos) o entero, a definir por el equipo",
+    description:
+      "Precio en la unidad monetaria menor (ej: centavos) o entero, a definir por el equipo",
   }),
   categoria: CategorySchema,
   imagenUrl: Type.Union([Type.String({ format: "uri" }), Type.Null()]),
@@ -34,10 +34,13 @@ export const ProductCreateBody = Type.Object({
 export const ProductUpdateBody = Type.Partial(
   Type.Object({
     nombre: Type.String({ minLength: 2, maxLength: 150 }),
-    descripcion: Type.String({ maxLength: 500 }),
+    descripcion: Type.Union([Type.String({ maxLength: 500 }), Type.Null()]),
     precio: Type.Integer({ minimum: 0 }),
     categoriaId: Type.Integer({ minimum: 1 }),
-    imagenUrl: Type.String({ format: "uri", maxLength: 300 }),
+    imagenUrl: Type.Union([
+      Type.String({ format: "uri", maxLength: 300 }),
+      Type.Null(),
+    ]),
     stock: Type.Integer({ minimum: 0 }),
     activo: Type.Boolean(),
   }),
@@ -48,14 +51,18 @@ export const ProductUpdateBody = Type.Partial(
 export const ProductFiltersQuery = Type.Object({
   ...PaginationQuery.properties,
   nombre: Type.Optional(
-    Type.String({ maxLength: 150, description: "Búsqueda parcial por nombre (ILIKE)" }),
+    Type.String({
+      maxLength: 150,
+      description: "Búsqueda parcial por nombre (ILIKE)",
+    }),
   ),
   categoriaId: Type.Optional(Type.Integer({ minimum: 1 })),
   precioMin: Type.Optional(Type.Integer({ minimum: 0 })),
   precioMax: Type.Optional(Type.Integer({ minimum: 0 })),
   activo: Type.Optional(
     Type.Boolean({
-      description: "Por defecto el catálogo público solo muestra activo=true; el dueño puede pedir activo=false",
+      description:
+        "Por defecto el catálogo público solo muestra activo=true; el dueño puede pedir activo=false",
     }),
   ),
   sort: Type.Optional(
