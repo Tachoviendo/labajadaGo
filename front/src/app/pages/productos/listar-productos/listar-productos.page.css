@@ -1,0 +1,131 @@
+.catalog-container {
+  max-width: 1200px;
+}
+
+.catalog-title {
+  color: #173b68;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.results-title {
+  color: #173b68;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e5e9ef;
+  border-radius: 12px;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgb(23 59 104 / 10%);
+}
+
+.product-image-link {
+  display: block;
+  overflow: hidden;
+  background: #f5f7fa;
+}
+
+.product-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+.product-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 14px;
+}
+
+.product-category {
+  margin-bottom: 6px;
+  color: #6c757d;
+  font-size: 0.78rem;
+}
+
+.product-name {
+  display: -webkit-box;
+  overflow: hidden;
+  min-height: 2.8em;
+  margin-bottom: 6px;
+  color: #173b68;
+  font-size: 1rem;
+  font-weight: 600;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.product-description {
+  display: -webkit-box;
+  overflow: hidden;
+  min-height: 2.6em;
+  margin-bottom: 10px;
+  color: #6c757d;
+  font-size: 0.82rem;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.product-price {
+  margin-bottom: 5px;
+  color: #173b68;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.product-stock {
+  margin-bottom: 12px;
+  font-size: 0.8rem;
+}
+
+.product-body .btn-primary {
+  background-color: #173b68;
+  border-color: #173b68;
+}
+
+.product-body .btn-primary:hover {
+  background-color: #102c50;
+}
+
+.empty-state {
+  background: #f5f7fa;
+  border-radius: 12px;
+}
+
+@media (max-width: 575.98px) {
+  .catalog-title {
+    font-size: 1.5rem;
+  }
+
+  .product-body {
+    padding: 10px;
+  }
+
+  .product-name {
+    font-size: 0.9rem;
+  }
+
+  .product-price {
+    font-size: 1.1rem;
+  }
+
+  .product-body .btn {
+    padding: 7px 5px;
+    font-size: 0.78rem;
+  }
+}

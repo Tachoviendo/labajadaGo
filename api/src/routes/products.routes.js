@@ -4,8 +4,10 @@ import {
   ProductFiltersQuery,
   ProductSchema,
   IdParam,
+  paginated,
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
+import * as productsService from "../../services/products.service.js";
 
 export default async function productRoutes(app) {
   //listar y filtrar productos - publica
@@ -21,20 +23,14 @@ export default async function productRoutes(app) {
       schema: {
         querystring: ProductFiltersQuery,
         response: {
-          200: {
-            type: "array",
-            items: ProductSchema,
-          },
+          200: paginated(ProductSchema),
           401: ErrorResponseSchema,
           403: ErrorResponseSchema,
         },
       },
     },
     async (request) => {
-      return {
-        message: "Listar productos",
-        query: request.query,
-      };
+      return productsService.listar(app, request.query);
     },
   );
 
@@ -50,11 +46,7 @@ export default async function productRoutes(app) {
       },
     },
     async (request) => {
-      const { id } = request.params;
-
-      return {
-        id: Number(id),
-      };
+      return productsService.obtener(app, request.params.id);
     },
   );
 
@@ -73,10 +65,10 @@ export default async function productRoutes(app) {
         },
       },
     },
-    async () => {
-      return {
-        id: 1,
-      };
+    async (request, reply) => {
+      const producto = await productsService.crear(app, request.body);
+
+      return reply.code(201).send(producto);
     },
   );
 
@@ -99,9 +91,7 @@ export default async function productRoutes(app) {
     async (request) => {
       const { id } = request.params;
 
-      return {
-        id: Number(id),
-      };
+      return productsService.actualizar(app, id, request.body);
     },
   );
 
@@ -123,7 +113,7 @@ export default async function productRoutes(app) {
     async (request, reply) => {
       const { id } = request.params;
 
-      console.log(`Desactivando producto ${id}`);
+      await productsService.desactivar(app, id);
 
       return reply.code(204).send();
     },

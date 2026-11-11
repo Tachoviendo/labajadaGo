@@ -1,0 +1,158 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.checkout-container {
+  max-width: 1180px;
+}
+
+.checkout-header h1,
+.checkout-card h2,
+.success-container h2 {
+  color: #173b68;
+}
+
+.checkout-card,
+.success-container,
+.empty-container {
+  padding: 24px;
+  background: white;
+  border: 1px solid #e9edf2;
+  border-radius: 12px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.section-icon {
+  color: #173b68;
+  background: #edf3fa;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.section-heading h2,
+.summary-card h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.address-option,
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  margin-bottom: 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.address-option.selected,
+.payment-option.selected {
+  border-color: #173b68;
+  background: #f4f8fd;
+}
+
+.address-content,
+.payment-content,
+.product-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+}
+
+.selected-icon {
+  color: #173b68;
+}
+
+.address-form {
+  margin-top: 20px;
+  padding: 18px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.confirm-button {
+  background: #f28c28;
+  border-color: #f28c28;
+  font-weight: 600;
+}
+
+.confirm-button:hover {
+  background: #df7717;
+  border-color: #df7717;
+}
+
+.summary-product,
+.summary-row,
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.summary-divider {
+  border-top: 1px solid #dee2e6;
+  margin: 20px 0;
+}
+
+.summary-total {
+  color: #173b68;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.loading-container,
+.empty-container,
+.success-container {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.success-icon {
+  color: #198754;
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.order-number {
+  padding: 12px;
+  margin: 15px 0;
+  background: #f4f8fd;
+  border-radius: 8px;
+}
+
+.success-details {
+  display: flex;
+  justify-content: space-around;
+  gap: 15px;
+  margin-top: 20px;
+  padding: 20px 0;
+  border-top: 1px solid #dee2e6;
+}
+
+.success-details div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+@media (max-width: 576px) {
+  .checkout-card {
+    padding: 16px;
+  }
+
+  .success-details {
+    flex-direction: column;
+  }
+}

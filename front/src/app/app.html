@@ -1,39 +1,138 @@
-<nav>
-  @if (usuario(); as usuario) {
-    <span>Hola, {{ usuario.nombre }} ({{ usuario.rol }})</span>
-    <button type="button" (click)="cerrarSesion()">Cerrar sesión</button><br />
-  }
-  <a routerLink="/">Inicio</a><br />
-  <a routerLink="/productos">Productos</a><br />
+@if (usuario(); as usuarioActual) {
+  @if (usuarioActual.rol === 'cliente') {
+    <!-- Navegación para clientes -->
+    <header class="navbar bg-white border-bottom px-3">
+      <a class="navbar-brand fw-semibold" routerLink="/"> La Bajada </a>
 
-  @if (!usuario()) {
-    <a routerLink="/login">Login</a><br />
-    <a routerLink="/registro">Registro</a><br />
-    <a routerLink="/recuperar">Recuperar contraseña</a><br />
+      <div class="d-flex align-items-center gap-2">
+        <span class="small text-muted"> Hola, {{ usuarioActual.nombre }} </span>
+
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cerrarSesion()">
+          Salir
+        </button>
+      </div>
+    </header>
+
+    <main class="client-content container py-3">
+      <router-outlet />
+    </main>
+
+    <nav class="client-bottom-nav bg-white border-top">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <span>Inicio</span>
+      </a>
+
+      <a routerLink="/productos" routerLinkActive="active">
+        <span>Productos</span>
+      </a>
+
+      <a routerLink="/carrito" routerLinkActive="active">
+        <span>Carrito</span>
+      </a>
+
+      <a routerLink="/mis-pedidos" routerLinkActive="active">
+        <span>Pedidos</span>
+      </a>
+
+      <a routerLink="/perfil" routerLinkActive="active">
+        <span>Perfil</span>
+      </a>
+    </nav>
   } @else {
-    <a routerLink="/perfil">Mi perfil</a><br />
+    <!-- Navegación para cajero y dueño -->
+    <div class="staff-layout">
+      <aside class="staff-sidebar bg-light border-end">
+        <div class="p-3 border-bottom">
+          <a class="navbar-brand fw-semibold" routerLink="/"> La Bajada </a>
+
+          <div class="small text-muted mt-2">
+            {{ usuarioActual.nombre }}
+          </div>
+
+          <span class="badge text-bg-secondary mt-1">
+            {{ usuarioActual.rol }}
+          </span>
+        </div>
+
+        <nav class="nav flex-column p-3 gap-2">
+          @if (usuarioActual.rol === 'dueno') {
+            <a
+              class="nav-link"
+              routerLink="/admin"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+            >
+              Panel principal
+            </a>
+          }
+
+          <a class="nav-link" routerLink="/admin/pedidos" routerLinkActive="active">
+            Pedidos entrantes
+          </a>
+
+          @if (usuarioActual.rol === 'dueno') {
+            <hr />
+
+            <span class="text-muted small fw-semibold"> Administración </span>
+
+            <a class="nav-link" routerLink="/admin/productos" routerLinkActive="active">
+              Productos
+            </a>
+
+            <a class="nav-link" routerLink="/admin/categorias" routerLinkActive="active">
+              Categorías
+            </a>
+
+            <a class="nav-link" routerLink="/admin/usuarios" routerLinkActive="active">
+              Usuarios
+            </a>
+          }
+
+          <hr />
+
+          <a class="nav-link" routerLink="/perfil" routerLinkActive="active"> Mi perfil </a>
+
+          <button
+            class="btn btn-outline-danger btn-sm text-start"
+            type="button"
+            (click)="cerrarSesion()"
+          >
+            Cerrar sesión
+          </button>
+        </nav>
+      </aside>
+
+      <main class="staff-content">
+        <router-outlet />
+      </main>
+    </div>
   }
+} @else {
+  <!-- Navegación para visitantes -->
+  <nav class="navbar navbar-expand-lg bg-white border-bottom">
+    <div class="container">
+      <a class="navbar-brand fw-semibold" routerLink="/"> La Bajada </a>
 
-  <!-- los links siguen los mismos roles que los guards de las rutas -->
-  @if (usuario()?.rol === 'cliente') {
-    <a routerLink="/carrito">Carrito</a><br />
-    <a routerLink="/checkout">Checkout</a><br />
-    <a routerLink="/perfil/direcciones">Mis direcciones</a><br />
-    <a routerLink="/mis-pedidos">Mis pedidos</a><br />
-  }
+      <div class="navbar-nav ms-auto">
+        <a
+          class="nav-link"
+          routerLink="/"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          Inicio
+        </a>
 
-  @if (usuario()?.rol === 'dueno') {
-    <a routerLink="/admin">Panel administrador</a><br />
-    <a routerLink="/admin/productos">Administrar productos</a><br />
-    <a routerLink="/admin/categorias">Administrar categorías</a><br />
-    <a routerLink="/admin/usuarios">Usuarios internos</a><br />
-  }
+        <a class="nav-link" routerLink="/productos" routerLinkActive="active"> Productos </a>
 
-  @if (usuario()?.rol === 'cajero' || usuario()?.rol === 'dueno') {
-    <a routerLink="/admin/pedidos">Pedidos entrantes</a><br />
-  }
-</nav>
+        <a class="nav-link" routerLink="/login" routerLinkActive="active"> Iniciar sesión </a>
 
-<hr />
+        <a class="nav-link" routerLink="/registro" routerLinkActive="active"> Registrarse </a>
+      </div>
+    </div>
+  </nav>
 
-<router-outlet />
+  <main class="container py-3">
+    <router-outlet />
+  </main>
+}

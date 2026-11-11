@@ -1,0 +1,144 @@
+.cart-container {
+  max-width: 1150px;
+}
+
+.cart-title {
+  color: #173b68;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.empty-cart,
+.cart-summary {
+  background: #fff;
+  border: 1px solid #e5e9ef;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid #e5e9ef;
+}
+
+.cart-item:first-child {
+  padding-top: 0;
+}
+
+.cart-product-image {
+  width: 105px;
+  height: 105px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #f5f7fa;
+  flex-shrink: 0;
+}
+
+.cart-product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cart-product-name {
+  color: #173b68;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.cart-product-price {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.quantity-value {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.cart-item-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.btn-remove {
+  padding: 0;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.cart-summary {
+  position: sticky;
+  top: 20px;
+}
+
+.summary-title {
+  color: #173b68;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.summary-line,
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.summary-total {
+  color: #173b68;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+.cart-summary .btn-primary,
+.empty-cart .btn-primary {
+  background: #173b68;
+  border-color: #173b68;
+}
+
+.cart-summary .btn-primary:hover,
+.empty-cart .btn-primary:hover {
+  background: #102c50;
+  border-color: #102c50;
+}
+
+@media (max-width: 575.98px) {
+  .cart-title {
+    font-size: 1.5rem;
+  }
+
+  .cart-item {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .cart-product-image {
+    width: 78px;
+    height: 78px;
+  }
+
+  .cart-item-actions {
+    font-size: 0.9rem;
+  }
+
+  .cart-summary {
+    position: static;
+  }
+}

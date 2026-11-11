@@ -1,1 +1,144 @@
-<p>carrito route works!</p>
+<div class="container py-4 cart-container">
+  <div class="mb-4">
+    <h1 class="cart-title">Mi carrito</h1>
+    <p class="text-secondary mb-0">Revisá los productos antes de continuar.</p>
+  </div>
+
+  @if (cargando) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="text-secondary mt-2">Cargando tu carrito...</p>
+    </div>
+  } @else if (error && !carrito) {
+    <div class="alert alert-danger" role="alert">
+      {{ error }}
+      <button class="btn btn-sm btn-outline-danger ms-2" type="button" (click)="cargarCarrito()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (!carrito || carrito.items.length === 0) {
+    <div class="empty-cart text-center py-5">
+      <h2 class="h4">Tu carrito está vacío</h2>
+      <p class="text-secondary">Todavía no agregaste productos.</p>
+      <a routerLink="/productos" class="btn btn-primary"> Ver productos </a>
+    </div>
+  } @else {
+    @if (error) {
+      <div class="alert alert-danger" role="alert">
+        {{ error }}
+      </div>
+    }
+
+    <div class="row g-4">
+      <div class="col-12 col-lg-8">
+        <div class="cart-items">
+          @for (item of carrito.items; track item.id) {
+            <article class="cart-item">
+              <img
+                [src]="item.producto.imagenUrl || imagenProducto"
+                [alt]="item.producto.nombre"
+                class="cart-product-image"
+              />
+
+              <div class="cart-product-info">
+                <h2 class="cart-product-name">
+                  {{ item.producto.nombre }}
+                </h2>
+
+                <p class="text-secondary small mb-1">
+                  {{ item.producto.categoria || 'Sin categoría' }}
+                </p>
+
+                <p class="cart-product-price">
+                  {{ item.producto.precio | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
+                </p>
+
+                <div class="quantity-control">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    [disabled]="
+                      actualizandoId !== null || eliminandoId !== null || item.cantidad <= 1
+                    "
+                    (click)="cambiarCantidad(item, -1)"
+                    aria-label="Disminuir cantidad"
+                  >
+                    −
+                  </button>
+
+                  <span class="quantity-value">{{ item.cantidad }}</span>
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    [disabled]="
+                      actualizandoId !== null ||
+                      eliminandoId !== null ||
+                      item.cantidad >= item.producto.stock
+                    "
+                    (click)="cambiarCantidad(item, 1)"
+                    aria-label="Aumentar cantidad"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div class="cart-item-actions">
+                <strong>
+                  {{ item.subtotal | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
+                </strong>
+
+                <button
+                  type="button"
+                  class="btn btn-link text-danger btn-remove"
+                  [disabled]="actualizandoId !== null || eliminandoId !== null"
+                  (click)="eliminar(item)"
+                >
+                  @if (eliminandoId === item.producto.id) {
+                    Eliminando...
+                  } @else {
+                    Eliminar
+                  }
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+
+        <a routerLink="/productos" class="btn btn-outline-primary mt-3"> ← Seguir comprando </a>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <div class="cart-summary">
+          <h2 class="summary-title">Resumen del pedido</h2>
+
+          <div class="summary-line">
+            <span>Productos</span>
+            <span>{{ cantidadProductos }}</span>
+          </div>
+
+          <div class="summary-line">
+            <span>Subtotal</span>
+            <strong>
+              {{ carrito.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
+            </strong>
+          </div>
+
+          <hr />
+
+          <div class="summary-total">
+            <span>Total</span>
+            <strong>
+              {{ carrito.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
+            </strong>
+          </div>
+
+          <a routerLink="/checkout" class="btn btn-primary w-100 mt-4"> Continuar con la compra </a>
+        </div>
+      </div>
+    </div>
+  }
+</div>

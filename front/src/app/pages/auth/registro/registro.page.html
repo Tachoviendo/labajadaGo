@@ -1,65 +1,127 @@
-<h1>Crear cuenta</h1>
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+      <div class="card border-0 shadow-sm registro-card">
+        <div class="card-body p-4 p-md-5">
+          <div class="text-center mb-4">
+            <h1 class="h2 fw-bold">Crear cuenta</h1>
+            <p class="text-secondary">Completá tus datos para registrarte en La Bajada.</p>
+          </div>
 
-@if (mensajeError()) {
-  <p class="error">{{ mensajeError() }}</p>
-}
+          @if (mensajeError()) {
+            <div class="alert alert-danger" role="alert">
+              {{ mensajeError() }}
+            </div>
+          }
 
-<form novalidate (submit)="registrarse($event)">
-  <div class="campo">
-    <label for="nombre">Nombre:</label>
-    <input id="nombre" type="text" autocomplete="name" [formField]="registroForm.nombre" />
-    @if (registroForm.nombre().touched() && registroForm.nombre().errors().length > 0) {
-      <small class="error">{{ registroForm.nombre().errors()[0].message }}</small>
-    }
+          <form novalidate (submit)="registrarse($event)">
+            <div class="mb-3">
+              <label for="nombre" class="form-label">Nombre completo</label>
+              <input
+                id="nombre"
+                type="text"
+                class="form-control"
+                autocomplete="name"
+                placeholder="Ingresá tu nombre"
+                [formField]="registroForm.nombre"
+              />
+              @if (registroForm.nombre().touched() && registroForm.nombre().errors().length > 0) {
+                <div class="text-danger small mt-1">
+                  {{ registroForm.nombre().errors()[0].message }}
+                </div>
+              }
+            </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label">Correo electrónico</label>
+              <input
+                id="email"
+                type="email"
+                class="form-control"
+                autocomplete="email"
+                placeholder="ejemplo@correo.com"
+                [formField]="registroForm.email"
+              />
+              @if (registroForm.email().touched() && registroForm.email().errors().length > 0) {
+                <div class="text-danger small mt-1">
+                  {{ registroForm.email().errors()[0].message }}
+                </div>
+              }
+            </div>
+
+            <div class="mb-3">
+              <label for="password" class="form-label">Contraseña</label>
+              <input
+                id="password"
+                type="password"
+                class="form-control"
+                autocomplete="new-password"
+                placeholder="Mínimo 8 caracteres"
+                [formField]="registroForm.password"
+              />
+              @if (
+                registroForm.password().touched() && registroForm.password().errors().length > 0
+              ) {
+                <div class="text-danger small mt-1">
+                  {{ registroForm.password().errors()[0].message }}
+                </div>
+              }
+            </div>
+
+            <div class="mb-3">
+              <label for="confirmacion" class="form-label">Repetir contraseña</label>
+              <input
+                id="confirmacion"
+                type="password"
+                class="form-control"
+                autocomplete="new-password"
+                placeholder="Repetí tu contraseña"
+                [formField]="registroForm.confirmacion"
+              />
+              @if (
+                registroForm.confirmacion().touched() &&
+                registroForm.confirmacion().errors().length > 0
+              ) {
+                <div class="text-danger small mt-1">
+                  {{ registroForm.confirmacion().errors()[0].message }}
+                </div>
+              }
+            </div>
+
+            <div class="mb-4">
+              <label for="telefono" class="form-label">Teléfono (opcional)</label>
+              <input
+                id="telefono"
+                type="text"
+                class="form-control"
+                autocomplete="tel"
+                placeholder="Tu teléfono"
+                [formField]="registroForm.telefono"
+              />
+              @if (
+                registroForm.telefono().touched() && registroForm.telefono().errors().length > 0
+              ) {
+                <div class="text-danger small mt-1">
+                  {{ registroForm.telefono().errors()[0].message }}
+                </div>
+              }
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary w-100"
+              [disabled]="registroForm().submitting()"
+            >
+              {{ registroForm().submitting() ? 'Creando cuenta...' : 'Crear cuenta' }}
+            </button>
+          </form>
+
+          <p class="text-center text-secondary mt-4 mb-0">
+            ¿Ya tenés cuenta?
+            <a routerLink="/login" class="fw-semibold">Iniciá sesión</a>
+          </p>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <div class="campo">
-    <label for="email">Email:</label>
-    <input id="email" type="email" autocomplete="email" [formField]="registroForm.email" />
-    @if (registroForm.email().touched() && registroForm.email().errors().length > 0) {
-      <small class="error">{{ registroForm.email().errors()[0].message }}</small>
-    }
-  </div>
-
-  <div class="campo">
-    <label for="password">Contraseña:</label>
-    <input
-      id="password"
-      type="password"
-      autocomplete="new-password"
-      [formField]="registroForm.password"
-    />
-    @if (registroForm.password().touched() && registroForm.password().errors().length > 0) {
-      <small class="error">{{ registroForm.password().errors()[0].message }}</small>
-    }
-  </div>
-
-  <div class="campo">
-    <label for="confirmacion">Repetir contraseña:</label>
-    <input
-      id="confirmacion"
-      type="password"
-      autocomplete="new-password"
-      [formField]="registroForm.confirmacion"
-    />
-    @if (
-      registroForm.confirmacion().touched() && registroForm.confirmacion().errors().length > 0
-    ) {
-      <small class="error">{{ registroForm.confirmacion().errors()[0].message }}</small>
-    }
-  </div>
-
-  <div class="campo">
-    <label for="telefono">Teléfono (opcional):</label>
-    <input id="telefono" type="text" autocomplete="tel" [formField]="registroForm.telefono" />
-    @if (registroForm.telefono().touched() && registroForm.telefono().errors().length > 0) {
-      <small class="error">{{ registroForm.telefono().errors()[0].message }}</small>
-    }
-  </div>
-
-  <button type="submit" [disabled]="registroForm().submitting()">
-    {{ registroForm().submitting() ? 'Creando cuenta...' : 'Crear cuenta' }}
-  </button>
-</form>
-
-<p>¿Ya tenés cuenta? <a routerLink="/login">Iniciá sesión</a></p>
+</div>

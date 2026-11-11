@@ -1,90 +1,228 @@
-<h1>Mi perfil</h1>
+<div class="perfil-page">
+  <div class="container perfil-container">
+    <!-- Encabezado -->
+    <header class="perfil-header">
+      <div>
+        <span class="perfil-eyebrow">MI CUENTA</span>
+        <h1>Mi perfil</h1>
+        <p class="perfil-subtitulo">Administrá tus datos personales y la seguridad de tu cuenta.</p>
+      </div>
+    </header>
 
-@if (idUsuario === null) {
-  <p>Tenés que <a routerLink="/login">iniciar sesión</a> para ver tu perfil.</p>
-} @else if (perfil.isLoading()) {
-  <p>Cargando...</p>
-} @else if (perfil.error()) {
-  <p class="error">{{ mensajeDeError(perfil.error()) }}</p>
-} @else if (perfil.hasValue()) {
-  @if (mensajeExito()) {
-    <p class="exito">{{ mensajeExito() }}</p>
-  }
-  @if (mensajeError()) {
-    <p class="error">{{ mensajeError() }}</p>
-  }
+    @if (idUsuario === null) {
+      <div class="alert alert-warning">
+        Tenés que <a routerLink="/login">iniciar sesión</a> para ver tu perfil.
+      </div>
+    } @else if (perfil.isLoading()) {
+      <div class="perfil-cargando">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p>Cargando tu perfil...</p>
+      </div>
+    } @else if (perfil.error()) {
+      <div class="alert alert-danger">
+        {{ mensajeDeError(perfil.error()) }}
+      </div>
+    } @else if (perfil.hasValue()) {
+      <!-- Información general -->
+      <div class="perfil-identidad">
+        <div class="perfil-avatar">
+          {{ perfil.value().nombre.charAt(0).toUpperCase() }}
+        </div>
+        <div>
+          <h2>{{ perfil.value().nombre }}</h2>
+          <span class="perfil-rol">
+            {{ perfil.value().rol }}
+          </span>
+        </div>
+      </div>
 
-  <p><b>Rol:</b> {{ perfil.value().rol }}</p>
-
-  <h2>Mis datos</h2>
-  <form novalidate (submit)="guardarPerfil($event)">
-    <div class="campo">
-      <label for="nombre">Nombre:</label>
-      <input id="nombre" type="text" [formField]="perfilForm.nombre" />
-      @if (perfilForm.nombre().touched() && perfilForm.nombre().errors().length > 0) {
-        <small class="error">{{ perfilForm.nombre().errors()[0].message }}</small>
+      <!-- Mensajes -->
+      @if (mensajeExito()) {
+        <div class="alert alert-success alert-dismissible" role="alert">
+          {{ mensajeExito() }}
+        </div>
       }
-    </div>
 
-    <div class="campo">
-      <label for="email">Email:</label>
-      <input id="email" type="email" [formField]="perfilForm.email" />
-      @if (perfilForm.email().touched() && perfilForm.email().errors().length > 0) {
-        <small class="error">{{ perfilForm.email().errors()[0].message }}</small>
+      @if (mensajeError()) {
+        <div class="alert alert-danger" role="alert">
+          {{ mensajeError() }}
+        </div>
       }
-    </div>
 
-    <div class="campo">
-      <label for="telefono">Teléfono:</label>
-      <input id="telefono" type="text" [formField]="perfilForm.telefono" />
-      @if (perfilForm.telefono().touched() && perfilForm.telefono().errors().length > 0) {
-        <small class="error">{{ perfilForm.telefono().errors()[0].message }}</small>
-      }
-    </div>
+      <div class="row g-4">
+        <!-- Datos personales -->
+        <div class="col-12">
+          <section class="card perfil-card">
+            <div class="card-body">
+              <div class="seccion-titulo">
+                <div>
+                  <h3>Mis datos</h3>
+                  <p>Actualizá tu información personal.</p>
+                </div>
+              </div>
 
-    <button type="submit">Guardar cambios</button>
-  </form>
+              <form novalidate (submit)="guardarPerfil($event)">
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label for="nombre" class="form-label">Nombre completo</label>
+                    <input
+                      id="nombre"
+                      type="text"
+                      class="form-control"
+                      [formField]="perfilForm.nombre"
+                      placeholder="Ingresá tu nombre"
+                    />
+                    @if (perfilForm.nombre().touched() && perfilForm.nombre().errors().length > 0) {
+                      <small class="mensaje-validacion">
+                        {{ perfilForm.nombre().errors()[0].message }}
+                      </small>
+                    }
+                  </div>
 
-  <h2>Cambiar contraseña</h2>
-  <form novalidate (submit)="cambiarPassword($event)">
-    <div class="campo">
-      <label for="passwordActual">Contraseña actual:</label>
-      <input id="passwordActual" type="password" [formField]="passwordForm.passwordActual" />
-      @if (
-        passwordForm.passwordActual().touched() && passwordForm.passwordActual().errors().length > 0
-      ) {
-        <small class="error">{{ passwordForm.passwordActual().errors()[0].message }}</small>
-      }
-    </div>
+                  <div class="col-12 col-md-6">
+                    <label for="email" class="form-label">Correo electrónico</label>
+                    <input
+                      id="email"
+                      type="email"
+                      class="form-control"
+                      [formField]="perfilForm.email"
+                      placeholder="ejemplo@correo.com"
+                    />
+                    @if (perfilForm.email().touched() && perfilForm.email().errors().length > 0) {
+                      <small class="mensaje-validacion">
+                        {{ perfilForm.email().errors()[0].message }}
+                      </small>
+                    }
+                  </div>
 
-    <div class="campo">
-      <label for="passwordNueva">Contraseña nueva:</label>
-      <input id="passwordNueva" type="password" [formField]="passwordForm.passwordNueva" />
-      @if (
-        passwordForm.passwordNueva().touched() && passwordForm.passwordNueva().errors().length > 0
-      ) {
-        <small class="error">{{ passwordForm.passwordNueva().errors()[0].message }}</small>
-      }
-    </div>
+                  <div class="col-12 col-md-6">
+                    <label for="telefono" class="form-label">Teléfono</label>
+                    <input
+                      id="telefono"
+                      type="text"
+                      class="form-control"
+                      [formField]="perfilForm.telefono"
+                      placeholder="Ingresá tu teléfono"
+                    />
+                    @if (
+                      perfilForm.telefono().touched() && perfilForm.telefono().errors().length > 0
+                    ) {
+                      <small class="mensaje-validacion">
+                        {{ perfilForm.telefono().errors()[0].message }}
+                      </small>
+                    }
+                  </div>
+                </div>
 
-    <div class="campo">
-      <label for="confirmacion">Repetir contraseña nueva:</label>
-      <input id="confirmacion" type="password" [formField]="passwordForm.confirmacion" />
-      @if (
-        passwordForm.confirmacion().touched() && passwordForm.confirmacion().errors().length > 0
-      ) {
-        <small class="error">{{ passwordForm.confirmacion().errors()[0].message }}</small>
-      }
-    </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-principal">Guardar cambios</button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
 
-    <button type="submit">Cambiar contraseña</button>
-  </form>
+        <!-- Seguridad -->
+        <div class="col-12">
+          <section class="card perfil-card">
+            <div class="card-body">
+              <div class="seccion-titulo">
+                <div>
+                  <h3>Seguridad</h3>
+                  <p>Mantené tu cuenta protegida actualizando tu contraseña.</p>
+                </div>
+              </div>
 
-  <h2>Dar de baja mi cuenta</h2>
-  <p>
-    Se borran tus datos personales (nombre, email, teléfono y direcciones) y no vas a poder volver a entrar.
-    No se puede hacer mientras tengas un pedido en curso.
-    Tus pedidos quedan registrados sin datos que te identifiquen.
-  </p>
-  <button type="button" class="peligro" (click)="darDeBaja()">Dar de baja mi cuenta</button>
-}
+              <form novalidate (submit)="cambiarPassword($event)">
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label for="passwordActual" class="form-label"> Contraseña actual </label>
+                    <input
+                      id="passwordActual"
+                      type="password"
+                      class="form-control"
+                      [formField]="passwordForm.passwordActual"
+                      placeholder="Ingresá tu contraseña actual"
+                      autocomplete="current-password"
+                    />
+                    @if (
+                      passwordForm.passwordActual().touched() &&
+                      passwordForm.passwordActual().errors().length > 0
+                    ) {
+                      <small class="mensaje-validacion">
+                        {{ passwordForm.passwordActual().errors()[0].message }}
+                      </small>
+                    }
+                  </div>
+
+                  <div class="col-12 col-md-6">
+                    <label for="passwordNueva" class="form-label"> Nueva contraseña </label>
+                    <input
+                      id="passwordNueva"
+                      type="password"
+                      class="form-control"
+                      [formField]="passwordForm.passwordNueva"
+                      placeholder="Mínimo 8 caracteres"
+                      autocomplete="new-password"
+                    />
+                    @if (
+                      passwordForm.passwordNueva().touched() &&
+                      passwordForm.passwordNueva().errors().length > 0
+                    ) {
+                      <small class="mensaje-validacion">
+                        {{ passwordForm.passwordNueva().errors()[0].message }}
+                      </small>
+                    }
+                  </div>
+
+                  <div class="col-12 col-md-6">
+                    <label for="confirmacion" class="form-label"> Repetir nueva contraseña </label>
+                    <input
+                      id="confirmacion"
+                      type="password"
+                      class="form-control"
+                      [formField]="passwordForm.confirmacion"
+                      placeholder="Confirmá tu nueva contraseña"
+                      autocomplete="new-password"
+                    />
+                    @if (
+                      passwordForm.confirmacion().touched() &&
+                      passwordForm.confirmacion().errors().length > 0
+                    ) {
+                      <small class="mensaje-validacion">
+                        {{ passwordForm.confirmacion().errors()[0].message }}
+                      </small>
+                    }
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-principal">Cambiar contraseña</button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+
+        <!-- Baja de cuenta -->
+        <div class="col-12">
+          <section class="card perfil-card perfil-card-peligro">
+            <div class="card-body">
+              <h3>Dar de baja mi cuenta</h3>
+              <p>
+                Si das de baja tu cuenta, se eliminarán tus datos personales (nombre, email,
+                teléfono y direcciones) y no vas a poder volver a ingresar. No se puede realizar
+                esta operación mientras tengas un pedido en curso. Tus pedidos quedarán registrados
+                sin datos que te identifiquen.
+              </p>
+
+              <button type="button" class="btn btn-danger" (click)="darDeBaja()">
+                Dar de baja mi cuenta
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    }
+  </div>
+</div>

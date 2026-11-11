@@ -1,14 +1,80 @@
-form {
-  width: 320px;
-  margin-bottom: 20px;
+:host {
+  display: block;
+  min-height: 100%;
 }
 
-.campo {
+.login-container {
   display: flex;
-  flex-direction: column;
-  margin-bottom: 10px;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 32px 16px 60px;
 }
 
-.error {
-  color: red;
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 10px;
+}
+
+.login-logo {
+  margin-bottom: 24px;
+  color: #173b68;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.login-container h1 {
+  color: #263238;
+}
+
+.login-container .form-label {
+  color: #263238;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.login-container .form-control {
+  padding: 12px 14px;
+  border-color: #d9e0e8;
+  font-size: 14px;
+}
+
+.login-container .form-control:focus {
+  border-color: #173b68;
+  box-shadow: 0 0 0 0.2rem rgba(23, 59, 104, 0.15);
+}
+
+.login-button {
+  min-height: 46px;
+  border-color: #173b68;
+  background-color: #173b68;
+  font-weight: 600;
+}
+
+.login-button:hover {
+  border-color: #102d50;
+  background-color: #102d50;
+}
+
+.login-links {
+  font-size: 13px;
+}
+
+.login-links a {
+  color: #173b68;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-links a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 20px 12px 32px;
+  }
 }
