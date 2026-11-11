@@ -22,42 +22,42 @@ INSERT INTO categoria (nombre, descripcion) VALUES
 ('Lacteos', 'Leche, yogures y chocolatadas'),
 ('Almacen', 'Yerba, azucar y otros basicos');
 
--- producto.categoria usa el mismo nombre que la tabla categoria
-INSERT INTO producto (nombre, descripcion, precio, categoria, imagen_url, stock) VALUES
-('Coca Cola 500ml', 'Gaseosa cola', 85, 'Bebidas', NULL, 40),
-('Agua saborizada', 'Agua con gas sabor pomelo', 60, 'Bebidas', NULL, 25),
-('Papas Lays', 'Papas fritas clasicas', 90, 'Snacks', NULL, 30),
-('Alfajor Cofler', 'Alfajor de chocolate', 55, 'Golosinas', NULL, 50),
-('Chocolate Aguila', 'Chocolate con leche', 70, 'Golosinas', NULL, 20),
-('Sprite 500ml', 'Gaseosa lima limon', 85, 'Bebidas', NULL, 30),
-('Fanta 500ml', 'Gaseosa naranja', 85, 'Bebidas', NULL, 30),
-('Agua Salus 1L', 'Agua mineral sin gas', 65, 'Bebidas', NULL, 40),
-('Jugo de naranja 1L', 'Jugo de naranja en caja', 95, 'Bebidas', NULL, 15),
-('Gatorade 500ml', 'Bebida isotonica', 110, 'Bebidas', NULL, 12),
-('Doritos', 'Snack de maiz sabor queso', 95, 'Snacks', NULL, 25),
-('Palitos de queso', 'Palitos salados', 60, 'Snacks', NULL, 35),
-('Mani salado', 'Mani tostado con sal', 50, 'Snacks', NULL, 40),
-('Chizitos', 'Snack de maiz inflado', 55, 'Snacks', NULL, 30),
-('Pringles original', 'Papas en tubo', 180, 'Snacks', NULL, 10),
-('Alfajor de maicena', 'Alfajor con dulce de leche y coco', 45, 'Golosinas', NULL, 60),
-('Chicles de menta', 'Paquete de chicles', 35, 'Golosinas', NULL, 80),
-('Caramelos masticables', 'Bolsita de caramelos frutales', 25, 'Golosinas', NULL, 100),
-('Bon o Bon', 'Bombon de chocolate y mani', 30, 'Golosinas', NULL, 70),
-('Turron de mani', 'Turron chico', 20, 'Golosinas', NULL, 50),
-('Galletitas Oreo', 'Galletitas de chocolate rellenas', 75, 'Galletitas', NULL, 30),
-('Galletitas de vainilla', 'Galletitas dulces', 65, 'Galletitas', NULL, 25),
-('Bizcochos salados', 'Bizcochos de grasa', 55, 'Galletitas', NULL, 20),
-('Galletas de arroz', 'Galletas de arroz integral', 70, 'Galletitas', NULL, 15),
-('Leche entera 1L', 'Leche en sachet', 52, 'Lacteos', NULL, 30),
-('Yogur bebible frutilla', 'Yogur de 1L', 60, 'Lacteos', NULL, 20),
-('Chocolatada 1L', 'Leche chocolatada', 58, 'Lacteos', NULL, 25),
-('Yerba 1kg', 'Yerba mate tradicional', 290, 'Almacen', NULL, 15),
-('Azucar 1kg', 'Azucar blanca', 75, 'Almacen', NULL, 20),
-('Pan lactal', 'Pan de molde blanco', 120, 'Almacen', NULL, 10);
+-- producto.categoria_id sigue el orden de la tabla categoria: 1 Bebidas, 2 Snacks, 3 Golosinas, 4 Galletitas, 5 Lacteos, 6 Almacen
+INSERT INTO producto (nombre, descripcion, precio, categoria_id, imagen_url, stock) VALUES
+('Coca Cola 500ml', 'Gaseosa cola', 85, 1, NULL, 40),
+('Agua saborizada', 'Agua con gas sabor pomelo', 60, 1, NULL, 25),
+('Papas Lays', 'Papas fritas clasicas', 90, 2, NULL, 30),
+('Alfajor Cofler', 'Alfajor de chocolate', 55, 3, NULL, 50),
+('Chocolate Aguila', 'Chocolate con leche', 70, 3, NULL, 20),
+('Sprite 500ml', 'Gaseosa lima limon', 85, 1, NULL, 30),
+('Fanta 500ml', 'Gaseosa naranja', 85, 1, NULL, 30),
+('Agua Salus 1L', 'Agua mineral sin gas', 65, 1, NULL, 40),
+('Jugo de naranja 1L', 'Jugo de naranja en caja', 95, 1, NULL, 15),
+('Gatorade 500ml', 'Bebida isotonica', 110, 1, NULL, 12),
+('Doritos', 'Snack de maiz sabor queso', 95, 2, NULL, 25),
+('Palitos de queso', 'Palitos salados', 60, 2, NULL, 35),
+('Mani salado', 'Mani tostado con sal', 50, 2, NULL, 40),
+('Chizitos', 'Snack de maiz inflado', 55, 2, NULL, 30),
+('Pringles original', 'Papas en tubo', 180, 2, NULL, 10),
+('Alfajor de maicena', 'Alfajor con dulce de leche y coco', 45, 3, NULL, 60),
+('Chicles de menta', 'Paquete de chicles', 35, 3, NULL, 80),
+('Caramelos masticables', 'Bolsita de caramelos frutales', 25, 3, NULL, 100),
+('Bon o Bon', 'Bombon de chocolate y mani', 30, 3, NULL, 70),
+('Turron de mani', 'Turron chico', 20, 3, NULL, 50),
+('Galletitas Oreo', 'Galletitas de chocolate rellenas', 75, 4, NULL, 30),
+('Galletitas de vainilla', 'Galletitas dulces', 65, 4, NULL, 25),
+('Bizcochos salados', 'Bizcochos de grasa', 55, 4, NULL, 20),
+('Galletas de arroz', 'Galletas de arroz integral', 70, 4, NULL, 15),
+('Leche entera 1L', 'Leche en sachet', 52, 5, NULL, 30),
+('Yogur bebible frutilla', 'Yogur de 1L', 60, 5, NULL, 20),
+('Chocolatada 1L', 'Leche chocolatada', 58, 5, NULL, 25),
+('Yerba 1kg', 'Yerba mate tradicional', 290, 6, NULL, 15),
+('Azucar 1kg', 'Azucar blanca', 75, 6, NULL, 20),
+('Pan lactal', 'Pan de molde blanco', 120, 6, NULL, 10);
 
 -- uno inactivo para probar el filtro activo=false del dueño
-INSERT INTO producto (nombre, descripcion, precio, categoria, imagen_url, stock, activo) VALUES
-('Gaseosa de pomelo 2L', 'Ya no se vende', 140, 'Bebidas', NULL, 0, FALSE);
+INSERT INTO producto (nombre, descripcion, precio, categoria_id, imagen_url, stock, activo) VALUES
+('Gaseosa de pomelo 2L', 'Ya no se vende', 140, 1, NULL, 0, FALSE);
 
 -- carrito de Juan con 2 productos (la pk del carrito es su usuario_id)
 INSERT INTO carrito (usuario_id) VALUES (3);
