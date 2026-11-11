@@ -265,27 +265,43 @@ export async function createFromCart(
     await client.query("BEGIN");
     transactionStarted = true;
 
+    // Obtener el carrito mediante el usuario, conservando su ID propio.
     const { rows: carritos } = await client.query(
-      "SELECT usuario_id FROM carrito WHERE usuario_id = $1 FOR UPDATE",
+      `SELECT id, usuario_id
+       FROM carrito
+       WHERE usuario_id = $1
+       FOR UPDATE`,
       [usuarioId],
     );
-    if (!carritos[0]) throw new ConflictError("el carrito está vacío");
-    const carritoId = carritos[0].usuario_id;
 
+    if (!carritos[0]) {
+      throw new ConflictError("el carrito está vacío");
+    }
+
+    const carrito = carritos[0];
+    const carritoId = carrito.id;
+
+    // Obtener los productos usando carrito.id, no usuario_id.
     const { rows: itemsCarrito } = await client.query(
       `SELECT producto_id, cantidad
-       FROM carrito_item WHERE carrito_id = $1
+       FROM carrito_item
+       WHERE carrito_id = $1
        ORDER BY producto_id`,
       [carritoId],
     );
-    if (itemsCarrito.length === 0)
+
+    if (itemsCarrito.length === 0) {
       throw new ConflictError("el carrito está vacío");
+    }
 
     const { rows: direcciones } = await client.query(
       `SELECT id, usuario_id, calle, numero, ciudad, referencia
-       FROM direccion WHERE id = $1 AND usuario_id = $2 FOR SHARE`,
+       FROM direccion
+       WHERE id = $1 AND usuario_id = $2
+       FOR SHARE`,
       [direccionId, usuarioId],
     );
+
     if (!direcciones[0]) {
       throw new NotFoundError(
         "la dirección no existe o no pertenece al usuario",
@@ -293,9 +309,13 @@ export async function createFromCart(
     }
 
     const productoIds = itemsCarrito.map((item) => item.producto_id);
+
     const { rows: productos } = await client.query(
       `SELECT id, nombre, precio, stock, activo
-       FROM producto WHERE id = ANY($1::integer[]) ORDER BY id FOR UPDATE`,
+       FROM producto
+       WHERE id = ANY($1::integer[])
+       ORDER BY id
+       FOR UPDATE`,
       [productoIds],
     );
     const productosPorId = new Map(
@@ -322,8 +342,17 @@ export async function createFromCart(
 
     const direccion = direcciones[0];
     const { rows: pedidos } = await client.query(
-      `INSERT INTO pedido (usuario_id, direccion_id, direccion_calle, direccion_numero,
-                           direccion_ciudad, direccion_referencia, estado, metodo_pago, total)
+      `INSERT INTO pedido (
+         usuario_id,
+         direccion_id,
+         direccion_calle,
+         direccion_numero,
+         direccion_ciudad,
+         direccion_referencia,
+         estado,
+         metodo_pago,
+         total
+       )
        VALUES ($1, $2, $3, $4, $5, $6, 'realizado', $7, $8)
        RETURNING id, usuario_id, fecha_creacion, estado, metodo_pago, total`,
       [
@@ -340,7 +369,7 @@ export async function createFromCart(
     const pedido = pedidos[0];
     const itemsRespuesta = [];
 
-    //el trigger pedido_item_descontar_stock descuenta el stock de cada item
+    // El trigger pedido_item_descontar_stock descuenta el stock.
     for (const item of itemsPedido) {
       const { rows } = await insertOrderItem(client, pedido.id, item);
       itemsRespuesta.push({
@@ -352,17 +381,24 @@ export async function createFromCart(
         subtotal: item.subtotal,
       });
     }
+    // Registrar el pago pendiente.
+    await client.query(
+      `INSERT INTO pago (pedido_id, metodo, estado)
+   VALUES ($1, $2, 'pendiente')`,
+      [pedido.id, metodoPago],
+    );
 
     await client.query(
       `INSERT INTO pedido_estado_historial (pedido_id, estado, usuario_id)
        VALUES ($1, 'realizado', $2)`,
       [pedido.id, usuarioId],
     );
+    // Vaciar únicamente los artículos del carrito correspondiente.
     await client.query("DELETE FROM carrito_item WHERE carrito_id = $1", [
       carritoId,
     ]);
     await client.query(
-      "UPDATE carrito SET fecha_actualizacion = now() WHERE usuario_id = $1",
+      "UPDATE carrito SET fecha_actualizacion = now() WHERE id = $1",
       [carritoId],
     );
 
