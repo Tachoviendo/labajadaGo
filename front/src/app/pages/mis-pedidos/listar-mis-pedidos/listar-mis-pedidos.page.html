@@ -1,1 +1,169 @@
-<p>listar mis pedidos route works!</p>
+<main class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <h1 class="h2 fw-bold mb-1">Mis pedidos</h1>
+      <p class="text-secondary mb-0">Consultá tus compras y seguí el estado de cada pedido.</p>
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-outline-primary"
+      (click)="cargarPedidos()"
+      [disabled]="cargando"
+    >
+      Actualizar
+    </button>
+  </div>
+
+  @if (mensajeExito) {
+    <div class="alert alert-success" role="alert">
+      {{ mensajeExito }}
+    </div>
+  }
+
+  @if (error) {
+    <div class="alert alert-danger" role="alert">
+      {{ error }}
+    </div>
+  }
+
+  @if (cargando) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="text-secondary mt-3 mb-0">Cargando tus pedidos...</p>
+    </div>
+  } @else if (pedidos.length === 0) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h2 class="h5 fw-bold">Todavía no tenés pedidos</h2>
+        <p class="text-secondary mb-3">
+          Cuando realices una compra, vas a poder consultarla desde acá.
+        </p>
+        <a routerLink="/productos" class="btn btn-primary"> Ver productos </a>
+      </div>
+    </div>
+  } @else {
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="h5 fw-bold mb-0">Historial de compras</h2>
+      <span class="text-secondary small"> {{ pedidos.length }} pedido(s) </span>
+    </div>
+
+    <div class="d-flex flex-column gap-3">
+      @for (pedido of pedidos; track pedido.id) {
+        <article class="card border-0 shadow-sm">
+          <div class="card-body p-3 p-md-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+              <div>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                  <h3 class="h5 fw-bold mb-0">Pedido #{{ pedido.id }}</h3>
+
+                  <span class="estado-badge" [ngClass]="claseEstado(pedido.estado)">
+                    {{ nombreEstado(pedido.estado) }}
+                  </span>
+                </div>
+
+                <p class="text-secondary small mb-1">
+                  {{ pedido.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}
+                </p>
+
+                <p class="mb-0 small">
+                  {{ calcularCantidadProductos(pedido) }}
+                  producto(s)
+                </p>
+              </div>
+
+              <div class="text-md-end">
+                <p class="text-secondary small mb-1">Total del pedido</p>
+                <p class="h4 fw-bold mb-0">
+                  {{ pedido.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
+                </p>
+              </div>
+            </div>
+
+            <hr class="my-3" />
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <p class="small text-secondary mb-1">Dirección de entrega</p>
+                <p class="mb-0 fw-semibold">
+                  {{ pedido.direccion.calle }}
+                  {{ pedido.direccion.numero || '' }}
+                </p>
+                <p class="small text-secondary mb-0">
+                  {{ pedido.direccion.ciudad }}
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <p class="small text-secondary mb-1">Método de pago</p>
+                <p class="mb-0 fw-semibold">
+                  {{ nombreMetodoPago(pedido.metodoPago) }}
+                </p>
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                (click)="toggleDetalle(pedido.id)"
+              >
+                {{ estaExpandido(pedido.id) ? 'Ocultar detalle' : 'Ver detalle' }}
+              </button>
+
+              @if (puedeCancelar(pedido)) {
+                <button
+                  type="button"
+                  class="btn btn-outline-danger btn-sm"
+                  (click)="cancelarPedido(pedido)"
+                  [disabled]="cancelandoId !== null"
+                >
+                  @if (cancelandoId === pedido.id) {
+                    Cancelando...
+                  } @else {
+                    Cancelar pedido
+                  }
+                </button>
+              }
+            </div>
+
+            @if (estaExpandido(pedido.id)) {
+              <div class="detalle-pedido mt-3 pt-3">
+                <h4 class="h6 fw-bold mb-3">Productos del pedido</h4>
+
+                <div class="d-flex flex-column gap-3">
+                  @for (item of pedido.items; track item.id) {
+                    <div class="d-flex justify-content-between gap-3">
+                      <div>
+                        <p class="fw-semibold mb-1">
+                          {{ item.nombreProducto }}
+                        </p>
+                        <p class="small text-secondary mb-0">
+                          {{ item.cantidad }} ×
+                          {{ item.precioUnitario | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
+                        </p>
+                      </div>
+
+                      <p class="fw-semibold mb-0 text-nowrap">
+                        {{ item.subtotal | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
+                      </p>
+                    </div>
+                  }
+                </div>
+
+                @if (pedido.direccion.referencia) {
+                  <div class="mt-3">
+                    <p class="small text-secondary mb-1">Referencia</p>
+                    <p class="mb-0">{{ pedido.direccion.referencia }}</p>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</main>

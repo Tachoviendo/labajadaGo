@@ -1,0 +1,56 @@
+:host {
+  display: block;
+  min-height: 100%;
+  background: #f5f7fa;
+}
+
+.estado-badge {
+  display: inline-block;
+  padding: 5px 11px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.estado-realizado {
+  color: #174a7e;
+  background: #e3efff;
+}
+
+.estado-preparando {
+  color: #8a5700;
+  background: #fff1cc;
+}
+
+.estado-reparto {
+  color: #6641a5;
+  background: #eee5ff;
+}
+
+.estado-entregado {
+  color: #176b3a;
+  background: #dff5e7;
+}
+
+.estado-cancelado {
+  color: #a52b35;
+  background: #ffe3e5;
+}
+
+.detalle-pedido {
+  border-top: 1px solid #e5e9ef;
+}
+
+.card {
+  border-radius: 12px;
+}
+
+.btn-primary {
+  background-color: #173b68;
+  border-color: #173b68;
+}
+
+.btn-primary:hover {
+  background-color: #102e53;
+  border-color: #102e53;
+}
