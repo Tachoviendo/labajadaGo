@@ -40,7 +40,10 @@ export const routes: Routes = [
     path: 'checkout',
     title: 'Checkout',
     canActivate: [rolGuard('cliente')],
-    loadComponent: () => import('./pages/checkout/confirmar-pedido/confirmar-pedido.page'),
+    loadComponent: () =>
+      import('./pages/checkout/confirmar-pedido/confirmar-pedido.page').then(
+        (m) => m.ConfirmarPedidoPage,
+      ),
   },
   {
     path: 'mis-pedidos',

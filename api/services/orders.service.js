@@ -85,8 +85,10 @@ export async function listForUser(app, usuario, filters) {
 
     if (usuario.rol === "cliente") addFilter("p.usuario_id =", usuario.id);
     if (filters.estado) addFilter("p.estado =", filters.estado);
-    if (filters.fechaDesde) addFilter("p.fecha_creacion::date >=", filters.fechaDesde);
-    if (filters.fechaHasta) addFilter("p.fecha_creacion::date <=", filters.fechaHasta);
+    if (filters.fechaDesde)
+      addFilter("p.fecha_creacion::date >=", filters.fechaDesde);
+    if (filters.fechaHasta)
+      addFilter("p.fecha_creacion::date <=", filters.fechaHasta);
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     const sort = filters.sort === "fecha_asc" ? "ASC" : "DESC";
@@ -102,9 +104,11 @@ export async function listForUser(app, usuario, filters) {
        LIMIT $${limitParameter} OFFSET $${offsetParameter}`,
       values,
     );
-    return Promise.all(rows.map(async (order) =>
-      mapOrder(order, await loadItems(client, order.id)),
-    ));
+    return Promise.all(
+      rows.map(async (order) =>
+        mapOrder(order, await loadItems(client, order.id)),
+      ),
+    );
   } finally {
     client.release();
   }
@@ -134,7 +138,9 @@ async function cancelLockedOrder(client, order, actorId) {
     throw new ConflictError("no se puede determinar un único estado de pago");
   }
   if (payments[0]?.estado === "pagado") {
-    throw new ConflictError("un pedido pagado no se puede cancelar directamente");
+    throw new ConflictError(
+      "un pedido pagado no se puede cancelar directamente",
+    );
   }
   if (payments[0] && payments[0].metodo !== order.metodo_pago) {
     throw new ConflictError("el método del pago no coincide con el del pedido");
@@ -142,8 +148,13 @@ async function cancelLockedOrder(client, order, actorId) {
   if (payments[0] && !["pendiente", "rechazado"].includes(payments[0].estado)) {
     throw new ConflictError("no se puede determinar el estado de pago");
   }
-  if (order.metodo_pago === "mercadopago" && payments[0]?.estado !== "rechazado") {
-    throw new ConflictError("no se puede verificar el estado del pago MercadoPago");
+  if (
+    order.metodo_pago === "mercadopago" &&
+    payments[0]?.estado !== "rechazado"
+  ) {
+    throw new ConflictError(
+      "no se puede verificar el estado del pago MercadoPago",
+    );
   }
 
   //el trigger pedido_reponer_stock devuelve el stock al pasar a cancelado
@@ -152,7 +163,8 @@ async function cancelLockedOrder(client, order, actorId) {
      WHERE id = $1 AND estado = $2 RETURNING id`,
     [order.id, order.estado],
   );
-  if (!updated[0]) throw new ConflictError("el pedido cambió mientras se cancelaba");
+  if (!updated[0])
+    throw new ConflictError("el pedido cambió mientras se cancelaba");
   await client.query(
     `INSERT INTO pedido_estado_historial (pedido_id, estado, usuario_id)
      VALUES ($1, 'cancelado', $2)`,
@@ -192,13 +204,17 @@ export async function changeStatus(app, pedidoId, actorId, estado) {
     } else {
       const currentIndex = ORDEN_ESTADOS_PEDIDO.indexOf(order.estado);
       const nextIndex = ORDEN_ESTADOS_PEDIDO.indexOf(estado);
-      if (currentIndex < 0 || nextIndex < 0 || Math.abs(currentIndex - nextIndex) !== 1) {
+      if (
+        currentIndex < 0 ||
+        nextIndex < 0 ||
+        Math.abs(currentIndex - nextIndex) !== 1
+      ) {
         throw new ConflictError("la transición de estado no está permitida");
       }
-      await client.query(
-        "UPDATE pedido SET estado = $1 WHERE id = $2",
-        [estado, order.id],
-      );
+      await client.query("UPDATE pedido SET estado = $1 WHERE id = $2", [
+        estado,
+        order.id,
+      ]);
       await client.query(
         `INSERT INTO pedido_estado_historial (pedido_id, estado, usuario_id)
          VALUES ($1, $2, $3)`,
@@ -237,7 +253,11 @@ async function insertOrderItem(client, pedidoId, item) {
   }
 }
 
-export async function createFromCart(app, usuarioId, { direccionId, metodoPago }) {
+export async function createFromCart(
+  app,
+  usuarioId,
+  { direccionId, metodoPago },
+) {
   const client = await app.pg.connect();
   let transactionStarted = false;
 
@@ -258,7 +278,8 @@ export async function createFromCart(app, usuarioId, { direccionId, metodoPago }
        ORDER BY producto_id`,
       [carritoId],
     );
-    if (itemsCarrito.length === 0) throw new ConflictError("el carrito está vacío");
+    if (itemsCarrito.length === 0)
+      throw new ConflictError("el carrito está vacío");
 
     const { rows: direcciones } = await client.query(
       `SELECT id, usuario_id, calle, numero, ciudad, referencia
@@ -266,7 +287,9 @@ export async function createFromCart(app, usuarioId, { direccionId, metodoPago }
       [direccionId, usuarioId],
     );
     if (!direcciones[0]) {
-      throw new NotFoundError("la dirección no existe o no pertenece al usuario");
+      throw new NotFoundError(
+        "la dirección no existe o no pertenece al usuario",
+      );
     }
 
     const productoIds = itemsCarrito.map((item) => item.producto_id);
@@ -275,7 +298,9 @@ export async function createFromCart(app, usuarioId, { direccionId, metodoPago }
        FROM producto WHERE id = ANY($1::integer[]) ORDER BY id FOR UPDATE`,
       [productoIds],
     );
-    const productosPorId = new Map(productos.map((producto) => [producto.id, producto]));
+    const productosPorId = new Map(
+      productos.map((producto) => [producto.id, producto]),
+    );
     let total = 0;
     const itemsPedido = itemsCarrito.map((item) => {
       const producto = productosPorId.get(item.producto_id);
@@ -287,7 +312,12 @@ export async function createFromCart(app, usuarioId, { direccionId, metodoPago }
       }
       const subtotal = producto.precio * item.cantidad;
       total += subtotal;
-      return { ...item, nombre: producto.nombre, precio: producto.precio, subtotal };
+      return {
+        ...item,
+        nombre: producto.nombre,
+        precio: producto.precio,
+        subtotal,
+      };
     });
 
     const direccion = direcciones[0];
@@ -297,8 +327,14 @@ export async function createFromCart(app, usuarioId, { direccionId, metodoPago }
        VALUES ($1, $2, $3, $4, $5, $6, 'realizado', $7, $8)
        RETURNING id, usuario_id, fecha_creacion, estado, metodo_pago, total`,
       [
-        usuarioId, direccionId, direccion.calle, direccion.numero,
-        direccion.ciudad, direccion.referencia, metodoPago, total,
+        usuarioId,
+        direccionId,
+        direccion.calle,
+        direccion.numero,
+        direccion.ciudad,
+        direccion.referencia,
+        metodoPago,
+        total,
       ],
     );
     const pedido = pedidos[0];
@@ -322,7 +358,9 @@ export async function createFromCart(app, usuarioId, { direccionId, metodoPago }
        VALUES ($1, 'realizado', $2)`,
       [pedido.id, usuarioId],
     );
-    await client.query("DELETE FROM carrito_item WHERE carrito_id = $1", [carritoId]);
+    await client.query("DELETE FROM carrito_item WHERE carrito_id = $1", [
+      carritoId,
+    ]);
     await client.query(
       "UPDATE carrito SET fecha_actualizacion = now() WHERE usuario_id = $1",
       [carritoId],

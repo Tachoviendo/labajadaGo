@@ -40,19 +40,25 @@ CREATE TABLE producto (
     activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- un carrito por usuario: la pk es el propio usuario_id
+
+-- un carrito por usuario
 CREATE TABLE carrito (
-    usuario_id INTEGER PRIMARY KEY REFERENCES usuario(id),
-    fecha_actualizacion TIMESTAMP DEFAULT now()
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL UNIQUE REFERENCES usuario(id),
+    fecha_actualizacion TIMESTAMP NOT NULL DEFAULT now()
 );
 
--- sale de la relacion N a N carrito - producto, un producto aparece una sola vez por carrito
+-- productos del carrito
+-- un producto aparece una sola vez por carrito
 CREATE TABLE carrito_item (
-    carrito_id INTEGER NOT NULL REFERENCES carrito(usuario_id),
+    id SERIAL PRIMARY KEY,
+    carrito_id INTEGER NOT NULL REFERENCES carrito(id) ON DELETE CASCADE,
     producto_id INTEGER NOT NULL REFERENCES producto(id),
-    cantidad INTEGER NOT NULL,
-    PRIMARY KEY (carrito_id, producto_id)
+    cantidad INTEGER NOT NULL CHECK (cantidad >= 1),
+    CONSTRAINT carrito_item_carrito_producto_unique
+        UNIQUE (carrito_id, producto_id)
 );
+
 
 -- la direccion se copia en el pedido para que no cambie si el usuario despues edita la suya
 CREATE TABLE pedido (

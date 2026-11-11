@@ -1,1 +1,276 @@
-<p>confirmar pedido route works!</p>
+<div class="checkout-container container py-4 py-lg-5">
+  <div class="checkout-header mb-4">
+    <a routerLink="/carrito" class="back-link">
+      <i class="bi bi-arrow-left"></i> Volver al carrito
+    </a>
+    <h1 class="mt-3">Finalizar compra</h1>
+    <p class="text-muted mb-0">Revisá los datos de tu pedido antes de confirmarlo.</p>
+  </div>
+
+  <!-- Cargando -->
+  <div *ngIf="cargando" class="loading-container">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-3 text-muted">Cargando información...</p>
+  </div>
+
+  <ng-container *ngIf="!cargando">
+    <!-- Pedido confirmado -->
+    <div *ngIf="pedidoCreado as pedido" class="success-container">
+      <div class="success-icon">
+        <i class="bi bi-check-lg"></i>
+      </div>
+
+      <h2>¡Pedido confirmado!</h2>
+      <p class="text-muted">Tu pedido se registró correctamente.</p>
+
+      <div class="order-number">
+        Número de pedido: <strong>#{{ pedido.id }}</strong>
+      </div>
+
+      <div class="success-details">
+        <div>
+          <span>Estado</span>
+          <strong>{{ pedido.estado }}</strong>
+        </div>
+        <div>
+          <span>Total</span>
+          <strong>{{ pedido.total | currency: 'UYU' : 'symbol' : '1.0-0' }}</strong>
+        </div>
+        <div>
+          <span>Pago</span>
+          <strong>Al recibir el pedido</strong>
+        </div>
+      </div>
+
+      <a routerLink="/mis-pedidos" class="btn btn-primary mt-4"> Ver mis pedidos </a>
+    </div>
+
+    <!-- Checkout -->
+    <div *ngIf="!pedidoCreado && carrito">
+      <div *ngIf="carrito.items.length === 0" class="empty-container">
+        <i class="bi bi-cart-x"></i>
+        <h3>Tu carrito está vacío</h3>
+        <p class="text-muted">Agregá productos antes de continuar con la compra.</p>
+        <a routerLink="/productos" class="btn btn-primary"> Ver productos </a>
+      </div>
+
+      <div *ngIf="carrito.items.length > 0" class="row g-4">
+        <!-- Columna principal -->
+        <div class="col-lg-8">
+          <!-- Dirección -->
+          <section class="checkout-card mb-4">
+            <div class="section-heading">
+              <div class="section-icon">
+                <i class="bi bi-geo-alt"></i>
+              </div>
+              <div>
+                <h2>Dirección de entrega</h2>
+                <p>¿Dónde querés recibir tu pedido?</p>
+              </div>
+            </div>
+
+            <div *ngIf="direcciones.length > 0" class="address-list">
+              <label
+                *ngFor="let direccion of direcciones"
+                class="address-option"
+                [class.selected]="direccionSeleccionadaId === direccion.id"
+              >
+                <input
+                  type="radio"
+                  name="direccion"
+                  [value]="direccion.id"
+                  [(ngModel)]="direccionSeleccionadaId"
+                />
+
+                <div class="address-content">
+                  <strong>
+                    {{ direccion.calle }}
+                    {{ direccion.numero ? direccion.numero : '' }}
+                  </strong>
+                  <span>{{ direccion.ciudad }}</span>
+
+                  <small *ngIf="direccion.referencia">
+                    {{ direccion.referencia }}
+                  </small>
+                </div>
+
+                <i class="bi bi-check-circle-fill selected-icon"></i>
+              </label>
+            </div>
+
+            <div *ngIf="direcciones.length === 0" class="no-address">
+              <i class="bi bi-info-circle"></i>
+              Todavía no tenés direcciones guardadas.
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-outline-primary add-address-btn"
+              (click)="mostrarFormularioDireccion = !mostrarFormularioDireccion"
+            >
+              <i class="bi bi-plus-lg"></i>
+              {{ mostrarFormularioDireccion ? 'Cancelar' : 'Agregar dirección' }}
+            </button>
+
+            <!-- Formulario nueva dirección -->
+            <div *ngIf="mostrarFormularioDireccion" class="address-form">
+              <h3>Nueva dirección</h3>
+
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <label class="form-label">Calle *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="calle"
+                    [(ngModel)]="nuevaDireccion.calle"
+                    placeholder="Ej. Uruguay"
+                    maxlength="150"
+                  />
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Número</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="numero"
+                    [(ngModel)]="nuevaDireccion.numero"
+                    placeholder="Ej. 1234"
+                    maxlength="20"
+                  />
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Ciudad *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="ciudad"
+                    [(ngModel)]="nuevaDireccion.ciudad"
+                    placeholder="Ej. Salto"
+                    maxlength="100"
+                  />
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Referencia</label>
+                  <textarea
+                    class="form-control"
+                    name="referencia"
+                    [(ngModel)]="nuevaDireccion.referencia"
+                    placeholder="Indicaciones adicionales para encontrar tu dirección"
+                    rows="2"
+                    maxlength="200"
+                  ></textarea>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-primary mt-3"
+                (click)="crearDireccion()"
+                [disabled]="guardandoDireccion"
+              >
+                <span
+                  *ngIf="guardandoDireccion"
+                  class="spinner-border spinner-border-sm me-2"
+                ></span>
+                {{ guardandoDireccion ? 'Guardando...' : 'Guardar dirección' }}
+              </button>
+            </div>
+          </section>
+
+          <!-- Método de pago -->
+          <section class="checkout-card">
+            <div class="section-heading">
+              <div class="section-icon">
+                <i class="bi bi-credit-card"></i>
+              </div>
+              <div>
+                <h2>Método de pago</h2>
+                <p>Seleccioná cómo vas a pagar.</p>
+              </div>
+            </div>
+
+            <label class="payment-option selected">
+              <input type="radio" name="metodoPago" value="pos" [(ngModel)]="metodoPago" disabled />
+
+              <div class="payment-content">
+                <strong>Pago al recibir el pedido</strong>
+                <span>Pagás cuando recibís tu compra.</span>
+              </div>
+
+              <i class="bi bi-cash-stack payment-icon"></i>
+            </label>
+
+            <small class="payment-note"> Por el momento, el pago online no está disponible. </small>
+          </section>
+        </div>
+
+        <!-- Resumen -->
+        <div class="col-lg-4">
+          <aside class="checkout-card summary-card">
+            <h2>Resumen del pedido</h2>
+
+            <div class="summary-products">
+              <div *ngFor="let item of carrito.items" class="summary-product">
+                <div class="product-info">
+                  <strong>{{ item.producto.nombre }}</strong>
+                  <span>
+                    {{ item.cantidad }} ×
+                    {{ item.producto.precio | currency: 'UYU' : 'symbol' : '1.0-0' }}
+                  </span>
+                </div>
+
+                <strong class="product-subtotal">
+                  {{ item.subtotal | currency: 'UYU' : 'symbol' : '1.0-0' }}
+                </strong>
+              </div>
+            </div>
+
+            <div class="summary-divider"></div>
+
+            <div class="summary-row">
+              <span>Productos</span>
+              <strong>{{ carrito.items.length }}</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Entrega</span>
+              <strong>A coordinar</strong>
+            </div>
+
+            <div class="summary-total">
+              <span>Total</span>
+              <strong>
+                {{ carrito.total | currency: 'UYU' : 'symbol' : '1.0-0' }}
+              </strong>
+            </div>
+
+            <div *ngIf="error" class="alert alert-danger mt-3 mb-0">
+              {{ error }}
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-primary confirm-button w-100 mt-4"
+              (click)="confirmarPedido()"
+              [disabled]="confirmandoPedido || !direccionSeleccionadaId"
+            >
+              <span *ngIf="confirmandoPedido" class="spinner-border spinner-border-sm me-2"></span>
+
+              {{ confirmandoPedido ? 'Confirmando pedido...' : 'Confirmar pedido' }}
+              <i *ngIf="!confirmandoPedido" class="bi bi-arrow-right ms-2"></i>
+            </button>
+
+            <p class="secure-note">
+              <i class="bi bi-shield-check"></i>
+              Tu pedido será registrado de forma segura.
+            </p>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>
