@@ -48,6 +48,11 @@ export class ConfirmarPedidoPage implements OnInit {
   error = '';
   pedidoCreado: Pedido | null = null;
 
+  //cantidad de unidades, igual que en el carrito y en mis pedidos
+  get cantidadProductos(): number {
+    return this.carrito?.items.reduce((total, item) => total + item.cantidad, 0) ?? 0;
+  }
+
   ngOnInit(): void {
     this.cargarCarrito();
     this.cargarDirecciones();
