@@ -1,0 +1,17 @@
+{
+  "name": "bucket",
+  "version": "1.0.0",
+  "description": "Bucket de imagenes de productos: guarda y sirve archivos estaticos",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/multipart": "^10.1.8",
+    "@fastify/static": "^10.1.10",
+    "fastify": "^5.12.8"
+  }
+}

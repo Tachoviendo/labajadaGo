@@ -1,1 +1,57 @@
-<p>Alta y edición de producto route works!</p>
+<div class="container py-4">
+  <a routerLink="/admin/productos" class="btn btn-link px-0 mb-3">&larr; Volver a productos</a>
+
+  @if (cargando()) {
+    <div class="text-center py-5">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+  } @else if (esNuevo()) {
+    <h1 class="h3 mb-3">Nuevo producto</h1>
+    <div class="alert alert-info">
+      El formulario de alta todavía no está disponible. La imagen se carga desde la edición del producto.
+    </div>
+  } @else if (producto(); as p) {
+    <h1 class="h3 mb-1">{{ p.nombre }}</h1>
+    <p class="text-body-secondary mb-4">{{ p.categoria.nombre }}</p>
+
+    <div class="card imagen-card">
+      <img [src]="imagenUrl()" [alt]="p.nombre" class="card-img-top imagen-preview" />
+      <div class="card-body">
+        <h2 class="h6 card-title">Imagen del producto</h2>
+        <p class="small text-body-secondary">JPG, PNG o WEBP, hasta 2 MB.</p>
+
+        <input
+          #fileInput
+          type="file"
+          class="form-control mb-3"
+          accept="image/jpeg,image/png,image/webp"
+          [disabled]="subiendo()"
+          (change)="elegirArchivo($event)"
+        />
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="!archivo() || subiendo()"
+          (click)="subir(fileInput)"
+        >
+          @if (subiendo()) {
+            <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+            Subiendo...
+          } @else {
+            Subir imagen
+          }
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="alert alert-danger mt-3" role="alert">{{ error() }}</div>
+  }
+  @if (mensaje()) {
+    <div class="alert alert-success mt-3" role="status">{{ mensaje() }}</div>
+  }
+</div>
