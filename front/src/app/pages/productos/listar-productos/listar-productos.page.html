@@ -96,8 +96,8 @@
               [attr.aria-label]="'Ver ' + producto.nombre"
             >
               <img
-                src="/imagenes/imagendeproductos.png"
-                [alt]="'Imagen provisoria de ' + producto.nombre"
+                [src]="producto.imagenUrl || '/imagenes/imagendeproductos.png'"
+                [alt]="producto.nombre"
                 class="product-image"
               />
             </a>

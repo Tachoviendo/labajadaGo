@@ -59,11 +59,12 @@ INSERT INTO producto (nombre, descripcion, precio, categoria_id, imagen_url, sto
 INSERT INTO producto (nombre, descripcion, precio, categoria_id, imagen_url, stock, activo) VALUES
 ('Gaseosa de pomelo 2L', 'Ya no se vende', 140, 1, NULL, 0, FALSE);
 
--- carrito de Juan con 2 productos (la pk del carrito es su usuario_id)
+-- carrito de Juan con 2 productos. el carrito tiene id propio,
+-- asi que los items se cuelgan del id que genera el insert
 INSERT INTO carrito (usuario_id) VALUES (3);
 INSERT INTO carrito_item (carrito_id, producto_id, cantidad) VALUES
-(3, 1, 3),
-(3, 3, 1);
+((SELECT id FROM carrito WHERE usuario_id = 3), 1, 3),
+((SELECT id FROM carrito WHERE usuario_id = 3), 3, 1);
 
 -- pedidos de cada cliente en distintos estados. la direccion se copia en el pedido
 -- y el total es la suma de sus items

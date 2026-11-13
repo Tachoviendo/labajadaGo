@@ -89,7 +89,8 @@ export class MiPerfilPage {
     submit(this.perfilForm, async () => {
       if (this.idUsuario === null) return;
       try {
-        await this.#usuariosService.actualizar(this.idUsuario, this.perfilModel());
+        const usuario = await this.#usuariosService.actualizar(this.idUsuario, this.perfilModel());
+        this.#authService.actualizarUsuarioActual(usuario);
         this.perfil.reload();
         this.mensajeExito.set('Tus datos se guardaron.');
       } catch (error) {

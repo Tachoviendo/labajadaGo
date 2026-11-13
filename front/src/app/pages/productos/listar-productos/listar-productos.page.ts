@@ -58,9 +58,13 @@ export class ListarProductosPage implements OnInit {
     this.categoriesService.listar().subscribe({
       next: (categorias) => {
         this.categorias = categorias;
+
+        this.cdr.detectChanges();
       },
       error: () => {
         this.error = 'No se pudieron cargar las categorías.';
+
+        this.cdr.detectChanges();
       },
     });
   }
@@ -140,10 +144,14 @@ export class ListarProductosPage implements OnInit {
       next: () => {
         this.mensajeCarrito = `${producto.nombre} se agregó al carrito.`;
         this.productoAgregandoId = null;
+
+        this.cdr.detectChanges();
       },
       error: (error) => {
         this.mensajeCarrito = error?.error?.message ?? 'No se pudo agregar el producto al carrito.';
         this.productoAgregandoId = null;
+
+        this.cdr.detectChanges();
       },
     });
   }

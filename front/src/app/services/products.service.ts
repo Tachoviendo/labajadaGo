@@ -26,4 +26,11 @@ export class ProductsService {
   obtener(id: number): Observable<Producto> {
     return this.http.get<Producto>(`${this.apiUrl}/${id}`);
   }
+
+  //solo dueño. la api la guarda en el bucket y devuelve el producto con la nueva imagenUrl
+  subirImagen(id: number, archivo: File): Observable<Producto> {
+    const formData = new FormData();
+    formData.append('file', archivo, archivo.name);
+    return this.http.post<Producto>(`${this.apiUrl}/${id}/imagen`, formData);
+  }
 }

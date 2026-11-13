@@ -51,7 +51,8 @@ function mapProduct(row) {
   };
 }
 
-//carrito_item no tiene id propio, el item se identifica por su producto
+//la api identifica cada item por su producto (es unico dentro del carrito),
+//asi el front usa el mismo id para PATCH y DELETE /carrito/items/:productoId
 function mapItem(row) {
   return {
     id: row.producto_id,

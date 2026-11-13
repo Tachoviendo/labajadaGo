@@ -1,0 +1,9 @@
+.imagen-card {
+  max-width: 420px;
+}
+
+.imagen-preview {
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  background: var(--bs-tertiary-bg);
+}

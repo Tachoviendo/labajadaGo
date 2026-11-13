@@ -17,6 +17,9 @@ afterEach(async () => {
   }
 });
 
+//las consultas del service ocupan varias lineas: se comparan con los espacios colapsados
+const normalizar = (sql) => sql.replace(/\s+/g, " ").trim();
+
 function initialState(options = {}) {
   const { addressOwner = 5, cartItems = null, products = null } = options;
   return {
@@ -28,7 +31,8 @@ function initialState(options = {}) {
       ciudad: "Bella Unión",
       referencia: null,
     },
-    cart: options.cart === undefined ? { usuario_id: 5, fecha_actualizacion: new Date() } : options.cart,
+    //el carrito tiene id propio, distinto del usuario_id a proposito
+    cart: options.cart === undefined ? { id: 40, usuario_id: 5, fecha_actualizacion: new Date() } : options.cart,
     cartItems: cartItems ?? [
       { producto_id: 2, cantidad: 5 },
       { producto_id: 4, cantidad: 1 },
@@ -39,6 +43,7 @@ function initialState(options = {}) {
     ],
     orders: [],
     orderItems: [],
+    payments: [],
     history: [],
   };
 }
@@ -55,8 +60,8 @@ async function createApp(options = {}) {
 
   const client = {
     async query(sql, values = []) {
-      calls.push({ sql, values });
-      const statement = sql.trim();
+      const statement = normalizar(sql);
+      calls.push({ sql: statement, values });
       if (statement === "BEGIN") {
         snapshot = structuredClone(state);
         return { rows: [] };
@@ -72,10 +77,15 @@ async function createApp(options = {}) {
       }
 
       let rows = [];
-      if (statement.includes("SELECT usuario_id FROM carrito WHERE usuario_id = $1")) {
-        rows = state.cart?.usuario_id === values[0] ? [{ usuario_id: state.cart.usuario_id }] : [];
+      if (statement === "SELECT id, usuario_id FROM carrito WHERE usuario_id = $1 FOR UPDATE") {
+        rows = state.cart?.usuario_id === values[0]
+          ? [{ id: state.cart.id, usuario_id: state.cart.usuario_id }]
+          : [];
       } else if (statement.startsWith("SELECT") && statement.includes("FROM carrito_item WHERE carrito_id = $1")) {
-        rows = [...state.cartItems].sort((a, b) => a.producto_id - b.producto_id);
+        //los items cuelgan de carrito.id: si se consultara por usuario_id no aparecerian
+        rows = state.cart?.id === values[0]
+          ? [...state.cartItems].sort((a, b) => a.producto_id - b.producto_id)
+          : [];
       } else if (statement.includes("FROM direccion WHERE id = $1 AND usuario_id = $2")) {
         rows = state.address?.id === values[0] && state.address.usuario_id === values[1]
           ? [state.address]
@@ -112,12 +122,14 @@ async function createApp(options = {}) {
         };
         state.orderItems.push(item);
         rows = [item];
+      } else if (statement.includes("INSERT INTO pago (pedido_id, metodo, estado)")) {
+        state.payments.push({ pedido_id: values[0], metodo: values[1], estado: "pendiente" });
       } else if (statement.includes("INSERT INTO pedido_estado_historial")) {
         state.history.push({ pedido_id: values[0], estado: "realizado", usuario_id: values[1] });
-      } else if (statement.includes("DELETE FROM carrito_item WHERE carrito_id = $1")) {
-        state.cartItems = [];
-      } else if (statement.includes("UPDATE carrito SET fecha_actualizacion = now()")) {
-        state.cart.fecha_actualizacion = new Date();
+      } else if (statement === "DELETE FROM carrito_item WHERE carrito_id = $1") {
+        if (state.cart?.id === values[0]) state.cartItems = [];
+      } else if (statement === "UPDATE carrito SET fecha_actualizacion = now() WHERE id = $1") {
+        if (state.cart?.id === values[0]) state.cart.fecha_actualizacion = new Date();
       } else {
         throw new Error(`Consulta inesperada: ${statement}`);
       }
@@ -211,7 +223,9 @@ test("POST /pedidos crea el checkout, copia la dirección y deriva datos de Post
     { id: 4, stock: 4 },
   ]);
   assert.deepEqual(state.history, [{ pedido_id: 70, estado: "realizado", usuario_id: 5 }]);
+  assert.deepEqual(state.payments, [{ pedido_id: 70, metodo: "pos", estado: "pendiente" }]);
   assert.deepEqual(state.cartItems, []);
+  assert.deepEqual(calls.find(({ sql }) => sql === "DELETE FROM carrito_item WHERE carrito_id = $1").values, [40]);
   assert.deepEqual(calls.find(({ sql }) => sql.includes("FROM carrito WHERE usuario_id" )).values, [5]);
   assert.deepEqual(calls.find(({ sql }) => sql.includes("FROM direccion WHERE id" )).values, [10, 5]);
   assert.deepEqual(calls.find(({ sql }) => sql.includes("INSERT INTO pedido (" )).values, [
@@ -289,6 +303,7 @@ test("cada fallo después de una escritura hace rollback de todo el checkout", a
   for (const failAfter of [
     "INSERT INTO pedido (",
     "INSERT INTO pedido_item",
+    "INSERT INTO pago",
     "INSERT INTO pedido_estado_historial",
     "DELETE FROM carrito_item",
     "UPDATE carrito SET fecha_actualizacion",
@@ -299,6 +314,7 @@ test("cada fallo después de una escritura hace rollback de todo el checkout", a
     assert.equal(getState().orders.length, 0, failAfter);
     assert.equal(getState().orderItems.length, 0, failAfter);
     assert.equal(getState().history.length, 0, failAfter);
+    assert.equal(getState().payments.length, 0, failAfter);
     assert.deepEqual(getState().products.map(({ stock }) => stock), [20, 5], failAfter);
     assert.equal(getState().cartItems.length, 2, failAfter);
     assert.equal(calls.at(-1).sql, "ROLLBACK", failAfter);
