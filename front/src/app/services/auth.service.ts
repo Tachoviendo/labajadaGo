@@ -63,6 +63,14 @@ export class AuthService {
     return this.http.post<void>(`${environment.apiUrl}/auth/logout`, {}, { headers });
   }
 
+  //refresca los datos del usuario guardados en la sesion (ej: despues de editar
+  //el perfil), asi el saludo del header muestra el nombre nuevo sin volver a loguearse
+  actualizarUsuarioActual(usuario: Usuario): void {
+    const auth = this.authSubject.value;
+    if (!auth || auth.usuario.id !== usuario.id) return;
+    this.saveAuth({ ...auth, usuario: { ...auth.usuario, ...usuario } });
+  }
+
   //borra la sesion local sin llamar a la api (ej: el token ya vencio)
   limpiarSesion(): void {
     this.saveAuth(null);

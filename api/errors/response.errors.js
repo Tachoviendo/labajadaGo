@@ -35,7 +35,17 @@ export const ConflictError = createError(
   "Existe un conflicto en los datos. %s",
   409,
 );
+export const PayloadTooLargeError = createError(
+  "PAYLOADTOOLARGE",
+  "El archivo es demasiado grande. %s",
+  413,
+);
 export const InternalError = createError("INTERNAL", "Error interno. %s", 500);
+export const BadGatewayError = createError(
+  "BADGATEWAY",
+  "Falló un servicio externo. %s",
+  502,
+);
 
 //transforma un error crudo de postgres (pg) en uno de los errores de arriba,
 //usando el codigo SQLSTATE y el nombre de constraint/tabla para armar un mensaje legible

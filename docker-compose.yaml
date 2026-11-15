@@ -13,5 +13,20 @@ services:
       - ./db:/docker-entrypoint-initdb.d
       - pgdata:/var/lib/postgresql/data  # descomentar para persistir datos entre reinicios
 
+  #bucket de imagenes de productos (ver bucket/server.js). la api le sube los archivos
+  #con BUCKET_TOKEN y el front los muestra directo desde http://localhost:3001/<archivo>
+  bucket:
+    build: ./bucket
+    container_name: bucket
+    environment:
+      #mismo valor que usa la api (.env). el default es solo para desarrollo
+      BUCKET_TOKEN: ${BUCKET_TOKEN:-dev-bucket-token}
+      BUCKET_PORT: 3001
+    ports:
+      - "3001:3001"
+    volumes:
+      - bucketdata:/data
+
 volumes:
   pgdata:
+  bucketdata:
