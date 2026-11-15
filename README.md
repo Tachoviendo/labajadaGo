@@ -64,6 +64,7 @@ Se cargan con `db/03_seed.sql`. Son solo para desarrollo.
 | Cajero | `lucia@labajada.com` | `cajera123` |
 | Cliente | `juan@gmail.com` | `juan123` |
 | Cliente | `ana@gmail.com` | `ana123` |
+| Repartidor | `pedro@labajada.com` | `repartidor123` |
 
 ## Cómo probar la autenticación
 
