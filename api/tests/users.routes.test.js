@@ -199,6 +199,9 @@ test("DELETE /usuarios/:id anonimiza usuario, direcciones y la copia de la direc
   assert.deepEqual(direccion.values, [7]);
   assert.match(pedido.sql, /direccion_calle = 'Eliminada', direccion_numero = NULL/);
   assert.match(pedido.sql, /direccion_ciudad = 'Eliminada', direccion_referencia = NULL/);
+  //el punto del mapa tambien es dato personal: se borra en la direccion y en la copia del pedido
+  assert.match(direccion.sql, /lat = NULL, lng = NULL/);
+  assert.match(pedido.sql, /direccion_lat = NULL, direccion_lng = NULL/);
   assert.deepEqual(pedido.values, [7]);
   assert.equal(calls.at(-1).sql, "COMMIT");
 });

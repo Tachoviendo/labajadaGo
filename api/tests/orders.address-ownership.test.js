@@ -21,7 +21,7 @@ afterEach(async () => {
 const normalizar = (sql) => sql.replace(/\s+/g, " ").trim();
 
 function initialState(options = {}) {
-  const { addressOwner = 5, cartItems = null, products = null } = options;
+  const { addressOwner = 5, cartItems = null, products = null, sinCoordenadas = false } = options;
   return {
     address: {
       id: 10,
@@ -30,6 +30,8 @@ function initialState(options = {}) {
       numero: "123",
       ciudad: "Bella Unión",
       referencia: null,
+      lat: sinCoordenadas ? null : -31.3853,
+      lng: sinCoordenadas ? null : -57.9552,
     },
     //el carrito tiene id propio, distinto del usuario_id a proposito
     cart: options.cart === undefined ? { id: 40, usuario_id: 5, fecha_actualizacion: new Date() } : options.cart,
@@ -98,11 +100,12 @@ async function createApp(options = {}) {
       } else if (statement.includes("INSERT INTO pedido (")) {
         const [
           usuario_id, direccion_id, direccion_calle, direccion_numero,
-          direccion_ciudad, direccion_referencia, metodo_pago, total,
+          direccion_ciudad, direccion_referencia, direccion_lat, direccion_lng, metodo_pago, total,
         ] = values;
         const pedido = {
           id: orderId++, usuario_id, direccion_id, direccion_calle, direccion_numero,
-          direccion_ciudad, direccion_referencia, estado: "realizado", metodo_pago, total,
+          direccion_ciudad, direccion_referencia, direccion_lat, direccion_lng,
+          estado: "realizado", metodo_pago, total,
           fecha_creacion: new Date("2026-01-02T03:04:05.000Z"),
         };
         state.orders.push(pedido);
@@ -194,6 +197,8 @@ test("POST /pedidos crea el checkout, copia la dirección y deriva datos de Post
       numero: "123",
       ciudad: "Bella Unión",
       referencia: null,
+      lat: -31.3853,
+      lng: -57.9552,
       esPredeterminada: false,
     },
     items: [
@@ -210,6 +215,7 @@ test("POST /pedidos crea el checkout, copia la dirección y deriva datos de Post
     id: 70, usuario_id: 5, direccion_id: 10,
     direccion_calle: "18 de Julio", direccion_numero: "123",
     direccion_ciudad: "Bella Unión", direccion_referencia: null,
+    direccion_lat: -31.3853, direccion_lng: -57.9552,
     estado: "realizado", metodo_pago: "pos", total: 240,
     fecha_creacion: new Date("2026-01-02T03:04:05.000Z"),
   });
@@ -229,7 +235,7 @@ test("POST /pedidos crea el checkout, copia la dirección y deriva datos de Post
   assert.deepEqual(calls.find(({ sql }) => sql.includes("FROM carrito WHERE usuario_id" )).values, [5]);
   assert.deepEqual(calls.find(({ sql }) => sql.includes("FROM direccion WHERE id" )).values, [10, 5]);
   assert.deepEqual(calls.find(({ sql }) => sql.includes("INSERT INTO pedido (" )).values, [
-    5, 10, "18 de Julio", "123", "Bella Unión", null, "pos", 240,
+    5, 10, "18 de Julio", "123", "Bella Unión", null, -31.3853, -57.9552, "pos", 240,
   ]);
   assert.match(calls.find(({ sql }) => sql.includes("nombre_producto" )).sql, /\$1[\s\S]*\$5/);
   assert.deepEqual(calls.filter(({ sql }) => /FOR UPDATE/.test(sql)).map(({ sql }) => sql.includes("carrito")), [true, false]);
@@ -252,6 +258,18 @@ test("direcciones ajenas, legacy sin dueño e inexistentes devuelven 404 sin esc
   assert.equal(response.statusCode, 404);
   assert.equal(getState().orders.length, 0);
   assert.equal(calls.some(({ sql }) => /INSERT INTO|UPDATE producto|DELETE FROM/.test(sql)), false);
+});
+
+test("una dirección sin punto en el mapa no se puede usar para pedir", async () => {
+  const { app, calls, getState } = await createApp({ sinCoordenadas: true });
+  const response = await request(app);
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.json().code, "BADREQUEST");
+  assert.match(response.json().message, /ubicación en el mapa/);
+  assert.equal(calls.some(({ sql }) => /INSERT INTO|UPDATE producto|DELETE FROM/.test(sql)), false);
+  assert.equal(calls.at(-1).sql, "ROLLBACK");
+  assert.deepEqual(getState().orders, []);
 });
 
 test("el carrito se busca por el usuario del token y no se puede elegir otro usuario", async () => {

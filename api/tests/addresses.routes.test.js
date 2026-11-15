@@ -53,8 +53,8 @@ async function createApp() {
       }
 
       if (sql.includes("INSERT INTO direccion")) {
-        const [usuario_id, calle, numero, ciudad, referencia] = values;
-        const address = direccion(20, usuario_id, { calle, numero, ciudad, referencia });
+        const [usuario_id, calle, numero, ciudad, referencia, lat, lng] = values;
+        const address = direccion(20, usuario_id, { calle, numero, ciudad, referencia, lat, lng });
         addresses.set(address.id, address);
         return { rows: [address] };
       }
@@ -109,6 +109,8 @@ function direccion(id, usuario_id, fields = {}) {
     numero: fields.numero ?? "1",
     ciudad: fields.ciudad ?? "Bella Unión",
     referencia: fields.referencia ?? null,
+    lat: fields.lat ?? -31.38,
+    lng: fields.lng ?? -57.96,
   };
 }
 
@@ -171,14 +173,18 @@ test("POST /direcciones toma el propietario del token y no del body", async () =
   const response = await request(app, "POST", "/api/direcciones", 1, {
     calle: "Nueva calle",
     ciudad: "Bella Unión",
+    lat: -31.3853,
+    lng: -57.9552,
     usuarioId: 2,
     usuario_id: 2,
   });
 
   assert.equal(response.statusCode, 201);
   assertAddress(response, 20, 1);
-  assert.deepEqual(calls[0].values, [1, "Nueva calle", null, "Bella Unión", null]);
-  assert.match(calls[0].sql, /VALUES \(\$1, \$2, \$3, \$4, \$5\)/);
+  assert.deepEqual(calls[0].values, [1, "Nueva calle", null, "Bella Unión", null, -31.3853, -57.9552]);
+  assert.match(calls[0].sql, /VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7\)/);
+  assert.equal(response.json().lat, -31.3853);
+  assert.equal(response.json().lng, -57.9552);
   assert.equal(calls[0].sql.includes("usuario_id = 2"), false);
 });
 
@@ -217,6 +223,8 @@ test("esPredeterminada=true se rechaza mientras no exista persistencia para ese 
   const response = await request(app, "POST", "/api/direcciones", 1, {
     calle: "Nueva calle",
     ciudad: "Bella Unión",
+    lat: -31.3853,
+    lng: -57.9552,
     esPredeterminada: true,
   });
 
@@ -229,4 +237,38 @@ test("esPredeterminada=true se rechaza mientras no exista persistencia para ese 
   assert.equal(patchResponse.statusCode, 400);
   assert.equal(patchResponse.json().code, "BADREQUEST");
   assert.equal(calls.length, 0);
+});
+
+test("POST /direcciones exige lat y lng dentro de rango", async () => {
+  const { app, calls } = await createApp();
+  const base = { calle: "Nueva calle", ciudad: "Salto" };
+
+  for (const payload of [
+    base,
+    { ...base, lat: -31.38 },
+    { ...base, lng: -57.96 },
+    { ...base, lat: -91, lng: -57.96 },
+    { ...base, lat: -31.38, lng: 181 },
+    { ...base, lat: "-31.38", lng: "x" },
+  ]) {
+    const response = await request(app, "POST", "/api/direcciones", 1, payload);
+    assert.equal(response.statusCode, 400, JSON.stringify(payload));
+    assert.equal(response.json().code, "BADREQUEST");
+  }
+  assert.equal(calls.length, 0);
+});
+
+test("PATCH /direcciones/:id mueve el punto con lat y lng juntas", async () => {
+  const { app, calls } = await createApp();
+
+  const sola = await request(app, "PATCH", "/api/direcciones/10", 1, { lat: -31.4 });
+  assert.equal(sola.statusCode, 400);
+  assert.equal(calls.length, 0);
+
+  const ambas = await request(app, "PATCH", "/api/direcciones/10", 1, { lat: -31.4, lng: -57.97 });
+  assert.equal(ambas.statusCode, 200);
+  assert.equal(ambas.json().lat, -31.4);
+  assert.equal(ambas.json().lng, -57.97);
+  assert.match(calls[0].sql.replace(/\s+/g, " "), /SET lat = \$1, lng = \$2 WHERE id = \$3 AND usuario_id = \$4/);
+  assert.deepEqual(calls[0].values, [-31.4, -57.97, 10, 1]);
 });

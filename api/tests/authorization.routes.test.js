@@ -200,7 +200,7 @@ test("todas las operaciones existentes de carrito y direcciones exigen rol clien
     {
       method: "POST",
       url: "/api/direcciones",
-      payload: { calle: "Rivera", ciudad: "Bella Unión" },
+      payload: { calle: "Rivera", ciudad: "Bella Unión", lat: -31.38, lng: -57.96 },
     },
     {
       method: "PATCH",

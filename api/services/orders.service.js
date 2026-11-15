@@ -1,4 +1,5 @@
 import {
+  BadRequestError,
   ConflictError,
   ForbiddenError,
   NotFoundError,
@@ -10,7 +11,8 @@ import { ORDEN_ESTADOS_PEDIDO } from "../schemas/enums.schema.js";
 const orderColumns = `p.id, p.usuario_id, p.fecha_creacion, p.estado,
   p.metodo_pago, p.total, p.direccion_id, p.usuario_id AS direccion_usuario_id,
   p.direccion_calle AS calle, p.direccion_numero AS numero,
-  p.direccion_ciudad AS ciudad, p.direccion_referencia AS referencia`;
+  p.direccion_ciudad AS ciudad, p.direccion_referencia AS referencia,
+  p.direccion_lat AS lat, p.direccion_lng AS lng`;
 
 async function loadItems(client, pedidoId) {
   const { rows } = await client.query(
@@ -39,6 +41,8 @@ function mapOrder(order, items) {
       numero: order.numero,
       ciudad: order.ciudad,
       referencia: order.referencia,
+      lat: order.lat ?? null,
+      lng: order.lng ?? null,
       esPredeterminada: false,
     },
     items,
@@ -295,7 +299,7 @@ export async function createFromCart(
     }
 
     const { rows: direcciones } = await client.query(
-      `SELECT id, usuario_id, calle, numero, ciudad, referencia
+      `SELECT id, usuario_id, calle, numero, ciudad, referencia, lat, lng
        FROM direccion
        WHERE id = $1 AND usuario_id = $2
        FOR SHARE`,
@@ -305,6 +309,13 @@ export async function createFromCart(
     if (!direcciones[0]) {
       throw new NotFoundError(
         "la dirección no existe o no pertenece al usuario",
+      );
+    }
+
+    //sin el punto en el mapa el repartidor no sabe a donde ir
+    if (direcciones[0].lat == null || direcciones[0].lng == null) {
+      throw new BadRequestError(
+        "la dirección no tiene ubicación en el mapa; editala y marcá el punto",
       );
     }
 
@@ -349,11 +360,13 @@ export async function createFromCart(
          direccion_numero,
          direccion_ciudad,
          direccion_referencia,
+         direccion_lat,
+         direccion_lng,
          estado,
          metodo_pago,
          total
        )
-       VALUES ($1, $2, $3, $4, $5, $6, 'realizado', $7, $8)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'realizado', $9, $10)
        RETURNING id, usuario_id, fecha_creacion, estado, metodo_pago, total`,
       [
         usuarioId,
@@ -362,6 +375,8 @@ export async function createFromCart(
         direccion.numero,
         direccion.ciudad,
         direccion.referencia,
+        direccion.lat,
+        direccion.lng,
         metodoPago,
         total,
       ],
@@ -415,6 +430,8 @@ export async function createFromCart(
         numero: direccion.numero,
         ciudad: direccion.ciudad,
         referencia: direccion.referencia,
+        lat: direccion.lat,
+        lng: direccion.lng,
         esPredeterminada: false,
       },
       items: itemsRespuesta,
