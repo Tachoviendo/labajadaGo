@@ -7,6 +7,7 @@ import {
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
 import * as ordersService from "../../services/orders.service.js";
+import { avisarEstado } from "../../plugins/seguimiento.js";
 
 export default async function orderRoutes(app) {
   //listar pedidos - cualquier rol logueado (el alcance cambia segun el rol, eso se resuelve en el service)
@@ -102,7 +103,9 @@ export default async function orderRoutes(app) {
         request.user.id,
         request.body.estado,
       );
-      return ordersService.getById(app, request.params.id, request.user);
+      const pedido = await ordersService.getById(app, request.params.id, request.user);
+      avisarEstado(app, pedido);
+      return pedido;
     },
   );
 

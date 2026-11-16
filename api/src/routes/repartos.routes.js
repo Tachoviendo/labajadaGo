@@ -4,6 +4,7 @@ import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
 import * as repartosService from "../../services/repartos.service.js";
 import * as bucketService from "../../services/bucket.service.js";
 import { leerImagenSubida } from "../../services/imagen.service.js";
+import { avisarEstado } from "../../plugins/seguimiento.js";
 
 //las fotos del celular pesan mas que las imagenes de productos
 const MAX_FOTO_MB = 5;
@@ -49,7 +50,11 @@ export default async function repartosRoutes(app) {
         },
       },
     },
-    async (request) => repartosService.recoger(app, request.params.id, request.user),
+    async (request) => {
+      const pedido = await repartosService.recoger(app, request.params.id, request.user);
+      avisarEstado(app, pedido);
+      return pedido;
+    },
   );
 
   //multipart/form-data con la foto en el campo "file" (jpeg, png o webp, hasta 5 MB)
@@ -81,7 +86,9 @@ export default async function repartosRoutes(app) {
       });
       const fotoUrl = await bucketService.subirImagen(buffer, mimetype, filename);
 
-      return repartosService.entregar(app, id, request.user, fotoUrl);
+      const pedido = await repartosService.entregar(app, id, request.user, fotoUrl);
+      avisarEstado(app, pedido);
+      return pedido;
     },
   );
 }
