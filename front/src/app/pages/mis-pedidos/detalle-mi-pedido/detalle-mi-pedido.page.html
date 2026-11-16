@@ -1,1 +1,104 @@
-<p>detalle mi pedido route works!</p>
+<div class="container py-4 detalle-pedido">
+  <a routerLink="/mis-pedidos" class="btn btn-link px-0 mb-2">&larr; Volver a mis pedidos</a>
+
+  @if (cargando()) {
+    <div class="text-center py-5">
+      <div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div>
+    </div>
+  } @else if (error()) {
+    <div class="alert alert-danger" role="alert">{{ error() }}</div>
+  } @else if (pedido(); as p) {
+    <header class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+      <div>
+        <h1 class="h3 mb-1">Pedido #{{ p.id }}</h1>
+        <p class="text-body-secondary mb-0">{{ p.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</p>
+      </div>
+      <span class="badge fs-6" [class]="claseEstado()">{{ nombreEstado() }}</span>
+    </header>
+
+    @if (muestraMapa()) {
+      <section class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <h2 class="h5 mb-0">
+              {{ enVivo() ? 'Tu pedido está en camino' : 'Recorrido de la entrega' }}
+            </h2>
+            @if (enVivo()) {
+              <span
+                class="small fw-semibold"
+                [class.text-success]="conexion()?.estado() === 'conectado'"
+                [class.text-body-secondary]="conexion()?.estado() !== 'conectado'"
+                role="status"
+              >
+                @if (conexion()?.estado() === 'conectado') {
+                  <span class="punto-vivo" aria-hidden="true"></span>
+                }
+                {{ textoConexion() }}
+              </span>
+            }
+          </div>
+
+          <app-mapa-seguimiento
+            [origen]="recorrido()?.origen ?? null"
+            [destino]="recorrido()?.destino ?? null"
+            [puntos]="puntos()"
+          />
+
+          @if (enVivo()) {
+            <p class="small text-body-secondary mt-2 mb-0">
+              @if (ultimaUbicacion(); as u) {
+                Última ubicación del repartidor: {{ u.fecha | date: 'HH:mm:ss' }}
+              } @else {
+                Esperando la primera ubicación del repartidor...
+              }
+            </p>
+          }
+        </div>
+      </section>
+    }
+
+    @if (p.estado === 'entregado' && p.fotoEntregaUrl) {
+      <section class="card mb-3">
+        <div class="card-body">
+          <h2 class="h5">Foto de la entrega</h2>
+          <a [href]="p.fotoEntregaUrl" target="_blank" rel="noopener">
+            <img [src]="p.fotoEntregaUrl" alt="Foto del repartidor al entregar el pedido" class="foto-entrega" />
+          </a>
+        </div>
+      </section>
+    }
+
+    <section class="card mb-3">
+      <div class="card-body">
+        <h2 class="h5">Productos</h2>
+        <ul class="list-group list-group-flush">
+          @for (item of p.items; track item.id) {
+            <li class="list-group-item d-flex justify-content-between px-0">
+              <span>{{ item.cantidad }} × {{ item.nombreProducto }}</span>
+              <span>{{ item.subtotal | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</span>
+            </li>
+          }
+          <li class="list-group-item d-flex justify-content-between px-0 fw-bold">
+            <span>Total</span>
+            <span>{{ p.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-body">
+        <h2 class="h5">Entrega</h2>
+        <p class="mb-1">
+          {{ p.direccion.calle }} {{ p.direccion.numero ?? '' }}, {{ p.direccion.ciudad }}
+        </p>
+        @if (p.direccion.referencia) {
+          <p class="text-body-secondary mb-1">{{ p.direccion.referencia }}</p>
+        }
+        <p class="mb-0">
+          Pago: {{ p.metodoPago === 'pos' ? 'al recibir el pedido (POS)' : 'MercadoPago' }}
+        </p>
+      </div>
+    </section>
+  }
+</div>

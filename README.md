@@ -33,8 +33,29 @@ docker-compose.yaml   levanta Postgres y carga /db
    npm install
    npm start
 ```
-   Queda en `http://localhost:4200`. La api ya permite llamadas desde ese
-   origen (CORS, variable `CORS_ORIGIN` del `.env`).
+   Queda en `http://localhost:4200`. `ng serve` tiene un proxy (`front/proxy.conf.json`):
+   `/api` (incluido el websocket del seguimiento) va a la api en el puerto 3000 y `/bucket`
+   va al bucket de imágenes en el 3001. Por eso el front usa rutas relativas.
+
+## Probar desde el celular (HTTPS)
+
+El mapa del repartidor usa la ubicación del navegador, y el celular solo la da en HTTPS.
+
+1. Conectar la compu y el celular al mismo Wi-Fi.
+2. Con la base, el bucket y la api levantados, correr el front así:
+   ```
+   cd front
+   npm run start:movil
+   ```
+   Levanta `ng serve` con un certificado autofirmado y escuchando en toda la red local.
+   La primera vez Windows pregunta si permite Node.js en redes privadas: aceptar.
+3. Averiguar la IP de la compu en el Wi-Fi (`ipconfig`, "Dirección IPv4", por ejemplo
+   `192.168.1.20`) y abrir en el celular `https://192.168.1.20:4200`.
+4. El navegador avisa que el certificado no es de confianza: entrar igual (en Chrome,
+   "Configuración avanzada" → "Acceder al sitio"). Pasa una vez por dispositivo.
+
+La api y el bucket no se exponen: el celular solo habla con el puerto 4200 y el proxy
+reenvía todo dentro de la compu.
 
 ## Idea del proyecto
 

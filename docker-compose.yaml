@@ -6,6 +6,10 @@ services:
       POSTGRES_USER: ${PGUSER}
       POSTGRES_PASSWORD: ${PGPASSWORD}
       POSTGRES_DB: ${PGDATABASE}
+      #hora de Uruguay para el servidor (logs y valor por defecto). la zona de la base
+      #tambien la fija db/01_schema.sql, asi las fechas no quedan corridas
+      TZ: America/Montevideo
+      PGTZ: America/Montevideo
     ports:
       - "5432:5432"
     volumes:

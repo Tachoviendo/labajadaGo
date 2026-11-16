@@ -1,5 +1,15 @@
 -- Script de creacion de base de datos - Kiosco La Bajada
 -- Postgres
+-- las fechas son TIMESTAMPTZ: guardan el instante exacto. con TIMESTAMP sin zona la api las
+-- leia como hora local y quedaban 3 horas corridas
+
+-- la zona de la base es la del kiosco: now(), los filtros por dia (fecha::date) y lo que se
+-- ve en psql quedan en hora de Uruguay. aplica a las conexiones nuevas (la api y el seed)
+DO $$
+BEGIN
+    EXECUTE format('ALTER DATABASE %I SET timezone TO %L', current_database(), 'America/Montevideo');
+END
+$$;
 
 CREATE TABLE usuario (
     id SERIAL PRIMARY KEY,
@@ -10,7 +20,7 @@ CREATE TABLE usuario (
     rol VARCHAR(20) NOT NULL DEFAULT 'cliente'
         CHECK (rol IN ('cliente', 'cajero', 'dueno', 'repartidor')),
     activo BOOLEAN DEFAULT TRUE,
-    fecha_creacion TIMESTAMP DEFAULT now()
+    fecha_creacion TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE TABLE direccion (
@@ -49,7 +59,7 @@ CREATE TABLE producto (
 CREATE TABLE carrito (
     id SERIAL PRIMARY KEY,
     usuario_id INTEGER NOT NULL UNIQUE REFERENCES usuario(id),
-    fecha_actualizacion TIMESTAMP NOT NULL DEFAULT now()
+    fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- productos del carrito
@@ -75,7 +85,7 @@ CREATE TABLE pedido (
     direccion_referencia VARCHAR(200),
     direccion_lat DOUBLE PRECISION,
     direccion_lng DOUBLE PRECISION,
-    fecha_creacion TIMESTAMP DEFAULT now(),
+    fecha_creacion TIMESTAMPTZ DEFAULT now(),
     estado VARCHAR(20) NOT NULL DEFAULT 'realizado'
         CHECK (estado IN ('realizado', 'preparando', 'en_reparto', 'entregado', 'cancelado')),
     metodo_pago VARCHAR(20) NOT NULL CHECK (metodo_pago IN ('mercadopago', 'pos')),
@@ -91,7 +101,7 @@ CREATE TABLE pedido_ubicacion (
     pedido_id INTEGER NOT NULL REFERENCES pedido(id),
     lat DOUBLE PRECISION NOT NULL CHECK (lat BETWEEN -90 AND 90),
     lng DOUBLE PRECISION NOT NULL CHECK (lng BETWEEN -180 AND 180),
-    fecha TIMESTAMP NOT NULL DEFAULT now()
+    fecha TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX pedido_ubicacion_pedido_fecha_idx ON pedido_ubicacion (pedido_id, fecha);
@@ -110,7 +120,7 @@ CREATE TABLE pedido_estado_historial (
     pedido_id INTEGER NOT NULL REFERENCES pedido(id),
     estado VARCHAR(20) NOT NULL
         CHECK (estado IN ('realizado', 'preparando', 'en_reparto', 'entregado', 'cancelado')),
-    fecha TIMESTAMP DEFAULT now(),
+    fecha TIMESTAMPTZ DEFAULT now(),
     usuario_id INTEGER REFERENCES usuario(id)
 );
 
@@ -122,6 +132,6 @@ CREATE TABLE pago (
     estado VARCHAR(20) NOT NULL DEFAULT 'pendiente'
         CHECK (estado IN ('pendiente', 'pagado', 'rechazado')),
     referencia_externa VARCHAR(150),
-    fecha_pago TIMESTAMP,
+    fecha_pago TIMESTAMPTZ,
     registrado_por INTEGER REFERENCES usuario(id)
 );

@@ -17,7 +17,7 @@ export const ProductSchema = Type.Object({
       "Precio en la unidad monetaria menor (ej: centavos) o entero, a definir por el equipo",
   }),
   categoria: CategorySchema,
-  imagenUrl: Type.Union([Type.String({ format: "uri" }), Type.Null()]),
+  imagenUrl: Type.Union([Type.String({ format: "uri-reference" }), Type.Null()]),
   stock: Type.Integer({ minimum: 0 }),
   activo: Type.Boolean(),
 });
@@ -27,7 +27,7 @@ export const ProductCreateBody = Type.Object({
   descripcion: Type.Optional(Type.String({ maxLength: 500 })),
   precio: Type.Integer({ minimum: 0 }),
   categoriaId: Type.Integer({ minimum: 1 }),
-  imagenUrl: Type.Optional(Type.String({ format: "uri", maxLength: 300 })),
+  imagenUrl: Type.Optional(Type.String({ format: "uri-reference", maxLength: 300 })),
   stock: Type.Optional(Type.Integer({ minimum: 0, default: 0 })),
 });
 
@@ -38,7 +38,7 @@ export const ProductUpdateBody = Type.Partial(
     precio: Type.Integer({ minimum: 0 }),
     categoriaId: Type.Integer({ minimum: 1 }),
     imagenUrl: Type.Union([
-      Type.String({ format: "uri", maxLength: 300 }),
+      Type.String({ format: "uri-reference", maxLength: 300 }),
       Type.Null(),
     ]),
     stock: Type.Integer({ minimum: 0 }),

@@ -31,6 +31,9 @@ export type Pedido = {
     numero: string | null;
     ciudad: string;
     referencia: string | null;
+    //destino del reparto en el mapa (copia del punto de la direccion al hacer el pedido)
+    lat: number | null;
+    lng: number | null;
     esPredeterminada: boolean;
   };
   items: PedidoItem[];
@@ -38,6 +41,10 @@ export type Pedido = {
   metodoPago: MetodoPago;
   total: number;
   fechaCreacion: string;
+  //repartidor que lo recogio (null hasta que sale a reparto)
+  repartidorId: number | null;
+  //foto que saca el repartidor al entregar (ruta relativa del bucket, ej: /bucket/x.jpg)
+  fotoEntregaUrl: string | null;
 };
 
 @Injectable({
