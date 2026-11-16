@@ -8,13 +8,14 @@ import { ORDEN_ESTADOS_PEDIDO } from "../schemas/enums.schema.js";
 
 //la direccion sale de la copia guardada en el pedido, no de la tabla direccion,
 //asi el pedido no cambia si el usuario despues edita su direccion
-const orderColumns = `p.id, p.usuario_id, p.fecha_creacion, p.estado,
+export const orderColumns = `p.id, p.usuario_id, p.fecha_creacion, p.estado,
   p.metodo_pago, p.total, p.direccion_id, p.usuario_id AS direccion_usuario_id,
   p.direccion_calle AS calle, p.direccion_numero AS numero,
   p.direccion_ciudad AS ciudad, p.direccion_referencia AS referencia,
-  p.direccion_lat AS lat, p.direccion_lng AS lng`;
+  p.direccion_lat AS lat, p.direccion_lng AS lng,
+  p.repartidor_id, p.foto_entrega_url`;
 
-async function loadItems(client, pedidoId) {
+export async function loadItems(client, pedidoId) {
   const { rows } = await client.query(
     `SELECT id, producto_id, nombre_producto, cantidad, precio_unitario
      FROM pedido_item WHERE pedido_id = $1 ORDER BY id`,
@@ -30,7 +31,7 @@ async function loadItems(client, pedidoId) {
   }));
 }
 
-function mapOrder(order, items) {
+export function mapOrder(order, items) {
   return {
     id: order.id,
     usuarioId: order.usuario_id,
@@ -50,7 +51,16 @@ function mapOrder(order, items) {
     metodoPago: order.metodo_pago,
     total: order.total,
     fechaCreacion: order.fecha_creacion.toISOString(),
+    repartidorId: order.repartidor_id ?? null,
+    fotoEntregaUrl: order.foto_entrega_url ?? null,
   };
+}
+
+//un repartidor ve los pedidos que tiene asignados y los que estan listos para
+//recoger (preparando y sin repartidor). nada mas
+function repartidorPuedeVer(order, usuario) {
+  if (order.repartidor_id === usuario.id) return true;
+  return order.estado === "preparando" && order.repartidor_id == null;
 }
 
 async function loadOrder(client, id) {
@@ -71,6 +81,9 @@ export async function getById(app, id, usuario) {
     if (usuario.rol === "cliente" && order.usuario_id !== usuario.id) {
       throw new ForbiddenError("el pedido pertenece a otro usuario");
     }
+    if (usuario.rol === "repartidor" && !repartidorPuedeVer(order, usuario)) {
+      throw new ForbiddenError("ese pedido no está asignado a vos ni disponible para recoger");
+    }
     return mapOrder(order, await loadItems(client, id));
   } finally {
     client.release();
@@ -88,6 +101,8 @@ export async function listForUser(app, usuario, filters) {
     };
 
     if (usuario.rol === "cliente") addFilter("p.usuario_id =", usuario.id);
+    //el repartidor lista sus repartos; los disponibles salen de GET /repartos/disponibles
+    if (usuario.rol === "repartidor") addFilter("p.repartidor_id =", usuario.id);
     if (filters.estado) addFilter("p.estado =", filters.estado);
     if (filters.fechaDesde)
       addFilter("p.fecha_creacion::date >=", filters.fechaDesde);
@@ -120,7 +135,7 @@ export async function listForUser(app, usuario, filters) {
 
 async function lockOrder(client, pedidoId) {
   const { rows } = await client.query(
-    `SELECT id, usuario_id, estado, metodo_pago
+    `SELECT id, usuario_id, estado, metodo_pago, repartidor_id
      FROM pedido WHERE id = $1 FOR UPDATE`,
     [pedidoId],
   );
@@ -176,7 +191,7 @@ async function cancelLockedOrder(client, order, actorId) {
   );
 }
 
-async function withOrderTransaction(app, operation) {
+export async function withOrderTransaction(app, operation) {
   const client = await app.pg.connect();
   let transactionStarted = false;
   try {
@@ -215,10 +230,21 @@ export async function changeStatus(app, pedidoId, actorId, estado) {
       ) {
         throw new ConflictError("la transición de estado no está permitida");
       }
-      await client.query("UPDATE pedido SET estado = $1 WHERE id = $2", [
-        estado,
-        order.id,
-      ]);
+      //salir a reparto y entregar lo marca el repartidor (recoger/entregar), asi queda
+      //asignado, con su recorrido y la foto. el personal no lo puede hacer a mano
+      if (estado === "en_reparto" && order.estado === "preparando") {
+        throw new ConflictError("el pedido sale a reparto cuando un repartidor lo recoge");
+      }
+      if (order.estado === "entregado" || estado === "entregado") {
+        throw new ConflictError("la entrega la registra el repartidor con la foto");
+      }
+      //volver de en_reparto a preparando (por un error) libera al repartidor
+      await client.query(
+        estado === "preparando"
+          ? "UPDATE pedido SET estado = $1, repartidor_id = NULL WHERE id = $2"
+          : "UPDATE pedido SET estado = $1 WHERE id = $2",
+        [estado, order.id],
+      );
       await client.query(
         `INSERT INTO pedido_estado_historial (pedido_id, estado, usuario_id)
          VALUES ($1, $2, $3)`,
@@ -439,6 +465,8 @@ export async function createFromCart(
       metodoPago: pedido.metodo_pago,
       total: pedido.total,
       fechaCreacion: pedido.fecha_creacion.toISOString(),
+      repartidorId: null,
+      fotoEntregaUrl: null,
     };
   } catch (error) {
     if (transactionStarted) {

@@ -209,6 +209,8 @@ test("POST /pedidos crea el checkout, copia la dirección y deriva datos de Post
     metodoPago: "pos",
     total: 240,
     fechaCreacion: "2026-01-02T03:04:05.000Z",
+    repartidorId: null,
+    fotoEntregaUrl: null,
   });
   const state = getState();
   assert.deepEqual(state.orders[0], {

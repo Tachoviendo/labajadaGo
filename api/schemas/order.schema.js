@@ -28,6 +28,12 @@ export const OrderSchema = Type.Object({
   metodoPago: MetodoPagoEnum,
   total: Type.Integer({ minimum: 0 }),
   fechaCreacion: Type.String({ format: "date-time" }),
+  repartidorId: Type.Union([Type.Integer(), Type.Null()], {
+    description: "Repartidor que recogió el pedido; null hasta que alguien lo recoge",
+  }),
+  fotoEntregaUrl: Type.Union([Type.String(), Type.Null()], {
+    description: "Foto que saca el repartidor al entregar (url del bucket)",
+  }),
 });
 
 //checkout. el body no recibe los items, se toman del carrito
