@@ -2,3 +2,6 @@
 
 /* Bootstrap */
 @import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* OpenLayers (controles de zoom, atribucion de OpenStreetMap) */
+@import 'ol/ol.css';
