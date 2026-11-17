@@ -11,6 +11,8 @@ const servidor = 'http://10.0.2.2';
 export const environment = {
   apiUrl: `${servidor}:3000/api`,
   bucketUrl: `${servidor}:3001`,
+  //la app de Android no usa el service worker de la PWA
+  pwa: false,
   mapa: {
     centro: { lat: -31.38876, lng: -57.96062 },
     zoom: 15,

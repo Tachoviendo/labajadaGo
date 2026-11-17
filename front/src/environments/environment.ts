@@ -8,6 +8,8 @@ export const environment = {
   //base de las imagenes del bucket. la api las guarda como /bucket/<archivo>
   //(ver pipes/url-publica.pipe.ts)
   bucketUrl: '/bucket',
+  //registra el service worker de la PWA (solo en el build de produccion)
+  pwa: true,
   //centro por defecto de los mapas: el local, en la plaza Artigas de Salto
   //(mismas coordenadas que LOCAL_LAT/LOCAL_LNG del .env de la api)
   mapa: {
