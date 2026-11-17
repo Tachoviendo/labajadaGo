@@ -57,6 +57,41 @@ El mapa del repartidor usa la ubicación del navegador, y el celular solo la da 
 La api y el bucket no se exponen: el celular solo habla con el puerto 4200 y el proxy
 reenvía todo dentro de la compu.
 
+## App de Android (Android Studio)
+
+El front se empaqueta como app de Android con [Capacitor](https://capacitorjs.com).
+El proyecto nativo está en `front/android`. Hace falta Android Studio (trae el SDK, el
+emulador y el Java que usa Gradle). El wrapper usa Gradle 9.1 porque el Java que trae
+Android Studio es el 25 y Gradle 8 no lo soporta.
+
+1. Con la base, el bucket y la api levantados, generar la app:
+   ```
+   cd front
+   npm run build:android
+   ```
+   Hace el build de Angular para Android y lo copia al proyecto nativo (`cap sync`).
+   Hay que volver a correrlo cada vez que cambia el front.
+2. Abrir el proyecto en Android Studio: `npm run android` (o abrir la carpeta
+   `front/android`). La primera vez Gradle descarga dependencias y tarda un rato.
+3. Elegir el emulador o el celular y tocar **Run**.
+
+**A qué api se conecta la app.** Adentro de la app no hay proxy de `ng serve`: la
+dirección de la compu está en `front/src/environments/environment.android.ts`.
+
+- Emulador: `http://10.0.2.2` (así ve el emulador a la compu). Es el valor por defecto.
+- Celular real (por Wi-Fi o USB): poner la IP de la compu en la red (`ipconfig`, por
+  ejemplo `http://192.168.1.9`) y volver a correr `npm run build:android`. La primera
+  vez Windows pregunta si deja entrar conexiones a Node.js y a Docker: aceptar en redes
+  privadas.
+
+La app se sirve como `http://localhost`, así que ese origen tiene que estar en
+`CORS_ORIGIN` del `.env` (ya viene en `.env.example`). La ubicación usa el plugin nativo
+(`@capacitor/geolocation`): la app pide el permiso de Android y no necesita HTTPS.
+
+**Celular por USB:** activar "Opciones de desarrollador" y "Depuración por USB" en el
+celular, conectarlo y aceptar el aviso; aparece en la lista de dispositivos de Android
+Studio.
+
 ## Idea del proyecto
 
 **Kiosco La Bajada** Busca realizar pedidos online pero como en bella unión no está pedidos ya el proyecto busca generar una webde **pedidos online**, que permita a los clientes comprar sin tener que ir presencialmente o llamar por teléfono, y que le dé al kiosco

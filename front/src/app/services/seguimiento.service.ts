@@ -44,6 +44,15 @@ export type ConexionSeguimiento = {
   cerrar: () => void;
 };
 
+//url del websocket a partir de apiUrl: en la web es relativa (/api, pasa por el proxy de
+//ng serve y queda ws:// o wss:// segun la pagina); en la app de Android es la direccion
+//de la compu (http://10.0.2.2:3000/api -> ws://10.0.2.2:3000/api)
+export function urlWebsocket(ruta: string): string {
+  const url = new URL(`${environment.apiUrl}${ruta}`, location.href);
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  return url.toString();
+}
+
 //cierres que no tiene sentido reintentar (login invalido, sin permiso, pedido inexistente)
 const CIERRES_DEFINITIVOS = new Set([4401, 4403, 4404]);
 const REINTENTO_MAXIMO_MS = 15000;
@@ -67,8 +76,7 @@ export class SeguimientoService {
     let timerReintento: ReturnType<typeof setTimeout> | undefined;
 
     const abrir = () => {
-      const protocolo = location.protocol === 'https:' ? 'wss' : 'ws';
-      socket = new WebSocket(`${protocolo}://${location.host}${environment.apiUrl}/pedidos/${pedidoId}/seguimiento`);
+      socket = new WebSocket(urlWebsocket(`/pedidos/${pedidoId}/seguimiento`));
 
       socket.onopen = () => {
         socket?.send(JSON.stringify({ tipo: 'auth', token: this.authService.tokenActual }));

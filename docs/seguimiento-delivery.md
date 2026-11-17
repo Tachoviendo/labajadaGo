@@ -38,12 +38,30 @@ El dueño puede crear más repartidores en `POST /api/usuarios` con `rol: "repar
 - **Rol nuevo**: la api devuelve `rol: "repartidor"` en el login. En el front hay que
   sumarlo al tipo `Rol` de `src/app/models/auth.model.ts`, a los guards y al menú
   (hoy `app.html` muestra el menú de cliente o el de personal).
-- **Todo va por rutas relativas**: `environment.apiUrl` es `/api` y las imágenes vienen
-  como `/bucket/<archivo>`. En desarrollo lo atiende el proxy de `ng serve`
-  (`front/proxy.conf.json`).
-- **Celular real**: la ubicación del navegador (`navigator.geolocation`) solo funciona en
-  HTTPS. Correr `npm run start:movil` y abrir `https://<ip-de-la-compu>:4200` desde el
-  celular (ver "Probar desde el celular" en el README).
+- **URLs**: siempre con `environment.apiUrl` (en la web es `/api`, en la app de Android la
+  dirección de la compu). Las imágenes vienen como `/bucket/<archivo>`: mostrarlas con el
+  pipe `urlPublica` (`<img [src]="foto | urlPublica">`), que en la app las manda al bucket.
+  El websocket se arma con `urlWebsocket()` de `seguimiento.service.ts` (ya lo usa
+  `conectar()`).
+- **Ubicación**: usar `UbicacionService` (`src/app/services/ubicacion.service.ts`), no
+  `navigator.geolocation` directo. En la app de Android usa el plugin nativo (pide el
+  permiso de Android, no necesita HTTPS) y en el navegador la ubicación de siempre:
+  ```ts
+  //al recoger el pedido
+  const conexion = this.seguimientoService.conectar(pedidoId, { onUbicacion, onEstado });
+  this.cortarUbicacion = await this.ubicacionService.seguirPosicion(
+    (punto) => conexion.enviarUbicacion(punto),
+    (error) => this.error.set(error.message),
+  );
+  //al entregar (o al salir de la pantalla)
+  this.cortarUbicacion?.();
+  conexion.cerrar();
+  ```
+  El servidor ignora los puntos que llegan con menos de 2 s de diferencia, así que no hace
+  falta filtrar del lado del front.
+- **Probar en el celular**: con la app de Android (ver "App de Android" en el README) o
+  desde el navegador del celular con `npm run start:movil` (HTTPS, ver "Probar desde el
+  celular").
 - **Foto**: el máximo es 5 MB. Las fotos del celular suelen pesar más, así que conviene
   achicarlas antes de subir (por ejemplo dibujarlas en un `<canvas>` a ~1600 px de lado y
   exportar JPEG con `canvas.toBlob(..., 'image/jpeg', 0.8)`). Para abrir la cámara o la
@@ -154,9 +172,8 @@ Los campos nuevos para el reparto son `repartidorId` y `fotoEntregaUrl`. La dire
 Una conexión por pedido. Entran **solo** el cliente del pedido y su repartidor.
 
 ```ts
-//ws en http, wss en https (celular). pasa por el proxy de ng serve
-const protocolo = location.protocol === 'https:' ? 'wss' : 'ws';
-const ws = new WebSocket(`${protocolo}://${location.host}/api/pedidos/${id}/seguimiento`);
+//ws/wss segun la pagina en la web, ws://10.0.2.2:3000 en la app (urlWebsocket() de seguimiento.service.ts)
+const ws = new WebSocket(urlWebsocket(`/pedidos/${id}/seguimiento`));
 ```
 
 1. Al abrir, el **primer mensaje** tiene que ser el login (el navegador no deja mandar

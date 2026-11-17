@@ -22,6 +22,7 @@ import { Circle, Fill, Stroke, Style } from 'ol/style';
 import { fromLonLat, toLonLat } from 'ol/proj';
 
 import { environment } from '../../../environments/environment';
+import { UbicacionError, UbicacionService } from '../../services/ubicacion.service';
 
 export type PuntoMapa = { lat: number; lng: number };
 
@@ -77,6 +78,7 @@ export class MapaSelectorComponent {
 
   private readonly contenedor = viewChild.required<ElementRef<HTMLDivElement>>('contenedor');
   private readonly destroyRef = inject(DestroyRef);
+  private readonly ubicacionService = inject(UbicacionService);
 
   private mapa: OlMap | null = null;
   private readonly pin = new Feature<Point>();
@@ -109,24 +111,18 @@ export class MapaSelectorComponent {
     });
   }
 
-  usarMiUbicacion(): void {
-    if (!('geolocation' in navigator)) {
-      this.errorUbicacion.set('Tu navegador no permite obtener la ubicación.');
-      return;
-    }
+  async usarMiUbicacion(): Promise<void> {
     this.buscandoUbicacion.set(true);
     this.errorUbicacion.set('');
-    navigator.geolocation.getCurrentPosition(
-      (posicion) => {
-        this.buscandoUbicacion.set(false);
-        this.elegir({ lat: posicion.coords.latitude, lng: posicion.coords.longitude });
-      },
-      () => {
-        this.buscandoUbicacion.set(false);
-        this.errorUbicacion.set('No se pudo obtener tu ubicación. Marcala tocando el mapa.');
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+    try {
+      const { lat, lng } = await this.ubicacionService.obtenerPosicion();
+      this.elegir({ lat: redondear(lat), lng: redondear(lng) });
+    } catch (error) {
+      const motivo = error instanceof UbicacionError ? error.message : 'No se pudo obtener tu ubicación.';
+      this.errorUbicacion.set(`${motivo} Marcala tocando el mapa.`);
+    } finally {
+      this.buscandoUbicacion.set(false);
+    }
   }
 
   private crearMapa(): void {

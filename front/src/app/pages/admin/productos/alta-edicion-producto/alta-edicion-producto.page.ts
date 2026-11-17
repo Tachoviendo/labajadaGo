@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { Producto } from '../../../../models/product.model';
 import { ProductsService } from '../../../../services/products.service';
 import { mensajeDeError } from '../../../../services/api-error';
+import { urlPublica } from '../../../../pipes/url-publica.pipe';
 
 const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -37,7 +38,7 @@ export class AltaEdicionProductoPage implements OnInit {
     return archivo ? URL.createObjectURL(archivo) : null;
   });
   readonly imagenUrl = computed(
-    () => this.previewLocal() ?? this.producto()?.imagenUrl ?? PLACEHOLDER,
+    () => this.previewLocal() ?? urlPublica(this.producto()?.imagenUrl) ?? PLACEHOLDER,
   );
 
   constructor() {

@@ -13,6 +13,7 @@ import {
 } from '../../../services/seguimiento.service';
 import { mensajeDeError } from '../../../services/api-error';
 import { MapaSeguimientoComponent } from '../../../components/mapa-seguimiento/mapa-seguimiento.component';
+import { UrlPublicaPipe } from '../../../pipes/url-publica.pipe';
 
 const NOMBRES_ESTADO: Record<EstadoPedido, string> = {
   realizado: 'Realizado',
@@ -35,7 +36,7 @@ const CLASES_ESTADO: Record<EstadoPedido, string> = {
 //completo y la foto de la entrega
 @Component({
   selector: 'app-detalle-mi-pedido',
-  imports: [RouterLink, CurrencyPipe, DatePipe, MapaSeguimientoComponent],
+  imports: [RouterLink, CurrencyPipe, DatePipe, MapaSeguimientoComponent, UrlPublicaPipe],
   templateUrl: './detalle-mi-pedido.page.html',
   styleUrl: './detalle-mi-pedido.page.css',
 })

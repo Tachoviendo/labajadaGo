@@ -61,8 +61,8 @@
       <section class="card mb-3">
         <div class="card-body">
           <h2 class="h5">Foto de la entrega</h2>
-          <a [href]="p.fotoEntregaUrl" target="_blank" rel="noopener">
-            <img [src]="p.fotoEntregaUrl" alt="Foto del repartidor al entregar el pedido" class="foto-entrega" />
+          <a [href]="p.fotoEntregaUrl | urlPublica" target="_blank" rel="noopener">
+            <img [src]="p.fotoEntregaUrl | urlPublica" alt="Foto del repartidor al entregar el pedido" class="foto-entrega" />
           </a>
         </div>
       </section>
