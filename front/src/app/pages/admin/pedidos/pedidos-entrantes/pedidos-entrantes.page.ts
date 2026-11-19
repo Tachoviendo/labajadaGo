@@ -132,9 +132,6 @@ export class PedidosEntrantesPage {
 
   protected async mover(pedido: Pedido, destino: EstadoTablero) {
     if (!this.puedeIrA(pedido, destino) || this.moviendo() !== null) return;
-    if (destino === 'entregado' && !confirm(`¿Marcar el pedido #${pedido.id} como entregado? No se puede deshacer.`)) {
-      return;
-    }
     this.moviendo.set(pedido.id);
     this.mensajeError.set(null);
     try {

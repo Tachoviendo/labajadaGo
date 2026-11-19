@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { OrdersService, Pedido, EstadoPedido } from '../../../services/orders.service';
+import { ConfirmacionService } from '../../../services/confirmacion.service';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -14,6 +15,7 @@ import { RouterLink } from '@angular/router';
 export class ListarMisPedidosPage implements OnInit {
   private readonly ordersService = inject(OrdersService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly confirmacion = inject(ConfirmacionService);
 
   pedidos: Pedido[] = [];
   cargando = true;
@@ -56,14 +58,18 @@ export class ListarMisPedidosPage implements OnInit {
     return ['realizado', 'preparando'].includes(pedido.estado);
   }
 
-  cancelarPedido(pedido: Pedido): void {
+  async cancelarPedido(pedido: Pedido): Promise<void> {
     if (!this.puedeCancelar(pedido) || this.cancelandoId !== null) {
       return;
     }
 
-    const confirmar = window.confirm(
-      `¿Estás seguro de que querés cancelar el pedido #${pedido.id}?`,
-    );
+    const confirmar = await this.confirmacion.preguntar({
+      titulo: `¿Cancelar el pedido #${pedido.id}?`,
+      mensaje: 'No se puede deshacer.',
+      textoConfirmar: 'Sí, cancelar',
+      textoCancelar: 'No',
+      peligro: true,
+    });
 
     if (!confirmar) return;
 

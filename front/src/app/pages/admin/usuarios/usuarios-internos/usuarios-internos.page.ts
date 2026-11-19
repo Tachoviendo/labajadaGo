@@ -6,6 +6,7 @@ import { Rol, Usuario } from '../../../../models/auth.model';
 import { ActualizarAdminBody, RolInterno } from '../../../../models/usuario.model';
 import { mensajeDeError } from '../../../../services/api-error';
 import { AuthService } from '../../../../services/auth.service';
+import { ConfirmacionService } from '../../../../services/confirmacion.service';
 import { UsuariosService } from '../../../../services/usuarios.service';
 
 @Component({
@@ -17,6 +18,7 @@ import { UsuariosService } from '../../../../services/usuarios.service';
 export class UsuariosInternosPage {
   readonly #usuariosService = inject(UsuariosService);
   readonly #authService = inject(AuthService);
+  readonly #confirmacion = inject(ConfirmacionService);
 
   //el dueño no puede desactivarse ni darse de baja a si mismo desde aca
   protected readonly idPropio = this.#authService.usuarioActual?.id ?? null;
@@ -49,8 +51,16 @@ export class UsuariosInternosPage {
     this.actualizarAdmin(usuario, { rol }, `Ahora ${usuario.nombre} es ${rol}.`);
   }
 
-  protected cambiarActivo(usuario: Usuario) {
-    if (usuario.activo && !confirm(`¿Desactivar a ${usuario.nombre}? No va a poder iniciar sesión.`)) {
+  protected async cambiarActivo(usuario: Usuario) {
+    if (
+      usuario.activo &&
+      !(await this.#confirmacion.preguntar({
+        titulo: `¿Desactivar a ${usuario.nombre}?`,
+        mensaje: 'No va a poder iniciar sesión hasta que lo vuelvas a activar.',
+        textoConfirmar: 'Desactivar',
+        peligro: true,
+      }))
+    ) {
       return;
     }
     const mensaje = usuario.activo ? 'desactivado' : 'activado';
@@ -59,9 +69,12 @@ export class UsuariosInternosPage {
 
   //ley 18331: borra los datos personales; los pedidos se conservan
   protected async darDeBaja(usuario: Usuario) {
-    const confirmado = confirm(
-      `¿Dar de baja a ${usuario.nombre}? Se borran sus datos personales y no se puede deshacer.`,
-    );
+    const confirmado = await this.#confirmacion.preguntar({
+      titulo: `¿Dar de baja a ${usuario.nombre}?`,
+      mensaje: 'Se borran sus datos personales y no se puede deshacer. Sus pedidos se conservan.',
+      textoConfirmar: 'Dar de baja',
+      peligro: true,
+    });
     if (!confirmado) return;
 
     this.limpiarMensajes();

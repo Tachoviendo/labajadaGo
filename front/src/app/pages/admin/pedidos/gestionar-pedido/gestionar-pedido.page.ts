@@ -1,7 +1,7 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, TemplateRef, computed, inject, input, numberAttribute, resource, signal } from '@angular/core';
+import { Component, computed, inject, input, numberAttribute, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { NgbAlert, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbAlert } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 
 import { EstadoPedidoComponent } from '../../../../components/estado-pedido/estado-pedido.component';
@@ -9,6 +9,7 @@ import { RolInterno } from '../../../../models/usuario.model';
 import { UrlPublicaPipe } from '../../../../pipes/url-publica.pipe';
 import { mensajeDeError } from '../../../../services/api-error';
 import { AuthService } from '../../../../services/auth.service';
+import { ConfirmacionService } from '../../../../services/confirmacion.service';
 import { OrdersService, Pedido } from '../../../../services/orders.service';
 import { EstadoTablero, Movimiento, movimientosPara, puedeCancelar } from '../movimientos';
 
@@ -22,7 +23,7 @@ import { EstadoTablero, Movimiento, movimientosPara, puedeCancelar } from '../mo
 })
 export class GestionarPedidoPage {
   readonly #ordersService = inject(OrdersService);
-  readonly #modal = inject(NgbModal);
+  readonly #confirmacion = inject(ConfirmacionService);
 
   //:id_pedido de la ruta. llega como texto y se pasa a numero
   readonly idPedido = input.required({ alias: 'id_pedido', transform: numberAttribute });
@@ -64,20 +65,20 @@ export class GestionarPedidoPage {
   protected readonly mensajeError = signal<string | null>(null);
 
   protected async mover(movimiento: Movimiento) {
-    if (movimiento.destino === 'entregado' && !confirm('¿Marcar como entregado? No se puede deshacer.')) {
-      return;
-    }
     await this.cambiarEstado(movimiento.destino, `Pasó a "${movimiento.texto.toLowerCase()}".`);
   }
 
-  //modal de ng-bootstrap con un <ng-template>. result se resuelve con modal.close() y se
-  //rechaza con modal.dismiss() (cerrar, Esc o click afuera)
-  protected async confirmarCancelacion(contenido: TemplateRef<unknown>) {
-    try {
-      await this.#modal.open(contenido, { centered: true }).result;
-    } catch {
-      return; //no confirmo
-    }
+  //modal de confirmacion (NgbModal, ver ConfirmacionService)
+  protected async confirmarCancelacion(pedido: Pedido) {
+    const confirmado = await this.#confirmacion.preguntar({
+      titulo: `¿Cancelar el pedido #${pedido.id}?`,
+      mensaje:
+        'El cliente lo va a ver cancelado en sus pedidos y los productos vuelven al stock. No se puede deshacer.',
+      textoConfirmar: 'Sí, cancelar',
+      textoCancelar: 'No, volver',
+      peligro: true,
+    });
+    if (!confirmado) return;
     await this.cambiarEstado('cancelado', 'El pedido fue cancelado y se devolvió el stock.');
   }
 

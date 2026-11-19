@@ -32,7 +32,7 @@
             type="button"
             class="btn btn-outline-danger ms-auto"
             [disabled]="ocupado()"
-            (click)="confirmarCancelacion(modalCancelar)"
+            (click)="confirmarCancelacion(p)"
           >
             Cancelar pedido
           </button>
@@ -129,23 +129,6 @@
       }
     </section>
 
-    <!-- modal de confirmacion (NgbModal) -->
-    <ng-template #modalCancelar let-modal>
-      <div class="modal-header">
-        <h2 class="modal-title fs-5">¿Cancelar el pedido #{{ p.id }}?</h2>
-        <button type="button" class="btn-close" aria-label="Cerrar" (click)="modal.dismiss()"></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-0">
-          El cliente lo va a ver cancelado en sus pedidos y los productos vuelven al stock.
-          No se puede deshacer.
-        </p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">No, volver</button>
-        <button type="button" class="btn btn-danger" (click)="modal.close()">Sí, cancelar</button>
-      </div>
-    </ng-template>
   } @else if (pedido.error()) {
     <ngb-alert type="danger" [dismissible]="false">{{ mensajeDeError(pedido.error()) }}</ngb-alert>
   } @else {
