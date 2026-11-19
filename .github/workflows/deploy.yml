@@ -1,0 +1,54 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy
+    # runner propio del repo (labels self-hosted,labajadago), no el de la org
+    runs-on: [self-hosted, labajadago]
+
+    steps:
+      - name: Pull latest changes
+        run: |
+          cd /var/www/labajadaGo
+          git pull origin main
+
+      - name: Check .env
+        run: |
+          test -f /var/www/labajadaGo/.env || { echo "Falta /var/www/labajadaGo/.env (copiar de .env.example)"; exit 1; }
+
+      # Se construye con los contenedores andando y `up -d` recrea solo lo que cambió,
+      # así la app queda caída unos segundos y no durante todo el build.
+      - name: Build images
+        run: |
+          cd /var/www/labajadaGo
+          docker compose build
+
+      - name: Start containers
+        run: |
+          cd /var/www/labajadaGo
+          docker compose up -d
+
+      - name: Show status
+        run: |
+          cd /var/www/labajadaGo
+          docker compose ps
+          docker compose logs --tail=30
+
+      # pasa por el nginx del front, así prueba front + api + base de una
+      - name: Health check
+        run: |
+          export $(grep -E '^FRONTEND_PORT=' /var/www/labajadaGo/.env)
+          for i in $(seq 1 12); do
+            curl -sf http://127.0.0.1:${FRONTEND_PORT}/api/health && exit 0
+            sleep 5
+          done
+          echo "No respondio 200 en /api/health tras 60s"
+          exit 1
+
+      - name: Clean up old images
+        run: docker image prune -af --filter "until=24h"

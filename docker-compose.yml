@@ -1,0 +1,116 @@
+# Produccion (labajadago.graph.uy). Levanta todo: postgres, api, bucket y front.
+# Desde afuera solo se publica el front (FRONTEND_PORT); el nginx del servidor apunta ahi
+# (ver deploy/nginx-labajadago.conf). La api y el bucket quedan en la red interna y el
+# nginx del contenedor del front les hace de proxy en /api y /bucket.
+#
+# Para desarrollar en la compu se usa docker-compose.dev.yaml (solo base y bucket).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${PROJECT_NAME}-postgres
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    environment:
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: ${PGDATABASE}
+      #hora de Uruguay (logs y valor por defecto). db/01_schema.sql tambien la fija
+      TZ: America/Montevideo
+      PGTZ: America/Montevideo
+    #solo desde el propio servidor (backups / tunel ssh), nunca desde internet
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
+    volumes:
+      #la primera vez que se crea el volumen corre db/01_schema, 02_triggers y 03_seed
+      - ./db:/docker-entrypoint-initdb.d:ro
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER} -d ${PGDATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./api
+    container_name: ${PROJECT_NAME}-backend
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    environment:
+      NODE_ENV: production
+      FASTIFY_PORT: 3000
+      FASTIFY_LOG_LEVEL: ${FASTIFY_LOG_LEVEL:-info}
+      FASTIFY_SECRET: ${FASTIFY_SECRET:?falta FASTIFY_SECRET en el .env}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${PGDATABASE}
+      BUCKET_URL: http://bucket:3001
+      BUCKET_PUBLIC_URL: /bucket
+      BUCKET_TOKEN: ${BUCKET_TOKEN:?falta BUCKET_TOKEN en el .env}
+      LOCAL_LAT: ${LOCAL_LAT}
+      LOCAL_LNG: ${LOCAL_LNG}
+      TZ: America/Montevideo
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    #127.0.0.1 y no localhost: adentro del contenedor localhost resuelve primero a ::1
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  bucket:
+    build: ./bucket
+    container_name: ${PROJECT_NAME}-bucket
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.25
+    environment:
+      BUCKET_TOKEN: ${BUCKET_TOKEN:?falta BUCKET_TOKEN en el .env}
+      BUCKET_PORT: 3001
+    volumes:
+      - bucket-data:/data
+    networks:
+      - app-network
+
+  frontend:
+    build: ./front
+    container_name: ${PROJECT_NAME}-frontend
+    restart: unless-stopped
+    mem_limit: 64m
+    cpus: 0.25
+    ports:
+      - "${FRONTEND_PORT}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+      bucket:
+        condition: service_started
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  app-network:
+    driver: bridge
+    name: ${PROJECT_NAME}-network
+
+volumes:
+  postgres-data:
+    name: ${PROJECT_NAME}-postgres-data
+  bucket-data:
+    name: ${PROJECT_NAME}-bucket-data

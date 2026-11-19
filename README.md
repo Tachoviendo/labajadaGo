@@ -8,17 +8,20 @@ Proyecto de dw2026
 /front    frontend (Angular)
 /db       scripts de la base: 01_schema.sql, 02_triggers.sql y 03_seed.sql
 /docs     documentación (historias de usuario, modelo, API, mapa de navegación)
-docker-compose.yaml   levanta Postgres y carga /db
-.env.example          variables compartidas por docker-compose y la api
+/deploy   nginx del servidor de producción
+docker-compose.dev.yaml   desarrollo: levanta Postgres (carga /db) y el bucket
+docker-compose.yml        producción: levanta todo (base, api, bucket y front)
+.env.example              variables compartidas por docker-compose y la api
 ```
 
 ## Cómo levantar el proyecto
 
 1. Copiar `.env.example` a `.env` en la raíz del repo.
-2. Levantar la base: `docker compose up -d` (desde la raíz). La primera vez que se crea
-   el volumen corre los scripts de `db/` en orden (`01_schema.sql`, `02_triggers.sql` y
-   `03_seed.sql`). Para recargarlos:
-   `docker compose down -v` y volver a levantar.
+2. Levantar la base y el bucket: `docker compose -f docker-compose.dev.yaml up -d` (desde
+   la raíz). La primera vez que se crea el volumen corre los scripts de `db/` en orden
+   (`01_schema.sql`, `02_triggers.sql` y `03_seed.sql`). Para recargarlos:
+   `docker compose -f docker-compose.dev.yaml down -v` y volver a levantar.
+   (Ojo: `docker compose up` sin `-f` usa `docker-compose.yml`, que es el de producción.)
 3. Levantar la api:
    ```
    cd api
@@ -199,3 +202,18 @@ Páginas del front, sus rutas y cómo se conectan según el rol:
 5. Estados del pedido y seguimiento (HU-18, HU-20, HU-21, HU-22).
 6. Resto de historias (búsqueda, historial, notificaciones, panel, cancelación) como
    incrementales sobre el MVP.
+
+## Producción (labajadago.graph.uy)
+
+Corre con `docker-compose.yml` en el droplet compartido (Antezana247), en `/var/www/labajadaGo`.
+Hacia afuera solo se publica el front en el puerto 8080. El nginx de ese contenedor
+(`front/nginx.conf`) sirve el build de Angular y manda `/api` (con el websocket incluido) y
+`/bucket` a sus contenedores. Postgres queda en `127.0.0.1:8081`.
+
+Cada push a `main` se despliega solo con `.github/workflows/deploy.yml`, que corre en el
+runner del repo (labels `self-hosted,labajadago`): hace `git pull`, `build`, `up -d` y chequea
+`/api/health`.
+
+Para probarlo en la compu (con otro nombre y otro puerto, así no choca con la base de
+desarrollo): un `.env` aparte con las variables del bloque "Producción" de `.env.example` y
+`docker compose -p labajadago-prueba --env-file <ese .env> up -d --build`.
