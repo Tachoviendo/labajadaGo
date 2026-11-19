@@ -56,18 +56,10 @@
         </div>
 
         <nav class="nav flex-column p-3 gap-2">
-          @if (rol === 'dueno') {
-            <a
-              class="nav-link"
-              routerLink="/admin"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: true }"
-            >
-              Panel principal
-            </a>
-          }
-
           @if (rol === 'repartidor') {
+            <a class="nav-link" routerLink="/repartos/tablero" routerLinkActive="active">
+              Tablero de pedidos
+            </a>
             <!-- exact: si no, tambien queda marcado en /repartos/tablero -->
             <a
               class="nav-link"
@@ -76,9 +68,6 @@
               [routerLinkActiveOptions]="{ exact: true }"
             >
               Mis repartos
-            </a>
-            <a class="nav-link" routerLink="/repartos/tablero" routerLinkActive="active">
-              Tablero de pedidos
             </a>
           } @else {
             <a class="nav-link" routerLink="/admin/pedidos" routerLinkActive="active">
@@ -90,6 +79,10 @@
             <hr />
 
             <span class="text-muted small fw-semibold"> Administración </span>
+
+            <a class="nav-link" routerLink="/admin/estadisticas" routerLinkActive="active">
+              Estadísticas
+            </a>
 
             <a class="nav-link" routerLink="/admin/productos" routerLinkActive="active">
               Productos

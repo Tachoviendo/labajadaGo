@@ -1,0 +1,96 @@
+/* lo visual sale de bootstrap; aca solo el layout de la pantalla */
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 64rem;
+  padding: 1.5rem;
+}
+
+.titulo {
+  color: #173b68;
+}
+
+/* 3 tarjetas en fila; en el celular una abajo de la otra */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+}
+
+.kpi-titulo,
+.seccion {
+  margin: 0 0 0.25rem;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.seccion {
+  margin-bottom: 1rem;
+}
+
+.kpi-valor {
+  color: #173b68;
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-ayuda {
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.detalle {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1rem;
+}
+
+.fila-barra {
+  display: grid;
+  grid-template-columns: 7rem 1fr 2rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.numero {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.producto {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.producto ngb-progressbar {
+  margin-top: 0.3rem;
+}
+
+.puesto {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: #fff1cc;
+  color: #8a5700;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* mientras llega el periodo nuevo se ve el anterior, atenuado */
+.actualizando {
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}

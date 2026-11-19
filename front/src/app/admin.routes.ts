@@ -5,14 +5,8 @@ import { rolGuard } from './guards/auth.guard';
 const soloDueno = [rolGuard('dueno')];
 
 export const adminRoutes: Routes = [
-  //solo dueño
-  {
-    path: '',
-    pathMatch: 'full',
-    title: 'Panel',
-    canActivate: soloDueno,
-    loadComponent: () => import('./pages/admin/panel/panel.page'),
-  },
+  //no hay panel: /admin lleva directo al tablero de pedidos
+  { path: '', pathMatch: 'full', redirectTo: 'pedidos' },
 
   //cajero y dueño
   {
@@ -47,6 +41,13 @@ export const adminRoutes: Routes = [
     title: 'Editar producto',
     canActivate: soloDueno,
     loadComponent: () => import('./pages/admin/productos/alta-edicion-producto/alta-edicion-producto.page'),
+  },
+  {
+    //HU-25: ventas del periodo, pedidos por estado y mas vendidos
+    path: 'estadisticas',
+    title: 'Estadísticas',
+    canActivate: soloDueno,
+    loadComponent: () => import('./pages/admin/estadisticas/estadisticas.page'),
   },
   {
     path: 'categorias',

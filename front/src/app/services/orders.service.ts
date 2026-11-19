@@ -127,7 +127,7 @@ export class OrdersService {
     return this.http.patch<Pedido>(`${this.apiUrl}/${id}/estado`, { estado });
   }
 
-  //solo dueño, para el panel
+  //solo dueño, para estadisticas
   resumen(filtros: FiltrosResumen = {}): Observable<ResumenVentas> {
     return this.http.get<ResumenVentas>(`${this.apiUrl}/resumen`, { params: aParams(filtros) });
   }
