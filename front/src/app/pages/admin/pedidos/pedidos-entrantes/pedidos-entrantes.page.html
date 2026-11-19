@@ -87,7 +87,9 @@
                       {{ moviendo() === pedido.id ? 'Moviendo…' : movimiento.texto }}
                     </button>
                   }
-                  <a class="btn btn-outline-primary btn-sm" [routerLink]="['/admin/pedidos', pedido.id]">Ver</a>
+                  @if (linkDetalle(pedido); as detalle) {
+                    <a class="btn btn-outline-primary btn-sm" [routerLink]="detalle.ruta">{{ detalle.texto }}</a>
+                  }
                 </footer>
               </article>
             } @empty {

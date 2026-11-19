@@ -5,8 +5,10 @@ import { NgbAlert } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 
 import { mensajeDeError } from '../../../../services/api-error';
+import { RolInterno } from '../../../../models/usuario.model';
 import { AuthService } from '../../../../services/auth.service';
 import { EstadoPedido, OrdersService, Pedido } from '../../../../services/orders.service';
+import { RepartosService } from '../../../../services/repartos.service';
 
 //cada cuanto se vuelve a pedir el tablero (polling)
 const INTERVALO_MS = 15_000;
@@ -44,6 +46,18 @@ const MOVIMIENTOS_DUENO: Partial<Record<EstadoTablero, Movimiento[]>> = {
   ],
 };
 
+//el repartidor solo recoge (POST /pedidos/:id/recoger). entregar necesita la foto,
+//asi que eso se hace desde su pantalla de reparto (ver linkDetalle)
+const MOVIMIENTOS_REPARTIDOR: Partial<Record<EstadoTablero, Movimiento[]>> = {
+  preparando: [{ destino: 'en_reparto', texto: 'Recoger' }],
+};
+
+const MOVIMIENTOS_POR_ROL: Record<RolInterno, Partial<Record<EstadoTablero, Movimiento[]>>> = {
+  cajero: MOVIMIENTOS_CAJERO,
+  dueno: MOVIMIENTOS_DUENO,
+  repartidor: MOVIMIENTOS_REPARTIDOR,
+};
+
 //YYYY-MM-DD en la hora local (la api filtra por dia con fecha_creacion::date)
 function hoy(): string {
   const ahora = new Date();
@@ -60,11 +74,12 @@ function hoy(): string {
 })
 export class PedidosEntrantesPage {
   readonly #ordersService = inject(OrdersService);
+  readonly #repartosService = inject(RepartosService);
 
-  //los movimientos posibles dependen del rol (no cambia mientras se esta en la pantalla)
-  readonly #movimientosPorEstado = inject(AuthService).tieneRol('dueno')
-    ? MOVIMIENTOS_DUENO
-    : MOVIMIENTOS_CAJERO;
+  //esta pantalla se usa en /admin/pedidos (cajero y dueño) y en /repartos/tablero (repartidor).
+  //el rol no cambia mientras se esta en la pantalla
+  protected readonly rol = (inject(AuthService).usuarioActual?.rol ?? 'cajero') as RolInterno;
+  readonly #movimientosPorEstado = MOVIMIENTOS_POR_ROL[this.rol];
 
   protected readonly columnas: Columna[] = [
     { estado: 'realizado', titulo: 'Entrantes', ayuda: 'Pedidos nuevos para preparar' },
@@ -140,6 +155,14 @@ export class PedidosEntrantesPage {
     return pedido.estado === 'cancelado' ? [] : (this.#movimientosPorEstado[pedido.estado] ?? []);
   }
 
+  //a donde lleva el boton de la tarjeta. el repartidor solo tiene detalle de lo que esta
+  //llevando (su pantalla de reparto, donde entrega con la foto); null = sin boton
+  protected linkDetalle(pedido: Pedido): { ruta: (string | number)[]; texto: string } | null {
+    if (this.rol !== 'repartidor') return { ruta: ['/admin/pedidos', pedido.id], texto: 'Ver' };
+    if (pedido.estado === 'en_reparto') return { ruta: ['/repartos', pedido.id], texto: 'Entregar' };
+    return null;
+  }
+
   protected puedeIrA(pedido: Pedido | null, destino: EstadoTablero) {
     return !!pedido && this.movimientos(pedido).some((m) => m.destino === destino);
   }
@@ -152,7 +175,12 @@ export class PedidosEntrantesPage {
     this.moviendo.set(pedido.id);
     this.mensajeError.set(null);
     try {
-      await firstValueFrom(this.#ordersService.cambiarEstado(pedido.id, destino));
+      //el repartidor no cambia el estado a mano: recoger lo asigna a el y lo saca a reparto
+      const pedido$ =
+        this.rol === 'repartidor'
+          ? this.#repartosService.recoger(pedido.id)
+          : this.#ordersService.cambiarEstado(pedido.id, destino);
+      await firstValueFrom(pedido$);
       this.pedidos.reload();
     } catch (error) {
       //409 de la api (ej: otro lo movio antes): se muestra el mensaje y se refresca

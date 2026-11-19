@@ -101,8 +101,14 @@ export async function listForUser(app, usuario, filters) {
     };
 
     if (usuario.rol === "cliente") addFilter("p.usuario_id =", usuario.id);
-    //el repartidor lista sus repartos; los disponibles salen de GET /repartos/disponibles
-    if (usuario.rol === "repartidor") addFilter("p.repartidor_id =", usuario.id);
+    //el repartidor ve sus repartos y, para el tablero, los que todavia no tienen repartidor
+    //(entrantes y preparando). los que lleva otro repartidor no los ve
+    if (usuario.rol === "repartidor") {
+      values.push(usuario.id);
+      conditions.push(
+        `(p.repartidor_id = $${values.length} OR (p.repartidor_id IS NULL AND p.estado IN ('realizado', 'preparando')))`,
+      );
+    }
     if (filters.estado) addFilter("p.estado =", filters.estado);
     if (filters.activos) {
       conditions.push("p.estado IN ('realizado', 'preparando', 'en_reparto')");

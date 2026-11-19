@@ -68,8 +68,17 @@
           }
 
           @if (rol === 'repartidor') {
-            <a class="nav-link" routerLink="/repartos" routerLinkActive="active">
+            <!-- exact: si no, tambien queda marcado en /repartos/tablero -->
+            <a
+              class="nav-link"
+              routerLink="/repartos"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+            >
               Mis repartos
+            </a>
+            <a class="nav-link" routerLink="/repartos/tablero" routerLinkActive="active">
+              Tablero de pedidos
             </a>
           } @else {
             <a class="nav-link" routerLink="/admin/pedidos" routerLinkActive="active">

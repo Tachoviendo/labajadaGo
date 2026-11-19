@@ -10,6 +10,13 @@ export const repartosRoutes: Routes = [
     loadComponent: () => import('./pages/repartos/disponibles/disponibles.page'),
   },
   {
+    //el mismo tablero kanban del cajero, con las acciones del repartidor.
+    //va antes de ':id_pedido' para que 'tablero' no se tome como un id
+    path: 'tablero',
+    title: 'Tablero de pedidos',
+    loadComponent: () => import('./pages/admin/pedidos/pedidos-entrantes/pedidos-entrantes.page'),
+  },
+  {
     //el pedido que esta llevando: mapa, ubicacion en vivo y entregar con foto
     path: ':id_pedido',
     title: 'Mi reparto',
