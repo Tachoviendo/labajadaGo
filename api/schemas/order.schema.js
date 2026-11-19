@@ -53,7 +53,7 @@ export const OrderStatusChangeBody = Type.Object({
   estado: EstadoPedidoEnum,
 });
 
-//historial de estado. auditoria
+//historial de estado. auditoria: GET /pedidos/:id/historial
 export const OrderStatusHistorySchema = Type.Object({
   id: Type.Integer(),
   pedidoId: Type.Integer(),
@@ -62,6 +62,40 @@ export const OrderStatusHistorySchema = Type.Object({
   usuarioId: Type.Union([Type.Integer(), Type.Null()], {
     description: "Quién hizo el cambio; puede ser null si fue automático",
   }),
+  usuario: Type.Union(
+    [
+      Type.Object({
+        nombre: Type.String(),
+        rol: Type.String(),
+        telefono: Type.Union([Type.String(), Type.Null()]),
+      }),
+      Type.Null(),
+    ],
+    { description: "Datos de quién hizo el cambio (el primero, 'realizado', es el cliente)" },
+  ),
+});
+
+export const OrderStatusHistoryListSchema = Type.Array(OrderStatusHistorySchema, {
+  examples: [
+    [
+      {
+        id: 1,
+        pedidoId: 3,
+        estado: "realizado",
+        fecha: "2026-11-17T11:47:00.000Z",
+        usuarioId: 3,
+        usuario: { nombre: "Juan Perez", rol: "cliente", telefono: "099333333" },
+      },
+      {
+        id: 7,
+        pedidoId: 3,
+        estado: "preparando",
+        fecha: "2026-11-17T11:52:00.000Z",
+        usuarioId: 2,
+        usuario: { nombre: "Lucia Cajera", rol: "cajero", telefono: "099222222" },
+      },
+    ],
+  ],
 });
 
 //historial del cliente y listado para cajero/dueño.
@@ -71,6 +105,13 @@ export const OrderStatusHistorySchema = Type.Object({
 export const OrderFiltersQuery = Type.Object({
   ...PaginationQuery.properties,
   estado: Type.Optional(EstadoPedidoEnum),
+  //pantalla de pedidos entrantes: solo los que todavia hay que atender
+  activos: Type.Optional(
+    Type.Boolean({
+      description:
+        "true: solo pedidos en curso (realizado, preparando, en_reparto). Se combina con estado",
+    }),
+  ),
   fechaDesde: Type.Optional(Type.String({ format: "date" })),
   fechaHasta: Type.Optional(Type.String({ format: "date" })),
   sort: Type.Optional(
@@ -79,3 +120,77 @@ export const OrderFiltersQuery = Type.Object({
     }),
   ),
 });
+
+//panel de ventas del dueño. sin fechas toma todo el historial
+export const SalesSummaryQuery = Type.Object({
+  fechaDesde: Type.Optional(
+    Type.String({ format: "date", examples: ["2026-11-01"] }),
+  ),
+  fechaHasta: Type.Optional(
+    Type.String({ format: "date", examples: ["2026-11-30"] }),
+  ),
+  top: Type.Optional(
+    Type.Integer({
+      minimum: 1,
+      maximum: 20,
+      default: 5,
+      description: "Cantidad de productos más vendidos a devolver",
+    }),
+  ),
+});
+
+export const SalesSummarySchema = Type.Object(
+  {
+    fechaDesde: Type.Union([Type.String({ format: "date" }), Type.Null()]),
+    fechaHasta: Type.Union([Type.String({ format: "date" }), Type.Null()]),
+    totalVendido: Type.Integer({
+      minimum: 0,
+      description: "Suma de los totales de pedidos no cancelados",
+    }),
+    cantidadPedidos: Type.Integer({
+      minimum: 0,
+      description: "Pedidos no cancelados en el rango",
+    }),
+    ticketPromedio: Type.Integer({
+      minimum: 0,
+      description: "totalVendido / cantidadPedidos, redondeado",
+    }),
+    porEstado: Type.Array(
+      Type.Object({
+        estado: EstadoPedidoEnum,
+        cantidad: Type.Integer({ minimum: 0 }),
+      }),
+      { description: "Un elemento por cada estado, incluidos cancelados y los que tienen 0" },
+    ),
+    masVendidos: Type.Array(
+      Type.Object({
+        productoId: Type.Integer(),
+        nombre: Type.String(),
+        cantidad: Type.Integer({ minimum: 1 }),
+        total: Type.Integer({ minimum: 0 }),
+      }),
+    ),
+  },
+  {
+    examples: [
+      {
+        fechaDesde: "2026-11-01",
+        fechaHasta: "2026-11-30",
+        totalVendido: 48500,
+        cantidadPedidos: 12,
+        ticketPromedio: 4042,
+        porEstado: [
+          { estado: "realizado", cantidad: 2 },
+          { estado: "preparando", cantidad: 1 },
+          { estado: "en_reparto", cantidad: 1 },
+          { estado: "entregado", cantidad: 8 },
+          { estado: "cancelado", cantidad: 1 },
+        ],
+        masVendidos: [
+          { productoId: 4, nombre: "Coca-Cola 1.5L", cantidad: 9, total: 13500 },
+          { productoId: 1, nombre: "Alfajor Guaymallén", cantidad: 15, total: 4500 },
+        ],
+      },
+    ],
+  },
+);

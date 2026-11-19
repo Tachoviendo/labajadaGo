@@ -8,7 +8,7 @@ import { NgbAlert, NgbCollapse } from '@ng-bootstrap/ng-bootstrap';
 import { OrdersService, Pedido, EstadoPedido } from '../../../services/orders.service';
 import { mensajeDeError } from '../../../services/api-error';
 import { NotificacionesService } from '../../../services/notificaciones.service';
-import { ConfirmacionService } from '../../../components/confirmacion/confirmacion.service';
+import { ConfirmacionService } from '../../../services/confirmacion.service';
 
 const NOMBRES_ESTADO: Record<EstadoPedido, string> = {
   realizado: 'Realizado',
@@ -61,11 +61,11 @@ export class ListarMisPedidosPage {
       return;
     }
 
-    const confirmado = await this.#confirmacion.confirmar({
-      titulo: 'Cancelar pedido',
-      mensaje: `¿Estás seguro de que querés cancelar el pedido #${pedido.id}?`,
+    const confirmado = await this.#confirmacion.preguntar({
+      titulo: `¿Cancelar el pedido #${pedido.id}?`,
+      mensaje: 'No se puede deshacer.',
       textoConfirmar: 'Sí, cancelar',
-      textoCancelar: 'Volver',
+      textoCancelar: 'No',
       peligro: true,
     });
     if (!confirmado) return;

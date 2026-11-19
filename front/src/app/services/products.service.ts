@@ -2,7 +2,13 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { FiltrosProductos, Producto, ProductosPaginados } from '../models/product.model';
+import {
+  ActualizarProductoBody,
+  CrearProductoBody,
+  FiltrosProductos,
+  Producto,
+  ProductosPaginados,
+} from '../models/product.model';
 
 @Injectable({
   providedIn: 'root',
@@ -25,6 +31,16 @@ export class ProductsService {
 
   obtener(id: number): Observable<Producto> {
     return this.http.get<Producto>(`${this.apiUrl}/${id}`);
+  }
+
+  //solo dueño
+  crear(datos: CrearProductoBody): Observable<Producto> {
+    return this.http.post<Producto>(this.apiUrl, datos);
+  }
+
+  //solo dueño. manda solo los campos que cambian. activo: false es la baja logica
+  actualizar(id: number, datos: ActualizarProductoBody): Observable<Producto> {
+    return this.http.patch<Producto>(`${this.apiUrl}/${id}`, datos);
   }
 
   //solo dueño. la api la guarda en el bucket y devuelve el producto con la nueva imagenUrl

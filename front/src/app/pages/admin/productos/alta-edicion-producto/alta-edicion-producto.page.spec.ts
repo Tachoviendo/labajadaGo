@@ -17,7 +17,9 @@ describe('AltaEdicionProductoPage', () => {
 
     fixture = TestBed.createComponent(AltaEdicionProductoPage);
     component = fixture.componentInstance;
-    await fixture.whenStable();
+    //los resources dejan la request pendiente (HttpClientTesting no responde), por eso
+    //no se espera whenStable: alcanza con un ciclo de deteccion de cambios
+    fixture.detectChanges();
   });
 
   it('should create', () => {

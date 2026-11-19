@@ -1,13 +1,29 @@
-form {
-  width: 320px;
-}
-
-.campo {
+/* lo visual sale de bootstrap; aca solo el layout de la pantalla */
+.pagina {
   display: flex;
   flex-direction: column;
-  margin-bottom: 10px;
+  gap: 1rem;
+  max-width: 36rem;
+  padding: 1.5rem;
 }
 
-.error {
-  color: indigo;
+.volver {
+  color: #173b68;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.titulo {
+  color: #173b68;
+}
+
+/* telefono y rol lado a lado; en el celular uno abajo del otro */
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.fila > div {
+  flex: 1 1 12rem;
 }

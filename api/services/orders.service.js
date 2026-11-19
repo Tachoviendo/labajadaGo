@@ -90,6 +90,35 @@ export async function getById(app, id, usuario) {
   }
 }
 
+//cambios de estado del pedido, del mas viejo al mas nuevo, con quien los hizo
+export async function statusHistory(app, id) {
+  const client = await app.pg.connect();
+  try {
+    await loadOrder(client, id); //404 si no existe
+    const { rows } = await client.query(
+      `SELECT h.id, h.pedido_id, h.estado, h.fecha, h.usuario_id,
+              u.nombre, u.rol, u.telefono
+       FROM pedido_estado_historial h
+       LEFT JOIN usuario u ON u.id = h.usuario_id
+       WHERE h.pedido_id = $1
+       ORDER BY h.fecha, h.id`,
+      [id],
+    );
+    return rows.map((row) => ({
+      id: row.id,
+      pedidoId: row.pedido_id,
+      estado: row.estado,
+      fecha: row.fecha.toISOString(),
+      usuarioId: row.usuario_id,
+      usuario: row.usuario_id
+        ? { nombre: row.nombre, rol: row.rol, telefono: row.telefono }
+        : null,
+    }));
+  } finally {
+    client.release();
+  }
+}
+
 export async function listForUser(app, usuario, filters) {
   const client = await app.pg.connect();
   try {
@@ -101,9 +130,18 @@ export async function listForUser(app, usuario, filters) {
     };
 
     if (usuario.rol === "cliente") addFilter("p.usuario_id =", usuario.id);
-    //el repartidor lista sus repartos; los disponibles salen de GET /repartos/disponibles
-    if (usuario.rol === "repartidor") addFilter("p.repartidor_id =", usuario.id);
+    //el repartidor ve sus repartos y, para el tablero, los que todavia no tienen repartidor
+    //(entrantes y preparando). los que lleva otro repartidor no los ve
+    if (usuario.rol === "repartidor") {
+      values.push(usuario.id);
+      conditions.push(
+        `(p.repartidor_id = $${values.length} OR (p.repartidor_id IS NULL AND p.estado IN ('realizado', 'preparando')))`,
+      );
+    }
     if (filters.estado) addFilter("p.estado =", filters.estado);
+    if (filters.activos) {
+      conditions.push("p.estado IN ('realizado', 'preparando', 'en_reparto')");
+    }
     if (filters.fechaDesde)
       addFilter("p.fecha_creacion::date >=", filters.fechaDesde);
     if (filters.fechaHasta)
@@ -128,6 +166,88 @@ export async function listForUser(app, usuario, filters) {
         mapOrder(order, await loadItems(client, order.id)),
       ),
     );
+  } finally {
+    client.release();
+  }
+}
+
+const TODOS_LOS_ESTADOS = [...ORDEN_ESTADOS_PEDIDO, "cancelado"];
+
+//panel de ventas del dueño: total vendido, pedidos por estado, ticket promedio y
+//productos mas vendidos. los cancelados se cuentan en porEstado pero no suman ventas
+export async function salesSummary(app, { fechaDesde, fechaHasta, top = 5 }) {
+  if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
+    throw new BadRequestError("fechaDesde no puede ser posterior a fechaHasta");
+  }
+
+  const conditions = [];
+  const values = [];
+  if (fechaDesde) {
+    values.push(fechaDesde);
+    conditions.push(`p.fecha_creacion::date >= $${values.length}`);
+  }
+  if (fechaHasta) {
+    values.push(fechaHasta);
+    conditions.push(`p.fecha_creacion::date <= $${values.length}`);
+  }
+  const rango = conditions.length ? `AND ${conditions.join(" AND ")}` : "";
+
+  const client = await app.pg.connect();
+  try {
+    const { rows: totales } = await client.query(
+      `SELECT COALESCE(SUM(p.total), 0)::int AS total_vendido,
+              COUNT(*)::int AS cantidad_pedidos
+       FROM pedido p
+       WHERE p.estado <> 'cancelado' ${rango}`,
+      values,
+    );
+
+    const { rows: estados } = await client.query(
+      `SELECT p.estado, COUNT(*)::int AS cantidad
+       FROM pedido p
+       WHERE TRUE ${rango}
+       GROUP BY p.estado`,
+      values,
+    );
+
+    const { rows: productos } = await client.query(
+      `SELECT i.producto_id, MAX(i.nombre_producto) AS nombre,
+              SUM(i.cantidad)::int AS cantidad,
+              SUM(i.cantidad * i.precio_unitario)::int AS total
+       FROM pedido_item i
+       JOIN pedido p ON p.id = i.pedido_id
+       WHERE p.estado <> 'cancelado' ${rango}
+       GROUP BY i.producto_id
+       ORDER BY cantidad DESC, total DESC, i.producto_id
+       LIMIT $${values.length + 1}`,
+      [...values, top],
+    );
+
+    const { total_vendido: totalVendido, cantidad_pedidos: cantidadPedidos } =
+      totales[0];
+    const cantidadPorEstado = new Map(
+      estados.map((fila) => [fila.estado, fila.cantidad]),
+    );
+
+    return {
+      fechaDesde: fechaDesde ?? null,
+      fechaHasta: fechaHasta ?? null,
+      totalVendido,
+      cantidadPedidos,
+      ticketPromedio: cantidadPedidos
+        ? Math.round(totalVendido / cantidadPedidos)
+        : 0,
+      porEstado: TODOS_LOS_ESTADOS.map((estado) => ({
+        estado,
+        cantidad: cantidadPorEstado.get(estado) ?? 0,
+      })),
+      masVendidos: productos.map((fila) => ({
+        productoId: fila.producto_id,
+        nombre: fila.nombre,
+        cantidad: fila.cantidad,
+        total: fila.total,
+      })),
+    };
   } finally {
     client.release();
   }
@@ -215,7 +335,9 @@ export async function withOrderTransaction(app, operation) {
   }
 }
 
-export async function changeStatus(app, pedidoId, actorId, estado) {
+//rol: "cajero" o "dueno". el dueño ademas puede sacar a reparto y marcar entregado
+//a mano (ej: lo lleva el mismo o se olvido de marcarlo el repartidor)
+export async function changeStatus(app, pedidoId, actorId, estado, rol) {
   return withOrderTransaction(app, async (client) => {
     const order = await lockOrder(client, pedidoId);
     if (estado === "cancelado") {
@@ -230,12 +352,16 @@ export async function changeStatus(app, pedidoId, actorId, estado) {
       ) {
         throw new ConflictError("la transición de estado no está permitida");
       }
-      //salir a reparto y entregar lo marca el repartidor (recoger/entregar), asi queda
-      //asignado, con su recorrido y la foto. el personal no lo puede hacer a mano
-      if (estado === "en_reparto" && order.estado === "preparando") {
+      //un pedido entregado ya no vuelve atras (para nadie)
+      if (order.estado === "entregado") {
+        throw new ConflictError("el pedido ya fue entregado");
+      }
+      //el cajero no saca a reparto ni entrega: eso lo hace el repartidor (recoger/entregar,
+      //con su recorrido y la foto) o el dueño a mano
+      if (rol !== "dueno" && estado === "en_reparto" && order.estado === "preparando") {
         throw new ConflictError("el pedido sale a reparto cuando un repartidor lo recoge");
       }
-      if (order.estado === "entregado" || estado === "entregado") {
+      if (rol !== "dueno" && estado === "entregado") {
         throw new ConflictError("la entrega la registra el repartidor con la foto");
       }
       //volver de en_reparto a preparando (por un error) libera al repartidor
@@ -250,6 +376,15 @@ export async function changeStatus(app, pedidoId, actorId, estado) {
          VALUES ($1, $2, $3)`,
         [order.id, estado, actorId],
       );
+      //si el dueño lo marca entregado y se paga con POS, el cobro queda registrado por el
+      //(igual que cuando entrega el repartidor, ver repartos.service.js)
+      if (estado === "entregado" && order.metodo_pago === "pos") {
+        await client.query(
+          `UPDATE pago SET estado = 'pagado', fecha_pago = now(), registrado_por = $2
+           WHERE pedido_id = $1 AND metodo = 'pos' AND estado IN ('pendiente', 'rechazado')`,
+          [order.id, actorId],
+        );
+      }
     }
   });
 }

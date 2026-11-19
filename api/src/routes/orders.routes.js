@@ -3,6 +3,9 @@ import {
   OrderSchema,
   OrderFiltersQuery,
   OrderStatusChangeBody,
+  OrderStatusHistoryListSchema,
+  SalesSummaryQuery,
+  SalesSummarySchema,
   IdParam,
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
@@ -29,6 +32,28 @@ export default async function orderRoutes(app) {
     },
     async (request) =>
       ordersService.listForUser(app, request.user, request.query),
+  );
+
+  //resumen de ventas para el panel - solo dueño.
+  //ruta estatica: fastify la resuelve antes que /pedidos/:id, no choca
+  app.get(
+    "/pedidos/resumen",
+    {
+      preHandler: [app.authenticate, app.authorize("dueno")],
+      schema: {
+        tags: ["pedidos"],
+        summary: "Resumen de ventas (panel del dueño)",
+        security: [{ bearerAuth: [] }],
+        querystring: SalesSummaryQuery,
+        response: {
+          200: SalesSummarySchema,
+          400: ErrorResponseSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
+        },
+      },
+    },
+    async (request) => ordersService.salesSummary(app, request.query),
   );
 
   //crear pedido - cliente logueado (checkout)
@@ -78,7 +103,27 @@ export default async function orderRoutes(app) {
       ordersService.getById(app, request.params.id, request.user),
   );
 
-  //cambiar estado del pedido - cajero o dueño
+  //historial de estados del pedido (quien y cuando) - cajero o dueño
+  app.get(
+    "/pedidos/:id/historial",
+    {
+      preHandler: [app.authenticate, app.authorize("cajero", "dueno")],
+      schema: {
+        tags: ["pedidos"],
+        security: [{ bearerAuth: [] }],
+        params: IdParam,
+        response: {
+          200: OrderStatusHistoryListSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+        },
+      },
+    },
+    async (request) => ordersService.statusHistory(app, request.params.id),
+  );
+
+  //cambiar estado del pedido - cajero o dueño (solo el dueño puede sacar a reparto y entregar)
   app.patch(
     "/pedidos/:id/estado",
     {
@@ -102,6 +147,7 @@ export default async function orderRoutes(app) {
         request.params.id,
         request.user.id,
         request.body.estado,
+        request.user.rol,
       );
       const pedido = await ordersService.getById(app, request.params.id, request.user);
       avisarEstado(app, pedido);

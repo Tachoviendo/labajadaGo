@@ -5,7 +5,8 @@ import { environment } from '../../environments/environment';
 import { AuthResponse, LoginBody, RegisterBody, Rol, Usuario } from '../models/auth.model';
 
 const STORAGE_KEY = 'labajadaGo.auth';
-const ROLES: Rol[] = ['cliente', 'cajero', 'dueno'];
+//roles validos al leer la sesion guardada; si falta uno, ese usuario queda deslogueado al recargar
+const ROLES: Rol[] = ['cliente', 'cajero', 'dueno', 'repartidor'];
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

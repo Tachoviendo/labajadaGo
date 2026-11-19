@@ -8,7 +8,7 @@ import { NgbAlert } from '@ng-bootstrap/ng-bootstrap';
 import { UrlPublicaPipe } from '../../../pipes/url-publica.pipe';
 import { mensajeDeError } from '../../../services/api-error';
 import { CartService, ItemCarrito } from '../../../services/cart.service';
-import { ConfirmacionService } from '../../../components/confirmacion/confirmacion.service';
+import { ConfirmacionService } from '../../../services/confirmacion.service';
 
 @Component({
   selector: 'app-ver-carrito',
@@ -67,9 +67,8 @@ export class VerCarritoPage {
       return;
     }
 
-    const confirmado = await this.#confirmacion.confirmar({
-      titulo: 'Quitar producto',
-      mensaje: `¿Quitar ${item.producto.nombre} del carrito?`,
+    const confirmado = await this.#confirmacion.preguntar({
+      titulo: `¿Quitar ${item.producto.nombre} del carrito?`,
       textoConfirmar: 'Quitar',
       peligro: true,
     });

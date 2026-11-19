@@ -17,7 +17,7 @@ import { mensajeDeError } from '../../../services/api-error';
 import { AuthService } from '../../../services/auth.service';
 import { UsuariosService } from '../../../services/usuarios.service';
 import { NotificacionesService } from '../../../services/notificaciones.service';
-import { ConfirmacionService } from '../../../components/confirmacion/confirmacion.service';
+import { ConfirmacionService } from '../../../services/confirmacion.service';
 
 @Component({
   selector: 'app-mi-perfil',
@@ -124,10 +124,9 @@ export class MiPerfilPage {
   //ley 18331: borra los datos personales; los pedidos se conservan
   protected async darDeBaja() {
     if (this.idUsuario === null) return;
-    const confirmado = await this.#confirmacion.confirmar({
-      titulo: 'Dar de baja mi cuenta',
-      mensaje:
-        '¿Seguro que querés dar de baja tu cuenta? Se borran tus datos personales y no se puede deshacer.',
+    const confirmado = await this.#confirmacion.preguntar({
+      titulo: '¿Dar de baja tu cuenta?',
+      mensaje: 'Se borran tus datos personales y no se puede deshacer.',
       textoConfirmar: 'Dar de baja',
       peligro: true,
     });

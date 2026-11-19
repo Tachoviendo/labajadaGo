@@ -1,0 +1,141 @@
+<section class="pagina">
+  <header class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <h1 class="h3 mb-0 titulo">Estadísticas</h1>
+    @if (resumen.isLoading()) {
+      <span class="spinner-border spinner-border-sm text-secondary" aria-label="Cargando"></span>
+    }
+  </header>
+
+  <!-- periodo -->
+  <div class="btn-group flex-wrap align-self-start" role="group" aria-label="Período">
+    @for (opcion of periodos; track opcion.valor) {
+      <button
+        type="button"
+        class="btn btn-sm"
+        [class.btn-primary]="periodo() === opcion.valor"
+        [class.btn-outline-primary]="periodo() !== opcion.valor"
+        [attr.aria-pressed]="periodo() === opcion.valor"
+        (click)="periodo.set(opcion.valor)"
+      >
+        {{ opcion.nombre }}
+      </button>
+    }
+  </div>
+
+  @if (periodo() === 'rango') {
+    @let r = rangoForm;
+    <div class="d-flex flex-wrap gap-3 align-items-start">
+      <div>
+        <label class="form-label small fw-semibold mb-1" for="desde">Desde</label>
+        <input id="desde" type="date" class="form-control form-control-sm" [formField]="r.desde" />
+      </div>
+      <div>
+        <label class="form-label small fw-semibold mb-1" for="hasta">Hasta</label>
+        <input
+          id="hasta"
+          type="date"
+          class="form-control form-control-sm"
+          [class.is-invalid]="r.hasta().invalid()"
+          [formField]="r.hasta"
+        />
+        @if (r.hasta().errors().length) {
+          <div class="invalid-feedback d-block">{{ r.hasta().errors()[0].message }}</div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (resumen.hasValue()) {
+    @let datos = resumen.value();
+
+    <div [class.actualizando]="resumen.isLoading()" class="d-flex flex-column gap-3">
+      <!-- numeros grandes -->
+      <div class="kpis">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="kpi-titulo">Total vendido</div>
+            <div class="kpi-valor">{{ datos.totalVendido | currency: 'UYU' : '$' : '1.0-0' }}</div>
+          </div>
+        </div>
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="kpi-titulo">Pedidos</div>
+            <div class="kpi-valor">{{ datos.cantidadPedidos }}</div>
+            <div class="kpi-ayuda">sin contar cancelados</div>
+          </div>
+        </div>
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="kpi-titulo">Ticket promedio</div>
+            <div class="kpi-valor">{{ datos.ticketPromedio | currency: 'UYU' : '$' : '1.0-0' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detalle">
+        <!-- por estado -->
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h2 class="seccion">Pedidos por estado</h2>
+            @if (totalPorEstado() === 0) {
+              <p class="text-body-secondary mb-0">No hubo pedidos en este período.</p>
+            } @else {
+              <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+                @for (e of datos.porEstado; track e.estado) {
+                  <li class="fila-barra">
+                    <app-estado-pedido [estado]="e.estado" />
+                    <ngb-progressbar
+                      class="flex-fill"
+                      [type]="e.estado === 'cancelado' ? 'danger' : e.estado === 'entregado' ? 'success' : 'primary'"
+                      [value]="e.cantidad"
+                      [max]="totalPorEstado()"
+                      height="0.6rem"
+                    />
+                    <span class="numero">{{ e.cantidad }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+
+        <!-- mas vendidos -->
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h2 class="seccion">Productos más vendidos</h2>
+            @if (datos.masVendidos.length === 0) {
+              <p class="text-body-secondary mb-0">Todavía no se vendió nada en este período.</p>
+            } @else {
+              <ol class="mb-0 d-flex flex-column gap-2 ps-0 list-unstyled">
+                @for (p of datos.masVendidos; track p.productoId; let i = $index) {
+                  <li class="producto">
+                    <span class="puesto">{{ i + 1 }}</span>
+                    <div class="flex-fill">
+                      <div class="d-flex justify-content-between gap-2">
+                        <span class="fw-semibold">{{ p.nombre }}</span>
+                        <span class="text-nowrap">
+                          {{ p.cantidad }} u. · {{ p.total | currency: 'UYU' : '$' : '1.0-0' }}
+                        </span>
+                      </div>
+                      <ngb-progressbar type="warning" [value]="p.cantidad" [max]="maxVendido()" height="0.35rem" />
+                    </div>
+                  </li>
+                }
+              </ol>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else if (resumen.error()) {
+    <div class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert">
+      <span>{{ mensajeDeError(resumen.error()) }}</span>
+      <button type="button" class="btn btn-outline-danger btn-sm" (click)="resumen.reload()">Reintentar</button>
+    </div>
+  } @else if (resumen.isLoading()) {
+    <div class="d-flex align-items-center gap-2 text-body-secondary">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Cargando estadísticas…
+    </div>
+  }
+</section>

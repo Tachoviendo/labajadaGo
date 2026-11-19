@@ -24,6 +24,23 @@ export type CrearProductoBody = {
   stock?: number;
 };
 
+//api/schemas/product.schema.js -> ProductUpdateBody (todo opcional, al menos un campo)
+export type ActualizarProductoBody = {
+  nombre?: string;
+  descripcion?: string | null;
+  precio?: number;
+  categoriaId?: number;
+  stock?: number;
+  activo?: boolean;
+};
+
+//api/schemas/category.schema.js -> CategoryCreateBody / CategoryUpdateBody
+export type CrearCategoriaBody = {
+  nombre: string;
+  descripcion?: string;
+};
+export type ActualizarCategoriaBody = Partial<CrearCategoriaBody>;
+
 export type Pagination = {
   page: number;
   limit: number;

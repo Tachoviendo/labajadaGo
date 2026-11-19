@@ -1,1 +1,113 @@
-<p>Pedidos entrantes route works!</p>
+<section class="pagina">
+  <header class="encabezado">
+    <div>
+      <h1>Pedidos</h1>
+      <p class="ayuda">
+        Arrastrá una tarjeta o usá sus botones para moverla. Se actualiza sola cada 15 segundos.
+        @if (ultimaActualizacion(); as hora) {
+          Última vez: {{ hora | date: 'HH:mm:ss' }}.
+        }
+      </p>
+    </div>
+    <button type="button" class="btn btn-primary" [disabled]="pedidos.isLoading()" (click)="actualizarAhora()">
+      {{ pedidos.isLoading() ? 'Actualizando…' : 'Actualizar ahora' }}
+    </button>
+  </header>
+
+  <!-- ngb-alert de ng-bootstrap: la cruz de cerrar dispara (closed) -->
+  @if (cantidadNuevos() > 0) {
+    <ngb-alert type="warning" class="mb-0 fw-semibold" (closed)="marcarVistos()">
+      {{ cantidadNuevos() === 1 ? 'Llegó 1 pedido nuevo' : 'Llegaron ' + cantidadNuevos() + ' pedidos nuevos' }}
+    </ngb-alert>
+  }
+
+  @if (mensajeError(); as mensaje) {
+    <ngb-alert type="danger" class="mb-0" (closed)="mensajeError.set(null)">{{ mensaje }}</ngb-alert>
+  }
+
+  @if (pedidos.hasValue()) {
+    @let grupos = tablero();
+
+    <div class="tablero">
+      @for (columna of columnas; track columna.estado) {
+        @let tarjetas = grupos[columna.estado];
+
+        <section
+          class="columna"
+          [class]="'columna columna-' + columna.estado"
+          [class.destino-posible]="puedeIrA(arrastrado(), columna.estado)"
+          [class.destino-activo]="columnaSobre() === columna.estado"
+          [attr.aria-label]="columna.titulo"
+          (dragover)="sobreColumna($event, columna.estado)"
+          (dragleave)="columnaSobre.set(null)"
+          (drop)="soltar($event, columna.estado)"
+        >
+          <header class="columna-encabezado">
+            <h2>{{ columna.titulo }}</h2>
+            <span class="contador">{{ tarjetas.length }}</span>
+          </header>
+          <p class="ayuda">{{ columna.ayuda }}</p>
+
+          <div class="tarjetas">
+            @for (pedido of tarjetas; track pedido.id) {
+              <article
+                class="tarjeta"
+                [class.nueva]="esNuevo(pedido)"
+                [class.ocupada]="moviendo() === pedido.id"
+                [attr.draggable]="movimientos(pedido).length > 0"
+                (dragstart)="empezarArrastre($event, pedido)"
+                (dragend)="terminarArrastre()"
+              >
+                <header class="tarjeta-encabezado">
+                  <strong>#{{ pedido.id }}</strong>
+                  <span class="ayuda">{{ pedido.fechaCreacion | date: 'dd/MM HH:mm' }}</span>
+                </header>
+
+                <p class="direccion">
+                  {{ pedido.direccion.calle }} {{ pedido.direccion.numero }}
+                  @if (pedido.direccion.referencia) {
+                    <small class="ayuda">{{ pedido.direccion.referencia }}</small>
+                  }
+                </p>
+
+                <p class="detalle">
+                  <span>{{ cantidadProductos(pedido) }} prod.</span>
+                  <span class="total">{{ pedido.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</span>
+                  <span class="pago">{{ pedido.metodoPago === 'pos' ? 'POS' : 'MercadoPago' }}</span>
+                </p>
+
+                <footer class="acciones">
+                  @for (movimiento of movimientos(pedido); track movimiento.destino) {
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm"
+                      [disabled]="moviendo() !== null"
+                      (click)="mover(pedido, movimiento.destino)"
+                    >
+                      {{ moviendo() === pedido.id ? 'Moviendo…' : movimiento.texto }}
+                    </button>
+                  }
+                  @if (linkDetalle(pedido); as detalle) {
+                    <a class="btn btn-outline-primary btn-sm" [routerLink]="detalle.ruta">{{ detalle.texto }}</a>
+                  }
+                </footer>
+              </article>
+            } @empty {
+              <p class="vacio">Sin pedidos</p>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  } @else if (pedidos.error()) {
+    <div class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert">
+      <span>{{ mensajeDeError(pedidos.error()) }}</span>
+      <button type="button" class="btn btn-outline-danger btn-sm" (click)="actualizarAhora()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="d-flex align-items-center gap-2 text-body-secondary">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Cargando pedidos…
+    </div>
+  }
+</section>

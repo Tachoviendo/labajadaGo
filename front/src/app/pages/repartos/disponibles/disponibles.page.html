@@ -1,0 +1,65 @@
+<section class="pagina">
+  <header class="encabezado">
+    <h1>Mis repartos</h1>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="actualizar()">Actualizar</button>
+  </header>
+
+  @if (mensajeError(); as mensaje) {
+    <ngb-alert type="danger" class="mb-0" (closed)="mensajeError.set(null)">{{ mensaje }}</ngb-alert>
+  }
+
+  <!-- reparto en curso -->
+  @if (actual(); as p) {
+    <section class="tarjeta en-curso">
+      <p class="etiqueta">Estás llevando</p>
+      <h2>Pedido #{{ p.id }}</h2>
+      <p class="direccion">{{ p.direccion.calle }} {{ p.direccion.numero }}, {{ p.direccion.ciudad }}</p>
+      @if (p.metodoPago === 'pos') {
+        <p class="cobrar">Cobrar con POS: {{ p.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</p>
+      }
+      <a class="btn btn-primary btn-lg" [routerLink]="['/repartos', p.id]">Ir al reparto</a>
+    </section>
+  } @else if (enCurso.error()) {
+    <ngb-alert type="danger" [dismissible]="false">{{ mensajeDeError(enCurso.error()) }}</ngb-alert>
+  }
+
+  <!-- listos para recoger -->
+  <section class="lista">
+    <h2>Listos para recoger</h2>
+    @if (actual()) {
+      <p class="ayuda">Entregá el pedido que estás llevando para poder recoger otro.</p>
+    }
+
+    @if (disponibles.hasValue()) {
+      @for (pedido of disponibles.value(); track pedido.id) {
+        <article class="tarjeta">
+          <header class="tarjeta-encabezado">
+            <strong>#{{ pedido.id }}</strong>
+            <span class="ayuda">{{ pedido.fechaCreacion | date: 'dd/MM HH:mm' }}</span>
+          </header>
+          <p class="direccion">{{ pedido.direccion.calle }} {{ pedido.direccion.numero }}</p>
+          <p class="ayuda">
+            {{ pedido.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }} ·
+            {{ pedido.metodoPago === 'pos' ? 'Cobrar con POS' : 'Pago con MercadoPago' }}
+          </p>
+          <button
+            type="button"
+            class="btn btn-success"
+            [disabled]="!!actual() || recogiendo() !== null"
+            (click)="recoger(pedido)"
+          >
+            {{ recogiendo() === pedido.id ? 'Recogiendo…' : 'Recoger' }}
+          </button>
+        </article>
+      } @empty {
+        <p class="vacio">No hay pedidos listos para recoger.</p>
+      }
+    } @else if (disponibles.error()) {
+      <ngb-alert type="danger" [dismissible]="false">{{ mensajeDeError(disponibles.error()) }}</ngb-alert>
+    } @else {
+      <p class="ayuda">Cargando…</p>
+    }
+  </section>
+
+  <a routerLink="/repartos/tablero" class="link">Ver el tablero completo →</a>
+</section>

@@ -1,59 +1,178 @@
-<div class="container py-4">
-  <a routerLink="/admin/productos" class="btn btn-link px-0 mb-3">&larr; Volver a productos</a>
+<section class="pagina">
+  <a routerLink="/admin/productos" class="volver">← Volver a productos</a>
 
-  @if (cargando()) {
-    <div class="text-center py-5">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Cargando...</span>
-      </div>
+  <h1>{{ esNuevo() ? 'Nuevo producto' : 'Editar producto' }}</h1>
+
+  @if (producto.error()) {
+    <ngb-alert type="danger" [dismissible]="false">{{ mensajeDeError(producto.error()) }}</ngb-alert>
+  } @else if (producto.isLoading()) {
+    <div class="d-flex align-items-center gap-2 text-body-secondary">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Cargando producto…
     </div>
-  } @else if (errorCarga()) {
-    <div class="alert alert-danger" role="alert">{{ errorCarga() }}</div>
-  } @else if (esNuevo()) {
-    <h1 class="h3 mb-3">Nuevo producto</h1>
-    <div class="alert alert-info">
-      El formulario de alta todavía no está disponible. La imagen se carga desde la edición del producto.
-    </div>
-  } @else if (producto(); as p) {
-    <h1 class="h3 mb-1">{{ p.nombre }}</h1>
-    <p class="text-body-secondary mb-4">{{ p.categoria.nombre }}</p>
+  } @else {
+    @let f = productoForm;
 
-    <div class="card imagen-card">
-      <img [src]="imagenUrl()" [alt]="p.nombre" class="card-img-top imagen-preview" />
-      <div class="card-body">
-        <h2 class="h6 card-title">Imagen del producto</h2>
-        <p class="small text-body-secondary">JPG, PNG o WEBP, hasta 2 MB.</p>
+    <form class="formulario" novalidate (submit)="enviar($event)">
+      <div class="columnas">
+        <!-- datos -->
+        <fieldset class="tarjeta">
+          <legend>Datos</legend>
 
-        <input
-          #fileInput
-          type="file"
-          class="form-control mb-3"
-          accept="image/jpeg,image/png,image/webp"
-          [disabled]="subiendo()"
-          (change)="elegirArchivo($event)"
-        />
+          <div class="campo">
+            <label class="form-label" for="nombre">Nombre</label>
+            <input
+              id="nombre"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="f.nombre().touched() && f.nombre().invalid()"
+              [formField]="f.nombre"
+            />
+            @if (f.nombre().touched() && f.nombre().errors().length) {
+              <small class="invalid-feedback d-block">{{ f.nombre().errors()[0].message }}</small>
+            }
+          </div>
 
-        <button
-          type="button"
-          class="btn btn-primary"
-          [disabled]="!archivo() || subiendo()"
-          (click)="subir(fileInput)"
-        >
-          @if (subiendo()) {
-            <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
-            Subiendo...
+          <div class="campo">
+            <label class="form-label" for="descripcion">Descripción <span class="opcional">(opcional)</span></label>
+            <textarea
+              id="descripcion"
+              rows="3"
+              class="form-control"
+              [class.is-invalid]="f.descripcion().touched() && f.descripcion().invalid()"
+              [formField]="f.descripcion"
+            ></textarea>
+            <small class="contador">{{ modelo().descripcion.length }}/500</small>
+            @if (f.descripcion().touched() && f.descripcion().errors().length) {
+              <small class="invalid-feedback d-block">{{ f.descripcion().errors()[0].message }}</small>
+            }
+          </div>
+
+          <div class="campo">
+            <label class="form-label" for="categoria">Categoría</label>
+            <select
+              id="categoria"
+              class="form-select"
+              [class.is-invalid]="f.categoriaId().touched() && f.categoriaId().invalid()"
+              [formField]="f.categoriaId"
+            >
+              <option value="" disabled>Elegí una categoría</option>
+              @if (categorias.hasValue()) {
+                @for (categoria of categorias.value(); track categoria.id) {
+                  <option [value]="categoria.id">{{ categoria.nombre }}</option>
+                }
+              }
+            </select>
+            @if (categorias.error()) {
+              <small class="invalid-feedback d-block">No se pudieron cargar las categorías.</small>
+            } @else if (f.categoriaId().touched() && f.categoriaId().errors().length) {
+              <small class="invalid-feedback d-block">{{ f.categoriaId().errors()[0].message }}</small>
+            }
+          </div>
+
+          <div class="fila">
+            <div class="campo">
+              <label class="form-label" for="precio">Precio ($)</label>
+              <input
+                id="precio"
+                type="number"
+                step="1"
+                class="form-control"
+                [class.is-invalid]="f.precio().touched() && f.precio().invalid()"
+                [formField]="f.precio"
+              />
+              @if (f.precio().touched() && f.precio().errors().length) {
+                <small class="invalid-feedback d-block">{{ f.precio().errors()[0].message }}</small>
+              }
+            </div>
+
+            <div class="campo">
+              <label class="form-label" for="stock">Stock</label>
+              <input
+                id="stock"
+                type="number"
+                step="1"
+                class="form-control"
+                [class.is-invalid]="f.stock().touched() && f.stock().invalid()"
+                [formField]="f.stock"
+              />
+              @if (f.stock().touched() && f.stock().errors().length) {
+                <small class="invalid-feedback d-block">{{ f.stock().errors()[0].message }}</small>
+              }
+            </div>
+          </div>
+
+          @if (!esNuevo()) {
+            <!-- baja logica: un producto inactivo no aparece en la tienda -->
+            <div class="form-check form-switch">
+              <input id="activo" type="checkbox" class="form-check-input" [formField]="f.activo" />
+              <label class="form-check-label" for="activo">
+                {{ modelo().activo ? 'Activo (se ve en la tienda)' : 'Inactivo (oculto en la tienda)' }}
+              </label>
+            </div>
+          }
+        </fieldset>
+
+        <!-- imagen -->
+        <fieldset class="tarjeta">
+          <legend>Imagen</legend>
+
+          @if (usandoCamara()) {
+            <app-camara textoBoton="Abrir cámara" (capturada)="fotoDeCamara($event)" />
+            <button type="button" class="btn btn-link px-0" (click)="usandoCamara.set(false)">
+              Volver
+            </button>
           } @else {
-            Subir imagen
+            <img class="imagen" [src]="imagenUrl()" alt="Imagen del producto" />
+
+            <div class="botones-imagen">
+              <label class="btn btn-outline-primary btn-sm mb-0">
+                Elegir archivo
+                <input
+                  type="file"
+                  class="visually-hidden"
+                  accept="image/jpeg,image/png,image/webp"
+                  (change)="elegirArchivo($event)"
+                />
+              </label>
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="usandoCamara.set(true)">
+                Sacar foto
+              </button>
+              @if (imagen()) {
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="quitarImagenNueva()">
+                  Descartar
+                </button>
+              }
+            </div>
+            <small class="ayuda">
+              JPG, PNG o WEBP, hasta 2 MB.
+              @if (imagen()) {
+                Se sube al guardar.
+              }
+            </small>
+          }
+
+          @if (errorImagen(); as mensaje) {
+            <ngb-alert type="warning" class="mb-0" (closed)="errorImagen.set(null)">{{ mensaje }}</ngb-alert>
+          }
+        </fieldset>
+      </div>
+
+      @if (errorApi(); as mensaje) {
+        <ngb-alert type="danger" class="mb-0" (closed)="errorApi.set(null)">{{ mensaje }}</ngb-alert>
+      }
+
+      <div class="acciones">
+        <a routerLink="/admin/productos" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary" [disabled]="guardando()">
+          @if (guardando()) {
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            Guardando…
+          } @else {
+            {{ esNuevo() ? 'Crear producto' : 'Guardar cambios' }}
           }
         </button>
       </div>
-    </div>
+    </form>
   }
-
-  @if (error()) {
-    <ngb-alert type="danger" class="mt-3" (closed)="error.set('')">{{ error() }}</ngb-alert>
-  }
-  @if (mensaje()) {
-    <ngb-alert type="success" class="mt-3" (closed)="mensaje.set('')">{{ mensaje() }}</ngb-alert>
-  }
-</div>
+</section>

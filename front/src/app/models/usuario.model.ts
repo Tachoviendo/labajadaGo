@@ -1,13 +1,16 @@
 //mismo contrato que la api, ver docs/api/usuarios.md
 import { Rol, Usuario } from './auth.model';
 
+//api/schemas/user.schema.js -> RolInterno (las cuentas que crea el dueño)
+export type RolInterno = Exclude<Rol, 'cliente'>;
+
 //api/schemas/user.schema.js -> CreateInternalUserBody
 export type CrearUsuarioInternoBody = {
   nombre: string;
   email: string;
   password: string;
   telefono?: string;
-  rol: 'cajero' | 'dueno';
+  rol: RolInterno;
 };
 
 //api/schemas/user.schema.js -> UserFiltersQuery
@@ -39,7 +42,7 @@ export type ActualizarPerfilBody = {
 //api/schemas/user.schema.js -> UserAdminUpdateBody (solo dueño)
 export type ActualizarAdminBody = {
   activo?: boolean;
-  rol?: 'cajero' | 'dueno';
+  rol?: RolInterno;
 };
 
 //api/schemas/auth.schema.js -> PasswordChangeBody
