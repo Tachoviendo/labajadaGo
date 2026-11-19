@@ -1,79 +1,153 @@
-<h1>Usuarios</h1>
+<section class="pagina">
+  <header class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <h1 class="h3 mb-0 titulo">Usuarios</h1>
+    <a routerLink="/admin/usuarios/nuevo" class="btn btn-primary">+ Nuevo usuario interno</a>
+  </header>
 
-<a routerLink="/admin/usuarios/nuevo">Nuevo usuario interno</a>
+  @if (mensajeExito(); as mensaje) {
+    <ngb-alert type="success" class="mb-0" (closed)="mensajeExito.set(null)">{{ mensaje }}</ngb-alert>
+  }
+  @if (mensajeError(); as mensaje) {
+    <ngb-alert type="danger" class="mb-0" (closed)="mensajeError.set(null)">{{ mensaje }}</ngb-alert>
+  }
 
-@if (mensajeExito()) {
-  <p class="exito">{{ mensajeExito() }}</p>
-}
-@if (mensajeError()) {
-  <p class="error">{{ mensajeError() }}</p>
-}
-
-<div class="filtro">
-  <label for="filtro-rol">Rol:</label>
-  <select id="filtro-rol" (change)="cambiarFiltro($event)">
-    <option value="">Todos</option>
-    <option value="cliente">Cliente</option>
-    <option value="cajero">Cajero</option>
-    <option value="dueno">Dueño</option>
-  </select>
-</div>
-
-@if (usuarios.isLoading()) {
-  <p>Cargando...</p>
-} @else if (usuarios.error()) {
-  <p class="error">{{ mensajeDeError(usuarios.error()) }}</p>
-} @else if (usuarios.hasValue()) {
-  <p>
-    <b>Cantidad de usuarios:</b> {{ usuarios.value().pagination.total }}
-  </p>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Id</th>
-        <th>Nombre</th>
-        <th>Email</th>
-        <th>Teléfono</th>
-        <th>Rol</th>
-        <th>Activo</th>
-        <th>Alta</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (usuario of usuarios.value().data; track usuario.id) {
-        <tr>
-          <td>{{ usuario.id }}</td>
-          <td>{{ usuario.nombre }}</td>
-          <td>{{ usuario.email }}</td>
-          <td>{{ usuario.telefono ?? '-' }}</td>
-          <td>
-            @if (usuario.rol === 'cliente' || usuario.id === idPropio || estaEliminado(usuario)) {
-              {{ usuario.rol }}
-            } @else {
-              <select (change)="cambiarRol(usuario, $event)">
-                <option value="cajero" [selected]="usuario.rol === 'cajero'">cajero</option>
-                <option value="dueno" [selected]="usuario.rol === 'dueno'">dueno</option>
-              </select>
-            }
-          </td>
-          <td>{{ usuario.activo ? 'Sí' : 'No' }}</td>
-          <td>{{ usuario.fechaCreacion | date: 'dd/MM/yyyy' }}</td>
-          <td>
-            @if (usuario.id !== idPropio && !estaEliminado(usuario)) {
-              <button type="button" (click)="cambiarActivo(usuario)">
-                {{ usuario.activo ? 'Desactivar' : 'Activar' }}
-              </button>
-              <button type="button" class="peligro" (click)="darDeBaja(usuario)">Dar de baja</button>
-            }
-          </td>
-        </tr>
-      } @empty {
-        <tr>
-          <td colspan="8">No hay usuarios.</td>
-        </tr>
+  <!-- filtro por rol: botones de bootstrap (btn-group) -->
+  <div class="d-flex flex-wrap align-items-center gap-3">
+    <div class="btn-group flex-wrap" role="group" aria-label="Filtrar por rol">
+      @for (opcion of roles; track opcion.valor) {
+        <button
+          type="button"
+          class="btn btn-sm"
+          [class.btn-primary]="filtroRol() === opcion.valor"
+          [class.btn-outline-primary]="filtroRol() !== opcion.valor"
+          [attr.aria-pressed]="filtroRol() === opcion.valor"
+          (click)="cambiarFiltro(opcion.valor)"
+        >
+          {{ opcion.nombre }}
+        </button>
       }
-    </tbody>
-  </table>
-}
+    </div>
+    @if (usuarios.hasValue()) {
+      <span class="text-body-secondary small">
+        {{ usuarios.value().pagination.total }}
+        {{ usuarios.value().pagination.total === 1 ? 'usuario' : 'usuarios' }}
+      </span>
+    }
+    @if (usuarios.isLoading()) {
+      <span class="spinner-border spinner-border-sm text-secondary" aria-label="Cargando"></span>
+    }
+  </div>
+
+  @if (usuarios.hasValue()) {
+    @let lista = usuarios.value();
+
+    <div class="card shadow-sm" [class.actualizando]="usuarios.isLoading()">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Usuario</th>
+              <th>Teléfono</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Alta</th>
+              <th class="text-end"><span class="visually-hidden">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (usuario of lista.data; track usuario.id) {
+              @let eliminado = estaEliminado(usuario);
+              @let esPropio = usuario.id === idPropio;
+              <tr [class.text-body-secondary]="eliminado">
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="avatar" [attr.data-rol]="usuario.rol" aria-hidden="true">{{ iniciales(usuario) }}</span>
+                    <div class="d-flex flex-column">
+                      <span class="fw-semibold">
+                        {{ usuario.nombre }}
+                        @if (esPropio) {
+                          <span class="badge text-bg-light border ms-1">Vos</span>
+                        }
+                      </span>
+                      <small class="text-body-secondary">{{ usuario.email }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ usuario.telefono ?? '—' }}</td>
+                <td>
+                  @if (usuario.rol === 'cliente' || esPropio || eliminado) {
+                    <span>{{ nombreRol(usuario.rol) }}</span>
+                  } @else {
+                    <select
+                      class="form-select form-select-sm rol"
+                      [attr.aria-label]="'Rol de ' + usuario.nombre"
+                      (change)="cambiarRol(usuario, $event)"
+                    >
+                      <option value="cajero" [selected]="usuario.rol === 'cajero'">Cajero</option>
+                      <option value="dueno" [selected]="usuario.rol === 'dueno'">Dueño</option>
+                      <option value="repartidor" [selected]="usuario.rol === 'repartidor'">Repartidor</option>
+                    </select>
+                  }
+                </td>
+                <td>
+                  @if (eliminado) {
+                    <span class="badge text-bg-secondary">Dado de baja</span>
+                  } @else if (usuario.activo) {
+                    <span class="badge text-bg-success">Activo</span>
+                  } @else {
+                    <span class="badge text-bg-warning">Inactivo</span>
+                  }
+                </td>
+                <td class="text-nowrap">{{ usuario.fechaCreacion | date: 'dd/MM/yyyy' }}</td>
+                <td>
+                  @if (!esPropio && !eliminado) {
+                    <div class="d-flex justify-content-end gap-2 text-nowrap">
+                      <button
+                        type="button"
+                        class="btn btn-sm"
+                        [class.btn-outline-warning]="usuario.activo"
+                        [class.btn-outline-success]="!usuario.activo"
+                        (click)="cambiarActivo(usuario)"
+                      >
+                        {{ usuario.activo ? 'Desactivar' : 'Activar' }}
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="darDeBaja(usuario)">
+                        Dar de baja
+                      </button>
+                    </div>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="text-center text-body-secondary py-4">No hay usuarios con ese rol.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    @if (lista.pagination.totalPages > 1) {
+      <ngb-pagination
+        class="d-flex justify-content-center"
+        [collectionSize]="lista.pagination.total"
+        [pageSize]="porPagina"
+        [page]="pagina()"
+        (pageChange)="pagina.set($event)"
+        [maxSize]="5"
+        aria-label="Páginas de usuarios"
+      />
+    }
+  } @else if (usuarios.error()) {
+    <div class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert">
+      <span>{{ mensajeDeError(usuarios.error()) }}</span>
+      <button type="button" class="btn btn-outline-danger btn-sm" (click)="usuarios.reload()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="d-flex align-items-center gap-2 text-body-secondary">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Cargando usuarios…
+    </div>
+  }
+</section>

@@ -8,13 +8,18 @@ import {
   AddressesService,
   Direccion,
   CrearDireccionBody,
+  tieneUbicacion,
 } from '../../../services/addresses.service';
+import {
+  MapaSelectorComponent,
+  PuntoMapa,
+} from '../../../components/mapa-selector/mapa-selector.component';
 import { OrdersService, Pedido } from '../../../services/orders.service';
 
 @Component({
   selector: 'app-confirmar-pedido',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, MapaSelectorComponent],
   templateUrl: './confirmar-pedido.page.html',
   styleUrl: './confirmar-pedido.page.css',
 })
@@ -32,11 +37,16 @@ export class ConfirmarPedidoPage implements OnInit {
 
   mostrarFormularioDireccion = false;
 
-  nuevaDireccion: CrearDireccionBody = {
+  readonly tieneUbicacion = tieneUbicacion;
+
+  //lat/lng arrancan en null hasta que el cliente marca el punto en el mapa
+  nuevaDireccion: Omit<CrearDireccionBody, 'lat' | 'lng'> & { lat: number | null; lng: number | null } = {
     calle: '',
     numero: '',
-    ciudad: '',
+    ciudad: 'Salto',
     referencia: '',
+    lat: null,
+    lng: null,
   };
 
   metodoPago: 'pos' = 'pos';
@@ -78,8 +88,10 @@ export class ConfirmarPedidoPage implements OnInit {
       next: (direcciones) => {
         this.direcciones = direcciones;
 
-        if (direcciones.length > 0) {
-          this.direccionSeleccionadaId = direcciones[0].id;
+        //se preselecciona la primera que tenga el punto en el mapa
+        const conUbicacion = direcciones.find(tieneUbicacion);
+        if (conUbicacion) {
+          this.direccionSeleccionadaId = conUbicacion.id;
         }
 
         this.cdr.markForCheck();
@@ -102,11 +114,19 @@ export class ConfirmarPedidoPage implements OnInit {
       return;
     }
 
+    const { lat, lng } = this.nuevaDireccion;
+    if (lat === null || lng === null) {
+      this.error = 'Marcá en el mapa dónde querés recibir el pedido.';
+      return;
+    }
+
     const datos: CrearDireccionBody = {
       calle,
       ciudad,
       numero: this.nuevaDireccion.numero?.trim() || undefined,
       referencia: this.nuevaDireccion.referencia?.trim() || undefined,
+      lat,
+      lng,
     };
 
     this.guardandoDireccion = true;
@@ -121,8 +141,10 @@ export class ConfirmarPedidoPage implements OnInit {
         this.nuevaDireccion = {
           calle: '',
           numero: '',
-          ciudad: '',
+          ciudad: 'Salto',
           referencia: '',
+          lat: null,
+          lng: null,
         };
 
         this.cdr.markForCheck();
@@ -135,6 +157,11 @@ export class ConfirmarPedidoPage implements OnInit {
     });
   }
 
+  marcarPunto(punto: PuntoMapa): void {
+    this.nuevaDireccion = { ...this.nuevaDireccion, lat: punto.lat, lng: punto.lng };
+    this.cdr.markForCheck();
+  }
+
   confirmarPedido(): void {
     this.error = '';
 
@@ -145,6 +172,12 @@ export class ConfirmarPedidoPage implements OnInit {
 
     if (!this.direccionSeleccionadaId) {
       this.error = 'Seleccioná una dirección de entrega.';
+      return;
+    }
+
+    const seleccionada = this.direcciones.find((d) => d.id === this.direccionSeleccionadaId);
+    if (seleccionada && !tieneUbicacion(seleccionada)) {
+      this.error = 'Esa dirección no tiene la ubicación marcada en el mapa. Editala en Mis direcciones.';
       return;
     }
 

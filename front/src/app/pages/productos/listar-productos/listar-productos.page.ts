@@ -14,11 +14,12 @@ import { ProductsService } from '../../../services/products.service';
 import { CategoriesService } from '../../../services/categories.service';
 import { CartService } from '../../../services/cart.service';
 import { AuthService } from '../../../services/auth.service';
+import { UrlPublicaPipe } from '../../../pipes/url-publica.pipe';
 
 @Component({
   selector: 'app-listar-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CurrencyPipe],
+  imports: [CommonModule, FormsModule, RouterLink, CurrencyPipe, UrlPublicaPipe],
   templateUrl: './listar-productos.page.html',
   styleUrl: './listar-productos.page.css',
 })

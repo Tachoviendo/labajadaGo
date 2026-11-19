@@ -8,10 +8,12 @@ import { mensajeDeError } from '../../../services/api-error';
 import { AuthService } from '../../../services/auth.service';
 
 //a donde va cada rol despues de loguearse (ver docs/mapa-navegacion.drawio)
+//los internos arrancan en el tablero de pedidos
 const INICIO_POR_ROL: Record<Rol, string> = {
   cliente: '/productos',
   cajero: '/admin/pedidos',
-  dueno: '/admin',
+  dueno: '/admin/pedidos',
+  repartidor: '/repartos/tablero',
 };
 
 @Component({

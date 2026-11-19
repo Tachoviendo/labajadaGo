@@ -122,14 +122,16 @@ export async function eliminar(app, id) {
     );
     await client.query(
       `UPDATE direccion
-       SET calle = 'Eliminada', numero = NULL, ciudad = 'Eliminada', referencia = NULL
+       SET calle = 'Eliminada', numero = NULL, ciudad = 'Eliminada', referencia = NULL,
+           lat = NULL, lng = NULL
        WHERE usuario_id = $1`,
       [id],
     );
     await client.query(
       `UPDATE pedido
        SET direccion_calle = 'Eliminada', direccion_numero = NULL,
-           direccion_ciudad = 'Eliminada', direccion_referencia = NULL
+           direccion_ciudad = 'Eliminada', direccion_referencia = NULL,
+           direccion_lat = NULL, direccion_lng = NULL
        WHERE usuario_id = $1`,
       [id],
     );

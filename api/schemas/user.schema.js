@@ -25,23 +25,30 @@ export const UserUpdateBody = Type.Object(
   { minProperties: 1, additionalProperties: false },
 );
 
+//roles de las cuentas internas, las que crea el dueño (un cliente se registra solo)
+const RolInterno = Type.Union([
+  Type.Literal("cajero"),
+  Type.Literal("dueno"),
+  Type.Literal("repartidor"),
+]);
+
 //body para que el dueño active/desactive o cambie el rol de un usuario interno.
 //separado de UserUpdateBody porque son permisos distintos (solo dueño)
 export const UserAdminUpdateBody = Type.Object(
   {
     activo: Type.Optional(Type.Boolean()),
-    rol: Type.Optional(Type.Union([Type.Literal("cajero"), Type.Literal("dueno")])),
+    rol: Type.Optional(RolInterno),
   },
   { minProperties: 1, additionalProperties: false },
 );
 
-//body para que el dueño cree una cuenta interna (cajero o dueño)
+//body para que el dueño cree una cuenta interna (cajero, dueño o repartidor)
 export const CreateInternalUserBody = Type.Object({
   nombre: Type.String({ minLength: 2, maxLength: 100 }),
   email: Type.String({ format: "email", maxLength: 150 }),
   password: Type.String({ minLength: 8, maxLength: 72 }),
   telefono: Type.Optional(Type.String({ maxLength: 30 })),
-  rol: Type.Union([Type.Literal("cajero"), Type.Literal("dueno")], {
+  rol: Type.Union(RolInterno.anyOf, {
     description: "Un cliente nunca se crea por esta vía, se crea con /auth/register",
   }),
 });

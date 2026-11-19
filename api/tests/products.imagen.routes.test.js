@@ -177,3 +177,14 @@ test("POST /productos/:id/imagen devuelve 502 si el bucket falla y no toca la ba
   assert.equal(productos.get(1).imagen_url, null);
   assert.equal(calls.some((c) => esUpdateDeImagen(c.sql)), false);
 });
+
+test("con BUCKET_PUBLIC_URL relativa la imagen se guarda como /bucket/... (la sirve el proxy del front)", async () => {
+  const { app, productos } = await createApp();
+  process.env.BUCKET_PUBLIC_URL = "/bucket";
+
+  const response = await subir(app);
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().imagenUrl, "/bucket/abc-123.png");
+  assert.equal(productos.get(1).imagen_url, "/bucket/abc-123.png");
+});

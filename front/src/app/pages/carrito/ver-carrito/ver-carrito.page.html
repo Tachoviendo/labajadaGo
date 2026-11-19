@@ -37,7 +37,7 @@
           @for (item of carrito.items; track item.id) {
             <article class="cart-item">
               <img
-                [src]="item.producto.imagenUrl || imagenProducto"
+                [src]="(item.producto.imagenUrl | urlPublica) || imagenProducto"
                 [alt]="item.producto.nombre"
                 class="cart-product-image"
               />

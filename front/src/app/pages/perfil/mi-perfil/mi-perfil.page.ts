@@ -13,6 +13,7 @@ import {
 
 import { mensajeDeError } from '../../../services/api-error';
 import { AuthService } from '../../../services/auth.service';
+import { ConfirmacionService } from '../../../services/confirmacion.service';
 import { UsuariosService } from '../../../services/usuarios.service';
 
 @Component({
@@ -25,6 +26,7 @@ export class MiPerfilPage {
   readonly #usuariosService = inject(UsuariosService);
   readonly #authService = inject(AuthService);
   readonly #router = inject(Router);
+  readonly #confirmacion = inject(ConfirmacionService);
 
   //id del usuario logueado, null si no hay sesion
   protected readonly idUsuario = this.#authService.usuarioActual?.id ?? null;
@@ -118,16 +120,19 @@ export class MiPerfilPage {
   //ley 18331: borra los datos personales; los pedidos se conservan
   protected async darDeBaja() {
     if (this.idUsuario === null) return;
-    const confirmado = confirm(
-      '¿Seguro que querés dar de baja tu cuenta? Se borran tus datos personales y no se puede deshacer.',
-    );
+    const confirmado = await this.#confirmacion.preguntar({
+      titulo: '¿Dar de baja tu cuenta?',
+      mensaje: 'Se borran tus datos personales y no se puede deshacer.',
+      textoConfirmar: 'Dar de baja',
+      peligro: true,
+    });
     if (!confirmado) return;
 
     this.limpiarMensajes();
     try {
       await this.#usuariosService.eliminar(this.idUsuario);
       this.#authService.logout().subscribe({ error: () => {} });
-      alert('Tu cuenta fue dada de baja.');
+      //la sesion ya se cerro: se vuelve al inicio sin otro aviso
       this.#router.navigate(['/']);
     } catch (error) {
       this.mensajeError.set(mensajeDeError(error));

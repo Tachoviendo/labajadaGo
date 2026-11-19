@@ -1,13 +1,14 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { UrlPublicaPipe } from '../../../pipes/url-publica.pipe';
 
 import { CartService, Carrito, ItemCarrito } from '../../../services/cart.service';
 
 @Component({
   selector: 'app-ver-carrito',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, RouterLink],
+  imports: [CommonModule, CurrencyPipe, RouterLink, UrlPublicaPipe],
   templateUrl: './ver-carrito.page.html',
   styleUrl: './ver-carrito.page.css',
 })

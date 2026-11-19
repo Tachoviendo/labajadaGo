@@ -33,8 +33,64 @@ docker-compose.yaml   levanta Postgres y carga /db
    npm install
    npm start
 ```
-   Queda en `http://localhost:4200`. La api ya permite llamadas desde ese
-   origen (CORS, variable `CORS_ORIGIN` del `.env`).
+   Queda en `http://localhost:4200`. `ng serve` tiene un proxy (`front/proxy.conf.json`):
+   `/api` (incluido el websocket del seguimiento) va a la api en el puerto 3000 y `/bucket`
+   va al bucket de imágenes en el 3001. Por eso el front usa rutas relativas.
+
+## Probar desde el celular (HTTPS)
+
+El mapa del repartidor usa la ubicación del navegador, y el celular solo la da en HTTPS.
+
+1. Conectar la compu y el celular al mismo Wi-Fi.
+2. Con la base, el bucket y la api levantados, correr el front así:
+   ```
+   cd front
+   npm run start:movil
+   ```
+   Levanta `ng serve` con un certificado autofirmado y escuchando en toda la red local.
+   La primera vez Windows pregunta si permite Node.js en redes privadas: aceptar.
+3. Averiguar la IP de la compu en el Wi-Fi (`ipconfig`, "Dirección IPv4", por ejemplo
+   `192.168.1.20`) y abrir en el celular `https://192.168.1.20:4200`.
+4. El navegador avisa que el certificado no es de confianza: entrar igual (en Chrome,
+   "Configuración avanzada" → "Acceder al sitio"). Pasa una vez por dispositivo.
+
+La api y el bucket no se exponen: el celular solo habla con el puerto 4200 y el proxy
+reenvía todo dentro de la compu.
+
+## App de Android (Android Studio)
+
+El front se empaqueta como app de Android con [Capacitor](https://capacitorjs.com).
+El proyecto nativo está en `front/android`. Hace falta Android Studio (trae el SDK, el
+emulador y el Java que usa Gradle). El wrapper usa Gradle 9.1 porque el Java que trae
+Android Studio es el 25 y Gradle 8 no lo soporta.
+
+1. Con la base, el bucket y la api levantados, generar la app:
+   ```
+   cd front
+   npm run build:android
+   ```
+   Hace el build de Angular para Android y lo copia al proyecto nativo (`cap sync`).
+   Hay que volver a correrlo cada vez que cambia el front.
+2. Abrir el proyecto en Android Studio: `npm run android` (o abrir la carpeta
+   `front/android`). La primera vez Gradle descarga dependencias y tarda un rato.
+3. Elegir el emulador o el celular y tocar **Run**.
+
+**A qué api se conecta la app.** Adentro de la app no hay proxy de `ng serve`: la
+dirección de la compu está en `front/src/environments/environment.android.ts`.
+
+- Emulador: `http://10.0.2.2` (así ve el emulador a la compu). Es el valor por defecto.
+- Celular real (por Wi-Fi o USB): poner la IP de la compu en la red (`ipconfig`, por
+  ejemplo `http://192.168.1.9`) y volver a correr `npm run build:android`. La primera
+  vez Windows pregunta si deja entrar conexiones a Node.js y a Docker: aceptar en redes
+  privadas.
+
+La app se sirve como `http://localhost`, así que ese origen tiene que estar en
+`CORS_ORIGIN` del `.env` (ya viene en `.env.example`). La ubicación usa el plugin nativo
+(`@capacitor/geolocation`): la app pide el permiso de Android y no necesita HTTPS.
+
+**Celular por USB:** activar "Opciones de desarrollador" y "Depuración por USB" en el
+celular, conectarlo y aceptar el aviso; aparece en la lista de dispositivos de Android
+Studio.
 
 ## Idea del proyecto
 
@@ -64,6 +120,7 @@ Se cargan con `db/03_seed.sql`. Son solo para desarrollo.
 | Cajero | `lucia@labajada.com` | `cajera123` |
 | Cliente | `juan@gmail.com` | `juan123` |
 | Cliente | `ana@gmail.com` | `ana123` |
+| Repartidor | `pedro@labajada.com` | `repartidor123` |
 
 ## Cómo probar la autenticación
 

@@ -1,5 +1,6 @@
 @if (usuario(); as usuarioActual) {
-  @if (usuarioActual.rol === 'cliente') {
+  @let rol = usuarioActual.rol;
+  @if (rol === 'cliente') {
     <!-- Navegación para clientes -->
     <header class="navbar bg-white border-bottom px-3">
       <a class="navbar-brand fw-semibold" routerLink="/"> La Bajada </a>
@@ -39,7 +40,7 @@
       </a>
     </nav>
   } @else {
-    <!-- Navegación para cajero y dueño -->
+    <!-- Navegación para personal: cajero, dueño y repartidor -->
     <div class="staff-layout">
       <aside class="staff-sidebar bg-light border-end">
         <div class="p-3 border-bottom">
@@ -55,25 +56,33 @@
         </div>
 
         <nav class="nav flex-column p-3 gap-2">
-          @if (usuarioActual.rol === 'dueno') {
+          @if (rol === 'repartidor') {
+            <a class="nav-link" routerLink="/repartos/tablero" routerLinkActive="active">
+              Tablero de pedidos
+            </a>
+            <!-- exact: si no, tambien queda marcado en /repartos/tablero -->
             <a
               class="nav-link"
-              routerLink="/admin"
+              routerLink="/repartos"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
             >
-              Panel principal
+              Mis repartos
+            </a>
+          } @else {
+            <a class="nav-link" routerLink="/admin/pedidos" routerLinkActive="active">
+              Pedidos entrantes
             </a>
           }
 
-          <a class="nav-link" routerLink="/admin/pedidos" routerLinkActive="active">
-            Pedidos entrantes
-          </a>
-
-          @if (usuarioActual.rol === 'dueno') {
+          @if (rol === 'dueno') {
             <hr />
 
             <span class="text-muted small fw-semibold"> Administración </span>
+
+            <a class="nav-link" routerLink="/admin/estadisticas" routerLinkActive="active">
+              Estadísticas
+            </a>
 
             <a class="nav-link" routerLink="/admin/productos" routerLinkActive="active">
               Productos

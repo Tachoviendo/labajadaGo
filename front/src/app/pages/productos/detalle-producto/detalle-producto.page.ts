@@ -6,6 +6,7 @@ import { Producto } from '../../../models/product.model';
 import { ProductsService } from '../../../services/products.service';
 import { CartService } from '../../../services/cart.service';
 import { AuthService } from '../../../services/auth.service';
+import { urlPublica } from '../../../pipes/url-publica.pipe';
 
 @Component({
   selector: 'app-detalle-producto',
@@ -95,7 +96,7 @@ export class DetalleProductoPage implements OnInit {
   }
 
   get imagenProducto(): string {
-    return this.producto?.imagenUrl || '/imagenes/imagendeproductos.png';
+    return urlPublica(this.producto?.imagenUrl) || '/imagenes/imagendeproductos.png';
   }
 }
 

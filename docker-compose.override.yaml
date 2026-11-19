@@ -1,0 +1,6 @@
+# Override local: evita conflictos con el contenedor "db" y el Postgres del sistema en 5432
+services:
+  db:
+    container_name: labajada-db
+    ports: !override
+      - "5438:5432"

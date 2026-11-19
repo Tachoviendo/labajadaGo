@@ -36,6 +36,12 @@
         </div>
       </div>
 
+      @if (perfil.value().rol === 'cliente') {
+        <a routerLink="/perfil/direcciones" class="btn btn-outline-primary mb-3">
+          Mis direcciones
+        </a>
+      }
+
       <!-- Mensajes -->
       @if (mensajeExito()) {
         <div class="alert alert-success alert-dismissible" role="alert">

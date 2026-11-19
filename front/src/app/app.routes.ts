@@ -63,6 +63,13 @@ export const routes: Routes = [
     loadChildren: () => import('./admin.routes'),
   },
 
+  //repartidor. el guard va en el padre: protege todas las rutas hijas de una vez
+  {
+    path: 'repartos',
+    canActivate: [rolGuard('repartidor')],
+    loadChildren: () => import('./repartos.routes'),
+  },
+
   {
     path: 'sin-permisos',
     title: 'Sin permisos',

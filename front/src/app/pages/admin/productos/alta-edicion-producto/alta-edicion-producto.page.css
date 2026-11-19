@@ -1,9 +1,119 @@
-.imagen-card {
-  max-width: 420px;
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 60rem;
+  padding: 1.5rem;
 }
 
-.imagen-preview {
+.volver {
+  color: #173b68;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: #173b68;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* datos a la izquierda, imagen a la derecha; en el celular una debajo de la otra */
+.columnas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid #dde3ec;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.columnas > .tarjeta:first-child {
+  flex: 2 1 22rem;
+}
+
+.columnas > .tarjeta:last-child {
+  flex: 1 1 16rem;
+}
+
+legend {
+  float: none;
+  width: auto;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.campo .form-label {
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.fila .campo {
+  flex: 1 1 8rem;
+}
+
+.opcional,
+.contador,
+.ayuda {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.contador {
+  align-self: flex-end;
+  margin-top: 0.2rem;
+}
+
+.imagen {
+  width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: contain;
-  background: var(--bs-tertiary-bg);
+  border-radius: 0.4rem;
+  background: #f5f7fa;
+}
+
+.botones-imagen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }

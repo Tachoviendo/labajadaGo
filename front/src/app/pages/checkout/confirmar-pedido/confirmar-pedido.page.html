@@ -92,6 +92,11 @@
                   <small *ngIf="direccion.referencia">
                     {{ direccion.referencia }}
                   </small>
+
+                  <small *ngIf="!tieneUbicacion(direccion)" class="text-danger">
+                    Sin ubicación en el mapa:
+                    <a routerLink="/perfil/direcciones">marcala en Mis direcciones</a>
+                  </small>
                 </div>
 
                 <i class="bi bi-check-circle-fill selected-icon"></i>
@@ -163,6 +168,15 @@
                     rows="2"
                     maxlength="200"
                   ></textarea>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Ubicación en el mapa *</label>
+                  <app-mapa-selector
+                    [lat]="nuevaDireccion.lat"
+                    [lng]="nuevaDireccion.lng"
+                    (puntoCambiado)="marcarPunto($event)"
+                  />
                 </div>
               </div>
 

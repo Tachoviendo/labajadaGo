@@ -12,7 +12,9 @@ import fastifyStatic from "@fastify/static";
 const STORAGE_DIR = path.resolve(process.env.BUCKET_STORAGE_DIR || "./storage");
 const TOKEN = process.env.BUCKET_TOKEN;
 const PORT = Number(process.env.BUCKET_PORT || 3001);
-const MAX_BYTES = 2 * 1024 * 1024;
+//tope general del bucket. cada uso pone su propio limite en la api
+//(2 MB las imagenes de productos, 5 MB las fotos de entrega)
+const MAX_BYTES = 5 * 1024 * 1024;
 
 //la extension la decide el tipo, no el nombre que manda el cliente
 const EXTENSIONES = {
@@ -67,7 +69,7 @@ app.post("/", async (request, reply) => {
   //si se paso del limite, multipart corta el stream y marca truncated
   if (data.file.truncated) {
     await fs.promises.rm(destino, { force: true });
-    return reply.code(413).send({ message: "la imagen supera los 2 MB" });
+    return reply.code(413).send({ message: "la imagen supera los 5 MB" });
   }
 
   return reply.code(201).send({ filename });

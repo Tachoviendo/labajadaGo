@@ -1,5 +1,15 @@
 -- Script de creacion de base de datos - Kiosco La Bajada
 -- Postgres
+-- las fechas son TIMESTAMPTZ: guardan el instante exacto. con TIMESTAMP sin zona la api las
+-- leia como hora local y quedaban 3 horas corridas
+
+-- la zona de la base es la del kiosco: now(), los filtros por dia (fecha::date) y lo que se
+-- ve en psql quedan en hora de Uruguay. aplica a las conexiones nuevas (la api y el seed)
+DO $$
+BEGIN
+    EXECUTE format('ALTER DATABASE %I SET timezone TO %L', current_database(), 'America/Montevideo');
+END
+$$;
 
 CREATE TABLE usuario (
     id SERIAL PRIMARY KEY,
@@ -8,9 +18,9 @@ CREATE TABLE usuario (
     password VARCHAR(255) NOT NULL,
     telefono VARCHAR(30),
     rol VARCHAR(20) NOT NULL DEFAULT 'cliente'
-        CHECK (rol IN ('cliente', 'cajero', 'dueno')),
+        CHECK (rol IN ('cliente', 'cajero', 'dueno', 'repartidor')),
     activo BOOLEAN DEFAULT TRUE,
-    fecha_creacion TIMESTAMP DEFAULT now()
+    fecha_creacion TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE TABLE direccion (
@@ -19,7 +29,11 @@ CREATE TABLE direccion (
     calle VARCHAR(150) NOT NULL,
     numero VARCHAR(20),
     ciudad VARCHAR(100) NOT NULL,
-    referencia VARCHAR(200)
+    referencia VARCHAR(200),
+    -- punto que marca el cliente en el mapa. el destino del reparto sale de aca
+    lat DOUBLE PRECISION CHECK (lat BETWEEN -90 AND 90),
+    lng DOUBLE PRECISION CHECK (lng BETWEEN -180 AND 180),
+    CHECK ((lat IS NULL) = (lng IS NULL))
 );
 
 CREATE TABLE categoria (
@@ -45,7 +59,7 @@ CREATE TABLE producto (
 CREATE TABLE carrito (
     id SERIAL PRIMARY KEY,
     usuario_id INTEGER NOT NULL UNIQUE REFERENCES usuario(id),
-    fecha_actualizacion TIMESTAMP NOT NULL DEFAULT now()
+    fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- productos del carrito
@@ -69,12 +83,28 @@ CREATE TABLE pedido (
     direccion_numero VARCHAR(20),
     direccion_ciudad VARCHAR(100) NOT NULL,
     direccion_referencia VARCHAR(200),
-    fecha_creacion TIMESTAMP DEFAULT now(),
+    direccion_lat DOUBLE PRECISION,
+    direccion_lng DOUBLE PRECISION,
+    fecha_creacion TIMESTAMPTZ DEFAULT now(),
     estado VARCHAR(20) NOT NULL DEFAULT 'realizado'
         CHECK (estado IN ('realizado', 'preparando', 'en_reparto', 'entregado', 'cancelado')),
     metodo_pago VARCHAR(20) NOT NULL CHECK (metodo_pago IN ('mercadopago', 'pos')),
-    total INTEGER NOT NULL
+    total INTEGER NOT NULL,
+    -- el repartidor que recogio el pedido y la foto que saca al entregarlo (url del bucket)
+    repartidor_id INTEGER REFERENCES usuario(id),
+    foto_entrega_url VARCHAR(300)
 );
+
+-- recorrido del repartidor: un punto cada vez que manda su ubicacion mientras el pedido esta en_reparto
+CREATE TABLE pedido_ubicacion (
+    id BIGSERIAL PRIMARY KEY,
+    pedido_id INTEGER NOT NULL REFERENCES pedido(id),
+    lat DOUBLE PRECISION NOT NULL CHECK (lat BETWEEN -90 AND 90),
+    lng DOUBLE PRECISION NOT NULL CHECK (lng BETWEEN -180 AND 180),
+    fecha TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX pedido_ubicacion_pedido_fecha_idx ON pedido_ubicacion (pedido_id, fecha);
 
 CREATE TABLE pedido_item (
     id SERIAL PRIMARY KEY,
@@ -90,7 +120,7 @@ CREATE TABLE pedido_estado_historial (
     pedido_id INTEGER NOT NULL REFERENCES pedido(id),
     estado VARCHAR(20) NOT NULL
         CHECK (estado IN ('realizado', 'preparando', 'en_reparto', 'entregado', 'cancelado')),
-    fecha TIMESTAMP DEFAULT now(),
+    fecha TIMESTAMPTZ DEFAULT now(),
     usuario_id INTEGER REFERENCES usuario(id)
 );
 
@@ -102,6 +132,6 @@ CREATE TABLE pago (
     estado VARCHAR(20) NOT NULL DEFAULT 'pendiente'
         CHECK (estado IN ('pendiente', 'pagado', 'rechazado')),
     referencia_externa VARCHAR(150),
-    fecha_pago TIMESTAMP,
+    fecha_pago TIMESTAMPTZ,
     registrado_por INTEGER REFERENCES usuario(id)
 );

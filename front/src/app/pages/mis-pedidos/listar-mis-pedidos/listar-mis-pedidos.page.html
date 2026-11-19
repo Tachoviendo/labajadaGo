@@ -113,6 +113,16 @@
                 {{ estaExpandido(pedido.id) ? 'Ocultar detalle' : 'Ver detalle' }}
               </button>
 
+              @if (pedido.estado === 'en_reparto') {
+                <a [routerLink]="['/mis-pedidos', pedido.id]" class="btn btn-primary btn-sm">
+                  Seguir en el mapa
+                </a>
+              } @else if (pedido.estado === 'entregado') {
+                <a [routerLink]="['/mis-pedidos', pedido.id]" class="btn btn-outline-secondary btn-sm">
+                  Ver entrega
+                </a>
+              }
+
               @if (puedeCancelar(pedido)) {
                 <button
                   type="button"

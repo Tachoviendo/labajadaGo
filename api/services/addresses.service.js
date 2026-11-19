@@ -5,11 +5,13 @@ const columnasDireccion = {
   numero: "numero",
   ciudad: "ciudad",
   referencia: "referencia",
+  lat: "lat",
+  lng: "lng",
 };
 
 export async function listForUser(app, usuarioId) {
   const { rows } = await app.pg.query(
-    `SELECT id, usuario_id, calle, numero, ciudad, referencia
+    `SELECT id, usuario_id, calle, numero, ciudad, referencia, lat, lng
      FROM direccion WHERE usuario_id = $1 ORDER BY id`,
     [usuarioId],
   );
@@ -24,7 +26,9 @@ export async function getById(app, id, usuarioId) {
             CASE WHEN usuario_id = $2 THEN calle END AS calle,
             CASE WHEN usuario_id = $2 THEN numero END AS numero,
             CASE WHEN usuario_id = $2 THEN ciudad END AS ciudad,
-            CASE WHEN usuario_id = $2 THEN referencia END AS referencia
+            CASE WHEN usuario_id = $2 THEN referencia END AS referencia,
+            CASE WHEN usuario_id = $2 THEN lat END AS lat,
+            CASE WHEN usuario_id = $2 THEN lng END AS lng
      FROM direccion WHERE id = $1`,
     [id, usuarioId],
   );
@@ -39,16 +43,28 @@ export async function getById(app, id, usuarioId) {
 export async function create(app, usuarioId, datos) {
   rechazarPredeterminada(datos);
   const { rows } = await app.pg.query(
-    `INSERT INTO direccion (usuario_id, calle, numero, ciudad, referencia)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, usuario_id, calle, numero, ciudad, referencia`,
-    [usuarioId, datos.calle, datos.numero ?? null, datos.ciudad, datos.referencia ?? null],
+    `INSERT INTO direccion (usuario_id, calle, numero, ciudad, referencia, lat, lng)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id, usuario_id, calle, numero, ciudad, referencia, lat, lng`,
+    [
+      usuarioId,
+      datos.calle,
+      datos.numero ?? null,
+      datos.ciudad,
+      datos.referencia ?? null,
+      datos.lat,
+      datos.lng,
+    ],
   );
   return aPublica(rows[0]);
 }
 
 export async function update(app, id, usuarioId, cambios) {
   rechazarPredeterminada(cambios);
+  //el punto del mapa se mueve entero: lat y lng van juntas
+  if (Object.hasOwn(cambios, "lat") !== Object.hasOwn(cambios, "lng")) {
+    throw new BadRequestError("lat y lng se tienen que enviar juntas");
+  }
   const entradas = Object.entries(cambios).filter(([campo]) =>
     Object.hasOwn(columnasDireccion, campo),
   );
@@ -64,7 +80,7 @@ export async function update(app, id, usuarioId, cambios) {
   const { rows } = await app.pg.query(
     `UPDATE direccion SET ${asignaciones.join(", ")}
      WHERE id = $${valores.length - 1} AND usuario_id = $${valores.length}
-     RETURNING id, usuario_id, calle, numero, ciudad, referencia`,
+     RETURNING id, usuario_id, calle, numero, ciudad, referencia, lat, lng`,
     valores,
   );
   if (rows[0]) return aPublica(rows[0]);
@@ -92,6 +108,8 @@ function aPublica(direccion) {
     numero: direccion.numero,
     ciudad: direccion.ciudad,
     referencia: direccion.referencia,
+    lat: direccion.lat ?? null,
+    lng: direccion.lng ?? null,
     esPredeterminada: false,
   };
 }

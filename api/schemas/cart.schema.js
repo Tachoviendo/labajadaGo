@@ -6,7 +6,7 @@ export const CartProductSchema = Type.Object({
   descripcion: Type.Union([Type.String(), Type.Null()]),
   precio: Type.Integer({ minimum: 0 }),
   categoria: Type.Union([Type.String(), Type.Null()]),
-  imagenUrl: Type.Union([Type.String({ format: "uri" }), Type.Null()]),
+  imagenUrl: Type.Union([Type.String({ format: "uri-reference" }), Type.Null()]),
   stock: Type.Integer({ minimum: 0 }),
   activo: Type.Boolean(),
 });

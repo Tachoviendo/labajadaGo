@@ -6,6 +6,8 @@ import orderRoutes from "./orders.routes.js";
 import paymentRoutes from "./payments.routes.js";
 import addressRoutes from "./addresses.routes.js";
 import authRoutes from "./auth.routes.js";
+import repartosRoutes from "./repartos.routes.js";
+import seguimientoRoutes from "./seguimiento.routes.js";
 
 export default async function routes(app) {
   await app.register(userRoutes);
@@ -16,4 +18,6 @@ export default async function routes(app) {
   await app.register(paymentRoutes);
   await app.register(addressRoutes);
   await app.register(authRoutes);
+  await app.register(repartosRoutes);
+  await app.register(seguimientoRoutes);
 }

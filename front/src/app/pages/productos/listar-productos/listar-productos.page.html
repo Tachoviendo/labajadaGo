@@ -96,7 +96,7 @@
               [attr.aria-label]="'Ver ' + producto.nombre"
             >
               <img
-                [src]="producto.imagenUrl || '/imagenes/imagendeproductos.png'"
+                [src]="(producto.imagenUrl | urlPublica) || '/imagenes/imagendeproductos.png'"
                 [alt]="producto.nombre"
                 class="product-image"
               />

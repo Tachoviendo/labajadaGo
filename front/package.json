@@ -4,6 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:movil": "ng serve --ssl --host 0.0.0.0",
+    "pwa": "ng build && node scripts/servir-pwa.mjs",
+    "build:android": "ng build --configuration production,android && npx cap sync android",
+    "android": "npx cap open android",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -18,9 +22,14 @@
     "@angular/localize": "21.2.25",
     "@angular/platform-browser": "21.2.25",
     "@angular/router": "21.2.25",
+    "@angular/service-worker": "21.2.25",
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/geolocation": "^8.2.4",
     "@ionic/angular": "^8.8.19",
     "@ng-bootstrap/ng-bootstrap": "^20.0.0",
     "bootstrap": "^5.3.8",
+    "ol": "^10.11.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -28,6 +37,7 @@
     "@angular/build": "21.2.25",
     "@angular/cli": "21.2.25",
     "@angular/compiler-cli": "21.2.25",
+    "@capacitor/cli": "^8.6.2",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",

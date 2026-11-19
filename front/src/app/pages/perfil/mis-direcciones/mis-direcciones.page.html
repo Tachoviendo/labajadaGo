@@ -1,1 +1,140 @@
-<p>mis direcciones route works!</p>
+<div class="container py-4 direcciones-page">
+  <a routerLink="/perfil" class="btn btn-link px-0 mb-2">&larr; Volver a mi perfil</a>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">Mis direcciones</h1>
+      <p class="text-body-secondary mb-0">Elegí una de estas al confirmar cada pedido.</p>
+    </div>
+    @if (editando() === null) {
+      <button type="button" class="btn btn-primary" (click)="nueva()">Agregar dirección</button>
+    }
+  </div>
+
+  @if (mensaje()) {
+    <div class="alert alert-success" role="status">{{ mensaje() }}</div>
+  }
+
+  @if (editando() !== null) {
+    <section class="card mb-4">
+      <div class="card-body">
+        <h2 class="h5 card-title">
+          {{ editando() === 'nueva' ? 'Nueva dirección' : 'Editar dirección' }}
+        </h2>
+
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="form-label" for="calle">Calle *</label>
+            <input
+              id="calle"
+              type="text"
+              class="form-control"
+              maxlength="150"
+              placeholder="Ej. Uruguay"
+              [ngModel]="formulario().calle"
+              (ngModelChange)="actualizarCampo('calle', $event)"
+            />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="numero">Número</label>
+            <input
+              id="numero"
+              type="text"
+              class="form-control"
+              maxlength="20"
+              placeholder="Ej. 1234"
+              [ngModel]="formulario().numero"
+              (ngModelChange)="actualizarCampo('numero', $event)"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="ciudad">Ciudad *</label>
+            <input
+              id="ciudad"
+              type="text"
+              class="form-control"
+              maxlength="100"
+              [ngModel]="formulario().ciudad"
+              (ngModelChange)="actualizarCampo('ciudad', $event)"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="referencia">Referencia</label>
+            <input
+              id="referencia"
+              type="text"
+              class="form-control"
+              maxlength="200"
+              placeholder="Ej. casa con portón azul"
+              [ngModel]="formulario().referencia"
+              (ngModelChange)="actualizarCampo('referencia', $event)"
+            />
+          </div>
+          <div class="col-12">
+            <label class="form-label">Ubicación en el mapa *</label>
+            <app-mapa-selector
+              [lat]="formulario().lat"
+              [lng]="formulario().lng"
+              (puntoCambiado)="marcarPunto($event)"
+            />
+          </div>
+        </div>
+
+        @if (error()) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ error() }}</div>
+        }
+
+        <div class="d-flex gap-2 mt-3">
+          <button type="button" class="btn btn-primary" [disabled]="guardando()" (click)="guardar()">
+            @if (guardando()) {
+              <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+              Guardando...
+            } @else {
+              Guardar
+            }
+          </button>
+          <button type="button" class="btn btn-outline-secondary" [disabled]="guardando()" (click)="cancelar()">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (cargando()) {
+    <div class="text-center py-5">
+      <div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div>
+    </div>
+  } @else if (direcciones().length === 0 && editando() === null) {
+    @if (error()) {
+      <div class="alert alert-danger" role="alert">{{ error() }}</div>
+    } @else {
+      <div class="alert alert-info">Todavía no tenés direcciones guardadas.</div>
+    }
+  } @else {
+    <ul class="list-group">
+      @for (direccion of direcciones(); track direccion.id) {
+        <li class="list-group-item d-flex justify-content-between align-items-start gap-3 py-3">
+          <div>
+            <strong>{{ direccion.calle }} {{ direccion.numero ?? '' }}</strong>
+            <div class="text-body-secondary">{{ direccion.ciudad }}</div>
+            @if (direccion.referencia) {
+              <small class="text-body-secondary">{{ direccion.referencia }}</small>
+            }
+            @if (!tieneUbicacion(direccion)) {
+              <div class="badge text-bg-warning mt-1">Falta marcar la ubicación en el mapa</div>
+            }
+          </div>
+          <button
+            type="button"
+            class="btn btn-outline-primary btn-sm"
+            [disabled]="editando() !== null"
+            (click)="editar(direccion)"
+          >
+            Editar
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>

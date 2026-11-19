@@ -10,6 +10,9 @@ export type Direccion = {
   numero: string | null;
   ciudad: string;
   referencia: string | null;
+  //punto marcado en el mapa. null en direcciones viejas que todavia no lo tienen
+  lat: number | null;
+  lng: number | null;
   esPredeterminada: boolean;
 };
 
@@ -18,7 +21,13 @@ export type CrearDireccionBody = {
   numero?: string;
   ciudad: string;
   referencia?: string;
+  lat: number;
+  lng: number;
 };
+
+export function tieneUbicacion(direccion: Direccion): boolean {
+  return direccion.lat !== null && direccion.lng !== null;
+}
 
 @Injectable({
   providedIn: 'root',

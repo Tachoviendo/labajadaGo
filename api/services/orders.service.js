@@ -1,4 +1,5 @@
 import {
+  BadRequestError,
   ConflictError,
   ForbiddenError,
   NotFoundError,
@@ -7,12 +8,14 @@ import { ORDEN_ESTADOS_PEDIDO } from "../schemas/enums.schema.js";
 
 //la direccion sale de la copia guardada en el pedido, no de la tabla direccion,
 //asi el pedido no cambia si el usuario despues edita su direccion
-const orderColumns = `p.id, p.usuario_id, p.fecha_creacion, p.estado,
+export const orderColumns = `p.id, p.usuario_id, p.fecha_creacion, p.estado,
   p.metodo_pago, p.total, p.direccion_id, p.usuario_id AS direccion_usuario_id,
   p.direccion_calle AS calle, p.direccion_numero AS numero,
-  p.direccion_ciudad AS ciudad, p.direccion_referencia AS referencia`;
+  p.direccion_ciudad AS ciudad, p.direccion_referencia AS referencia,
+  p.direccion_lat AS lat, p.direccion_lng AS lng,
+  p.repartidor_id, p.foto_entrega_url`;
 
-async function loadItems(client, pedidoId) {
+export async function loadItems(client, pedidoId) {
   const { rows } = await client.query(
     `SELECT id, producto_id, nombre_producto, cantidad, precio_unitario
      FROM pedido_item WHERE pedido_id = $1 ORDER BY id`,
@@ -28,7 +31,7 @@ async function loadItems(client, pedidoId) {
   }));
 }
 
-function mapOrder(order, items) {
+export function mapOrder(order, items) {
   return {
     id: order.id,
     usuarioId: order.usuario_id,
@@ -39,6 +42,8 @@ function mapOrder(order, items) {
       numero: order.numero,
       ciudad: order.ciudad,
       referencia: order.referencia,
+      lat: order.lat ?? null,
+      lng: order.lng ?? null,
       esPredeterminada: false,
     },
     items,
@@ -46,7 +51,16 @@ function mapOrder(order, items) {
     metodoPago: order.metodo_pago,
     total: order.total,
     fechaCreacion: order.fecha_creacion.toISOString(),
+    repartidorId: order.repartidor_id ?? null,
+    fotoEntregaUrl: order.foto_entrega_url ?? null,
   };
+}
+
+//un repartidor ve los pedidos que tiene asignados y los que estan listos para
+//recoger (preparando y sin repartidor). nada mas
+function repartidorPuedeVer(order, usuario) {
+  if (order.repartidor_id === usuario.id) return true;
+  return order.estado === "preparando" && order.repartidor_id == null;
 }
 
 async function loadOrder(client, id) {
@@ -67,7 +81,39 @@ export async function getById(app, id, usuario) {
     if (usuario.rol === "cliente" && order.usuario_id !== usuario.id) {
       throw new ForbiddenError("el pedido pertenece a otro usuario");
     }
+    if (usuario.rol === "repartidor" && !repartidorPuedeVer(order, usuario)) {
+      throw new ForbiddenError("ese pedido no está asignado a vos ni disponible para recoger");
+    }
     return mapOrder(order, await loadItems(client, id));
+  } finally {
+    client.release();
+  }
+}
+
+//cambios de estado del pedido, del mas viejo al mas nuevo, con quien los hizo
+export async function statusHistory(app, id) {
+  const client = await app.pg.connect();
+  try {
+    await loadOrder(client, id); //404 si no existe
+    const { rows } = await client.query(
+      `SELECT h.id, h.pedido_id, h.estado, h.fecha, h.usuario_id,
+              u.nombre, u.rol, u.telefono
+       FROM pedido_estado_historial h
+       LEFT JOIN usuario u ON u.id = h.usuario_id
+       WHERE h.pedido_id = $1
+       ORDER BY h.fecha, h.id`,
+      [id],
+    );
+    return rows.map((row) => ({
+      id: row.id,
+      pedidoId: row.pedido_id,
+      estado: row.estado,
+      fecha: row.fecha.toISOString(),
+      usuarioId: row.usuario_id,
+      usuario: row.usuario_id
+        ? { nombre: row.nombre, rol: row.rol, telefono: row.telefono }
+        : null,
+    }));
   } finally {
     client.release();
   }
@@ -84,7 +130,18 @@ export async function listForUser(app, usuario, filters) {
     };
 
     if (usuario.rol === "cliente") addFilter("p.usuario_id =", usuario.id);
+    //el repartidor ve sus repartos y, para el tablero, los que todavia no tienen repartidor
+    //(entrantes y preparando). los que lleva otro repartidor no los ve
+    if (usuario.rol === "repartidor") {
+      values.push(usuario.id);
+      conditions.push(
+        `(p.repartidor_id = $${values.length} OR (p.repartidor_id IS NULL AND p.estado IN ('realizado', 'preparando')))`,
+      );
+    }
     if (filters.estado) addFilter("p.estado =", filters.estado);
+    if (filters.activos) {
+      conditions.push("p.estado IN ('realizado', 'preparando', 'en_reparto')");
+    }
     if (filters.fechaDesde)
       addFilter("p.fecha_creacion::date >=", filters.fechaDesde);
     if (filters.fechaHasta)
@@ -114,9 +171,91 @@ export async function listForUser(app, usuario, filters) {
   }
 }
 
+const TODOS_LOS_ESTADOS = [...ORDEN_ESTADOS_PEDIDO, "cancelado"];
+
+//panel de ventas del dueño: total vendido, pedidos por estado, ticket promedio y
+//productos mas vendidos. los cancelados se cuentan en porEstado pero no suman ventas
+export async function salesSummary(app, { fechaDesde, fechaHasta, top = 5 }) {
+  if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
+    throw new BadRequestError("fechaDesde no puede ser posterior a fechaHasta");
+  }
+
+  const conditions = [];
+  const values = [];
+  if (fechaDesde) {
+    values.push(fechaDesde);
+    conditions.push(`p.fecha_creacion::date >= $${values.length}`);
+  }
+  if (fechaHasta) {
+    values.push(fechaHasta);
+    conditions.push(`p.fecha_creacion::date <= $${values.length}`);
+  }
+  const rango = conditions.length ? `AND ${conditions.join(" AND ")}` : "";
+
+  const client = await app.pg.connect();
+  try {
+    const { rows: totales } = await client.query(
+      `SELECT COALESCE(SUM(p.total), 0)::int AS total_vendido,
+              COUNT(*)::int AS cantidad_pedidos
+       FROM pedido p
+       WHERE p.estado <> 'cancelado' ${rango}`,
+      values,
+    );
+
+    const { rows: estados } = await client.query(
+      `SELECT p.estado, COUNT(*)::int AS cantidad
+       FROM pedido p
+       WHERE TRUE ${rango}
+       GROUP BY p.estado`,
+      values,
+    );
+
+    const { rows: productos } = await client.query(
+      `SELECT i.producto_id, MAX(i.nombre_producto) AS nombre,
+              SUM(i.cantidad)::int AS cantidad,
+              SUM(i.cantidad * i.precio_unitario)::int AS total
+       FROM pedido_item i
+       JOIN pedido p ON p.id = i.pedido_id
+       WHERE p.estado <> 'cancelado' ${rango}
+       GROUP BY i.producto_id
+       ORDER BY cantidad DESC, total DESC, i.producto_id
+       LIMIT $${values.length + 1}`,
+      [...values, top],
+    );
+
+    const { total_vendido: totalVendido, cantidad_pedidos: cantidadPedidos } =
+      totales[0];
+    const cantidadPorEstado = new Map(
+      estados.map((fila) => [fila.estado, fila.cantidad]),
+    );
+
+    return {
+      fechaDesde: fechaDesde ?? null,
+      fechaHasta: fechaHasta ?? null,
+      totalVendido,
+      cantidadPedidos,
+      ticketPromedio: cantidadPedidos
+        ? Math.round(totalVendido / cantidadPedidos)
+        : 0,
+      porEstado: TODOS_LOS_ESTADOS.map((estado) => ({
+        estado,
+        cantidad: cantidadPorEstado.get(estado) ?? 0,
+      })),
+      masVendidos: productos.map((fila) => ({
+        productoId: fila.producto_id,
+        nombre: fila.nombre,
+        cantidad: fila.cantidad,
+        total: fila.total,
+      })),
+    };
+  } finally {
+    client.release();
+  }
+}
+
 async function lockOrder(client, pedidoId) {
   const { rows } = await client.query(
-    `SELECT id, usuario_id, estado, metodo_pago
+    `SELECT id, usuario_id, estado, metodo_pago, repartidor_id
      FROM pedido WHERE id = $1 FOR UPDATE`,
     [pedidoId],
   );
@@ -172,7 +311,7 @@ async function cancelLockedOrder(client, order, actorId) {
   );
 }
 
-async function withOrderTransaction(app, operation) {
+export async function withOrderTransaction(app, operation) {
   const client = await app.pg.connect();
   let transactionStarted = false;
   try {
@@ -196,7 +335,9 @@ async function withOrderTransaction(app, operation) {
   }
 }
 
-export async function changeStatus(app, pedidoId, actorId, estado) {
+//rol: "cajero" o "dueno". el dueño ademas puede sacar a reparto y marcar entregado
+//a mano (ej: lo lleva el mismo o se olvido de marcarlo el repartidor)
+export async function changeStatus(app, pedidoId, actorId, estado, rol) {
   return withOrderTransaction(app, async (client) => {
     const order = await lockOrder(client, pedidoId);
     if (estado === "cancelado") {
@@ -211,15 +352,39 @@ export async function changeStatus(app, pedidoId, actorId, estado) {
       ) {
         throw new ConflictError("la transición de estado no está permitida");
       }
-      await client.query("UPDATE pedido SET estado = $1 WHERE id = $2", [
-        estado,
-        order.id,
-      ]);
+      //un pedido entregado ya no vuelve atras (para nadie)
+      if (order.estado === "entregado") {
+        throw new ConflictError("el pedido ya fue entregado");
+      }
+      //el cajero no saca a reparto ni entrega: eso lo hace el repartidor (recoger/entregar,
+      //con su recorrido y la foto) o el dueño a mano
+      if (rol !== "dueno" && estado === "en_reparto" && order.estado === "preparando") {
+        throw new ConflictError("el pedido sale a reparto cuando un repartidor lo recoge");
+      }
+      if (rol !== "dueno" && estado === "entregado") {
+        throw new ConflictError("la entrega la registra el repartidor con la foto");
+      }
+      //volver de en_reparto a preparando (por un error) libera al repartidor
+      await client.query(
+        estado === "preparando"
+          ? "UPDATE pedido SET estado = $1, repartidor_id = NULL WHERE id = $2"
+          : "UPDATE pedido SET estado = $1 WHERE id = $2",
+        [estado, order.id],
+      );
       await client.query(
         `INSERT INTO pedido_estado_historial (pedido_id, estado, usuario_id)
          VALUES ($1, $2, $3)`,
         [order.id, estado, actorId],
       );
+      //si el dueño lo marca entregado y se paga con POS, el cobro queda registrado por el
+      //(igual que cuando entrega el repartidor, ver repartos.service.js)
+      if (estado === "entregado" && order.metodo_pago === "pos") {
+        await client.query(
+          `UPDATE pago SET estado = 'pagado', fecha_pago = now(), registrado_por = $2
+           WHERE pedido_id = $1 AND metodo = 'pos' AND estado IN ('pendiente', 'rechazado')`,
+          [order.id, actorId],
+        );
+      }
     }
   });
 }
@@ -295,7 +460,7 @@ export async function createFromCart(
     }
 
     const { rows: direcciones } = await client.query(
-      `SELECT id, usuario_id, calle, numero, ciudad, referencia
+      `SELECT id, usuario_id, calle, numero, ciudad, referencia, lat, lng
        FROM direccion
        WHERE id = $1 AND usuario_id = $2
        FOR SHARE`,
@@ -305,6 +470,13 @@ export async function createFromCart(
     if (!direcciones[0]) {
       throw new NotFoundError(
         "la dirección no existe o no pertenece al usuario",
+      );
+    }
+
+    //sin el punto en el mapa el repartidor no sabe a donde ir
+    if (direcciones[0].lat == null || direcciones[0].lng == null) {
+      throw new BadRequestError(
+        "la dirección no tiene ubicación en el mapa; editala y marcá el punto",
       );
     }
 
@@ -349,11 +521,13 @@ export async function createFromCart(
          direccion_numero,
          direccion_ciudad,
          direccion_referencia,
+         direccion_lat,
+         direccion_lng,
          estado,
          metodo_pago,
          total
        )
-       VALUES ($1, $2, $3, $4, $5, $6, 'realizado', $7, $8)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'realizado', $9, $10)
        RETURNING id, usuario_id, fecha_creacion, estado, metodo_pago, total`,
       [
         usuarioId,
@@ -362,6 +536,8 @@ export async function createFromCart(
         direccion.numero,
         direccion.ciudad,
         direccion.referencia,
+        direccion.lat,
+        direccion.lng,
         metodoPago,
         total,
       ],
@@ -415,6 +591,8 @@ export async function createFromCart(
         numero: direccion.numero,
         ciudad: direccion.ciudad,
         referencia: direccion.referencia,
+        lat: direccion.lat,
+        lng: direccion.lng,
         esPredeterminada: false,
       },
       items: itemsRespuesta,
@@ -422,6 +600,8 @@ export async function createFromCart(
       metodoPago: pedido.metodo_pago,
       total: pedido.total,
       fechaCreacion: pedido.fecha_creacion.toISOString(),
+      repartidorId: null,
+      fotoEntregaUrl: null,
     };
   } catch (error) {
     if (transactionStarted) {

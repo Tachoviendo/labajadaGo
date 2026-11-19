@@ -5,14 +5,8 @@ import { rolGuard } from './guards/auth.guard';
 const soloDueno = [rolGuard('dueno')];
 
 export const adminRoutes: Routes = [
-  //solo dueño
-  {
-    path: '',
-    pathMatch: 'full',
-    title: 'Panel',
-    canActivate: soloDueno,
-    loadComponent: () => import('./pages/admin/panel/panel.page'),
-  },
+  //no hay panel: /admin lleva directo al tablero de pedidos
+  { path: '', pathMatch: 'full', redirectTo: 'pedidos' },
 
   //cajero y dueño
   {
@@ -21,7 +15,8 @@ export const adminRoutes: Routes = [
     loadComponent: () => import('./pages/admin/pedidos/pedidos-entrantes/pedidos-entrantes.page'),
   },
   {
-    path: 'pedidos/:id',
+    //:id_pedido llega como input() a la pagina (withComponentInputBinding en app.config)
+    path: 'pedidos/:id_pedido',
     title: 'Gestionar pedido',
     loadComponent: () => import('./pages/admin/pedidos/gestionar-pedido/gestionar-pedido.page'),
   },
@@ -41,10 +36,18 @@ export const adminRoutes: Routes = [
     loadComponent: () => import('./pages/admin/productos/alta-edicion-producto/alta-edicion-producto.page'),
   },
   {
-    path: 'productos/:id',
+    //:id_producto llega como input() a la pagina (withComponentInputBinding en app.config)
+    path: 'productos/:id_producto',
     title: 'Editar producto',
     canActivate: soloDueno,
     loadComponent: () => import('./pages/admin/productos/alta-edicion-producto/alta-edicion-producto.page'),
+  },
+  {
+    //HU-25: ventas del periodo, pedidos por estado y mas vendidos
+    path: 'estadisticas',
+    title: 'Estadísticas',
+    canActivate: soloDueno,
+    loadComponent: () => import('./pages/admin/estadisticas/estadisticas.page'),
   },
   {
     path: 'categorias',

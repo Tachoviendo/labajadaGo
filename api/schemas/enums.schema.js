@@ -8,7 +8,12 @@ import { Type } from "@fastify/type-provider-typebox";
 //se usa dueno sin ñ
 //valores de enum / query params. ajustable despues por las dudas
 export const RolEnum = Type.Union(
-  [Type.Literal("cliente"), Type.Literal("cajero"), Type.Literal("dueno")],
+  [
+    Type.Literal("cliente"),
+    Type.Literal("cajero"),
+    Type.Literal("dueno"),
+    Type.Literal("repartidor"),
+  ],
   { $id: "RolEnum" },
 );
 
