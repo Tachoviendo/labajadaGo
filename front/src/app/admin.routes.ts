@@ -42,7 +42,8 @@ export const adminRoutes: Routes = [
     loadComponent: () => import('./pages/admin/productos/alta-edicion-producto/alta-edicion-producto.page'),
   },
   {
-    path: 'productos/:id',
+    //:id_producto llega como input() a la pagina (withComponentInputBinding en app.config)
+    path: 'productos/:id_producto',
     title: 'Editar producto',
     canActivate: soloDueno,
     loadComponent: () => import('./pages/admin/productos/alta-edicion-producto/alta-edicion-producto.page'),

@@ -1,1 +1,145 @@
-<p>Administrar productos route works!</p>
+<section class="pagina">
+  <header class="encabezado">
+    <h1>Productos</h1>
+    <a routerLink="/admin/productos/nuevo" class="btn btn-primary">+ Nuevo producto</a>
+  </header>
+
+  <!-- filtros: cada cambio vuelve a pedir la lista (resource) desde la pagina 1 -->
+  @let f = filtrosForm;
+  <form class="filtros tarjeta" novalidate (submit)="$event.preventDefault()">
+    <div class="campo buscar">
+      <label class="form-label" for="nombre">Buscar</label>
+      <input id="nombre" type="search" class="form-control" placeholder="Nombre del producto" [formField]="f.nombre" />
+    </div>
+
+    <div class="campo">
+      <label class="form-label" for="categoria">Categoría</label>
+      <select id="categoria" class="form-select" [formField]="f.categoriaId">
+        <option value="">Todas</option>
+        @if (categorias.hasValue()) {
+          @for (categoria of categorias.value(); track categoria.id) {
+            <option [value]="categoria.id">{{ categoria.nombre }}</option>
+          }
+        }
+      </select>
+    </div>
+
+    <div class="campo">
+      <label class="form-label" for="estado">Estado</label>
+      <select id="estado" class="form-select" [formField]="f.estado">
+        <option value="activos">Activos</option>
+        <option value="inactivos">Inactivos</option>
+      </select>
+    </div>
+
+    <div class="campo">
+      <label class="form-label" for="sort">Ordenar por</label>
+      <select id="sort" class="form-select" [formField]="f.sort">
+        @for (orden of ordenes; track orden.valor) {
+          <option [value]="orden.valor">{{ orden.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <button type="button" class="btn btn-link limpiar" (click)="limpiarFiltros()">Limpiar</button>
+  </form>
+
+  @if (mensajeExito(); as mensaje) {
+    <ngb-alert type="success" class="mb-0" (closed)="mensajeExito.set(null)">{{ mensaje }}</ngb-alert>
+  }
+  @if (mensajeError(); as mensaje) {
+    <ngb-alert type="danger" class="mb-0" (closed)="mensajeError.set(null)">{{ mensaje }}</ngb-alert>
+  }
+
+  @if (productos.hasValue()) {
+    @let resultado = productos.value();
+
+    <div class="resumen">
+      <span>{{ resultado.pagination.total }} {{ resultado.pagination.total === 1 ? 'producto' : 'productos' }}</span>
+      @if (productos.isLoading()) {
+        <span class="spinner-border spinner-border-sm" aria-label="Actualizando"></span>
+      }
+    </div>
+
+    @if (resultado.data.length === 0) {
+      <p class="vacio">No hay productos con esos filtros.</p>
+    } @else {
+      <div class="tabla-contenedor tarjeta" [class.actualizando]="productos.isLoading()">
+        <table>
+          <thead>
+            <tr>
+              <th><span class="visually-hidden">Imagen</span></th>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th class="numero">Precio</th>
+              <th class="numero">Stock</th>
+              <th><span class="visually-hidden">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (producto of resultado.data; track producto.id) {
+              <tr>
+                <td>
+                  <img class="miniatura" [src]="(producto.imagenUrl | urlPublica) ?? placeholder" alt="" />
+                </td>
+                <td>
+                  <strong>{{ producto.nombre }}</strong>
+                  @if (producto.descripcion) {
+                    <small class="ayuda">{{ producto.descripcion }}</small>
+                  }
+                </td>
+                <td>{{ producto.categoria.nombre }}</td>
+                <td class="numero">{{ producto.precio | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</td>
+                <td class="numero" [class.stock-bajo]="producto.stock < stockBajo">
+                  {{ producto.stock }}
+                </td>
+                <td>
+                  <!-- el flex va en un div: en el <td> rompe el borde de la fila -->
+                  <div class="acciones">
+                    <a class="btn btn-outline-primary btn-sm" [routerLink]="['/admin/productos', producto.id]">
+                      Editar
+                    </a>
+                    <button
+                      type="button"
+                      class="btn btn-sm"
+                      [class.btn-outline-danger]="producto.activo"
+                      [class.btn-outline-success]="!producto.activo"
+                      [disabled]="cambiando() === producto.id"
+                      (click)="cambiarActivo(producto)"
+                    >
+                      {{ producto.activo ? 'Desactivar' : 'Activar' }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (resultado.pagination.totalPages > 1) {
+        <!-- NgbPagination de ng-bootstrap. cambiar de pagina setea el linkedSignal -> resource -->
+        <ngb-pagination
+          class="d-flex justify-content-center"
+          [collectionSize]="resultado.pagination.total"
+          [pageSize]="porPagina"
+          [page]="pagina()"
+          (pageChange)="pagina.set($event)"
+          [maxSize]="5"
+          [boundaryLinks]="true"
+          aria-label="Páginas de productos"
+        />
+      }
+    }
+  } @else if (productos.error()) {
+    <div class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert">
+      <span>{{ mensajeDeError(productos.error()) }}</span>
+      <button type="button" class="btn btn-outline-danger btn-sm" (click)="productos.reload()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="d-flex align-items-center gap-2 text-body-secondary">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Cargando productos…
+    </div>
+  }
+</section>
