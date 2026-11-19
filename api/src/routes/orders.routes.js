@@ -102,7 +102,7 @@ export default async function orderRoutes(app) {
       ordersService.getById(app, request.params.id, request.user),
   );
 
-  //cambiar estado del pedido - cajero o dueño
+  //cambiar estado del pedido - cajero o dueño (solo el dueño puede sacar a reparto y entregar)
   app.patch(
     "/pedidos/:id/estado",
     {
@@ -126,6 +126,7 @@ export default async function orderRoutes(app) {
         request.params.id,
         request.user.id,
         request.body.estado,
+        request.user.rol,
       );
       const pedido = await ordersService.getById(app, request.params.id, request.user);
       avisarEstado(app, pedido);

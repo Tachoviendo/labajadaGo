@@ -300,7 +300,9 @@ export async function withOrderTransaction(app, operation) {
   }
 }
 
-export async function changeStatus(app, pedidoId, actorId, estado) {
+//rol: "cajero" o "dueno". el dueño ademas puede sacar a reparto y marcar entregado
+//a mano (ej: lo lleva el mismo o se olvido de marcarlo el repartidor)
+export async function changeStatus(app, pedidoId, actorId, estado, rol) {
   return withOrderTransaction(app, async (client) => {
     const order = await lockOrder(client, pedidoId);
     if (estado === "cancelado") {
@@ -315,12 +317,16 @@ export async function changeStatus(app, pedidoId, actorId, estado) {
       ) {
         throw new ConflictError("la transición de estado no está permitida");
       }
-      //salir a reparto y entregar lo marca el repartidor (recoger/entregar), asi queda
-      //asignado, con su recorrido y la foto. el personal no lo puede hacer a mano
-      if (estado === "en_reparto" && order.estado === "preparando") {
+      //un pedido entregado ya no vuelve atras (para nadie)
+      if (order.estado === "entregado") {
+        throw new ConflictError("el pedido ya fue entregado");
+      }
+      //el cajero no saca a reparto ni entrega: eso lo hace el repartidor (recoger/entregar,
+      //con su recorrido y la foto) o el dueño a mano
+      if (rol !== "dueno" && estado === "en_reparto" && order.estado === "preparando") {
         throw new ConflictError("el pedido sale a reparto cuando un repartidor lo recoge");
       }
-      if (order.estado === "entregado" || estado === "entregado") {
+      if (rol !== "dueno" && estado === "entregado") {
         throw new ConflictError("la entrega la registra el repartidor con la foto");
       }
       //volver de en_reparto a preparando (por un error) libera al repartidor
@@ -335,6 +341,15 @@ export async function changeStatus(app, pedidoId, actorId, estado) {
          VALUES ($1, $2, $3)`,
         [order.id, estado, actorId],
       );
+      //si el dueño lo marca entregado y se paga con POS, el cobro queda registrado por el
+      //(igual que cuando entrega el repartidor, ver repartos.service.js)
+      if (estado === "entregado" && order.metodo_pago === "pos") {
+        await client.query(
+          `UPDATE pago SET estado = 'pagado', fecha_pago = now(), registrado_por = $2
+           WHERE pedido_id = $1 AND metodo = 'pos' AND estado IN ('pendiente', 'rechazado')`,
+          [order.id, actorId],
+        );
+      }
     }
   });
 }
