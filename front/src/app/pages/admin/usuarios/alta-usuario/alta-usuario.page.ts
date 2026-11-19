@@ -9,6 +9,7 @@ import {
   required,
   submit,
 } from '@angular/forms/signals';
+import { NgbAlert } from '@ng-bootstrap/ng-bootstrap';
 
 import { CrearUsuarioInternoBody } from '../../../../models/usuario.model';
 import { mensajeDeError } from '../../../../services/api-error';
@@ -16,7 +17,7 @@ import { UsuariosService } from '../../../../services/usuarios.service';
 
 @Component({
   selector: 'app-alta-usuario',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, NgbAlert],
   templateUrl: './alta-usuario.page.html',
   styleUrl: './alta-usuario.page.css',
 })

@@ -1,25 +1,43 @@
-.filtro {
-  margin: 10px 0;
+/* lo visual sale de bootstrap; aca solo lo propio de la pantalla */
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  min-width: 0;
 }
 
-table {
-  border-collapse: collapse;
+.titulo {
+  color: #173b68;
 }
 
-th,
-td {
-  border: 1px solid #ccc;
-  padding: 4px 8px;
+/* circulo con las iniciales, color segun el rol */
+.avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
-.error {
-  color: indigo;
-}
-.exito {
-  color: green;
+.avatar[data-rol='dueno'] { background: #e3efff; color: #174a7e; }
+.avatar[data-rol='cajero'] { background: #fff1cc; color: #8a5700; }
+.avatar[data-rol='repartidor'] { background: #eee5ff; color: #6641a5; }
+.avatar[data-rol='cliente'] { background: #dff5e7; color: #176b3a; }
+
+.rol {
+  width: auto;
+  min-width: 8rem;
 }
 
-.peligro {
-  color: white;
-  background-color: darkred;
+/* mientras llega la pagina nueva se ve la anterior, atenuada */
+.actualizando {
+  opacity: 0.6;
+  transition: opacity 0.15s;
 }
