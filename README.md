@@ -87,6 +87,11 @@ dirección de la compu está en `front/src/environments/environment.android.ts`.
   vez Windows pregunta si deja entrar conexiones a Node.js y a Docker: aceptar en redes
   privadas.
 
+**App contra producción.** `npm run build:android:prod` hace lo mismo que
+`build:android` pero con `environment.android.prod.ts`, que apunta a
+`https://labajadago.graph.uy` (no hace falta levantar nada en la compu). Después se
+abre y se corre igual, desde Android Studio.
+
 La app se sirve como `http://localhost`, así que ese origen tiene que estar en
 `CORS_ORIGIN` del `.env` (ya viene en `.env.example`). La ubicación usa el plugin nativo
 (`@capacitor/geolocation`): la app pide el permiso de Android y no necesita HTTPS.

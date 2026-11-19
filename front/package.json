@@ -7,6 +7,7 @@
     "start:movil": "ng serve --ssl --host 0.0.0.0",
     "pwa": "ng build && node scripts/servir-pwa.mjs",
     "build:android": "ng build --configuration production,android && npx cap sync android",
+    "build:android:prod": "ng build --configuration production,android-prod && npx cap sync android",
     "android": "npx cap open android",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
