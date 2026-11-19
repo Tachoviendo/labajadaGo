@@ -1,0 +1,96 @@
+<form novalidate (submit)="enviar($event)">
+  <div class="row g-3">
+    <div class="col-md-8">
+      <label class="form-label" for="calle">Calle *</label>
+      <input
+        id="calle"
+        type="text"
+        class="form-control"
+        placeholder="Ej. Uruguay"
+        [class.is-invalid]="direccionForm.calle().touched() && direccionForm.calle().invalid()"
+        [formField]="direccionForm.calle"
+      />
+      @if (direccionForm.calle().touched() && direccionForm.calle().invalid()) {
+        <div class="invalid-feedback">{{ direccionForm.calle().errors()[0].message }}</div>
+      }
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label" for="numero">Número</label>
+      <input
+        id="numero"
+        type="text"
+        class="form-control"
+        placeholder="Ej. 1234"
+        [class.is-invalid]="direccionForm.numero().touched() && direccionForm.numero().invalid()"
+        [formField]="direccionForm.numero"
+      />
+      @if (direccionForm.numero().touched() && direccionForm.numero().invalid()) {
+        <div class="invalid-feedback">{{ direccionForm.numero().errors()[0].message }}</div>
+      }
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label" for="ciudad">Ciudad *</label>
+      <input
+        id="ciudad"
+        type="text"
+        class="form-control"
+        placeholder="Ej. Salto"
+        [class.is-invalid]="direccionForm.ciudad().touched() && direccionForm.ciudad().invalid()"
+        [formField]="direccionForm.ciudad"
+      />
+      @if (direccionForm.ciudad().touched() && direccionForm.ciudad().invalid()) {
+        <div class="invalid-feedback">{{ direccionForm.ciudad().errors()[0].message }}</div>
+      }
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label" for="referencia">Referencia</label>
+      <input
+        id="referencia"
+        type="text"
+        class="form-control"
+        placeholder="Ej. casa con portón azul"
+        [class.is-invalid]="
+          direccionForm.referencia().touched() && direccionForm.referencia().invalid()
+        "
+        [formField]="direccionForm.referencia"
+      />
+      @if (direccionForm.referencia().touched() && direccionForm.referencia().invalid()) {
+        <div class="invalid-feedback">{{ direccionForm.referencia().errors()[0].message }}</div>
+      }
+    </div>
+
+    <div class="col-12">
+      <span class="form-label d-block">Ubicación en el mapa *</span>
+      <app-mapa-selector
+        [lat]="modelo().lat"
+        [lng]="modelo().lng"
+        (puntoCambiado)="marcarPunto($event)"
+      />
+      @if (direccionForm.lat().touched() && direccionForm.lat().invalid()) {
+        <div class="text-danger small mt-1">{{ direccionForm.lat().errors()[0].message }}</div>
+      }
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 mt-3">
+    <button type="submit" class="btn btn-primary" [disabled]="guardando()">
+      @if (guardando()) {
+        <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+        Guardando...
+      } @else {
+        {{ textoGuardar() }}
+      }
+    </button>
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      [disabled]="guardando()"
+      (click)="cancelado.emit()"
+    >
+      Cancelar
+    </button>
+  </div>
+</form>

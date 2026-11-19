@@ -7,6 +7,8 @@
         <span class="visually-hidden">Cargando...</span>
       </div>
     </div>
+  } @else if (errorCarga()) {
+    <div class="alert alert-danger" role="alert">{{ errorCarga() }}</div>
   } @else if (esNuevo()) {
     <h1 class="h3 mb-3">Nuevo producto</h1>
     <div class="alert alert-info">
@@ -49,9 +51,9 @@
   }
 
   @if (error()) {
-    <div class="alert alert-danger mt-3" role="alert">{{ error() }}</div>
+    <ngb-alert type="danger" class="mt-3" (closed)="error.set('')">{{ error() }}</ngb-alert>
   }
   @if (mensaje()) {
-    <div class="alert alert-success mt-3" role="status">{{ mensaje() }}</div>
+    <ngb-alert type="success" class="mt-3" (closed)="mensaje.set('')">{{ mensaje() }}</ngb-alert>
   }
 </div>

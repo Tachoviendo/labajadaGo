@@ -4,12 +4,20 @@
     <header class="navbar bg-white border-bottom px-3">
       <a class="navbar-brand fw-semibold" routerLink="/"> La Bajada </a>
 
-      <div class="d-flex align-items-center gap-2">
-        <span class="small text-muted"> Hola, {{ usuarioActual.nombre }} </span>
-
-        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cerrarSesion()">
-          Salir
+      <div ngbDropdown placement="bottom-end">
+        <button class="btn btn-outline-secondary btn-sm" type="button" ngbDropdownToggle>
+          Hola, {{ usuarioActual.nombre }}
         </button>
+
+        <div ngbDropdownMenu>
+          <a ngbDropdownItem routerLink="/perfil">Mi perfil</a>
+          <a ngbDropdownItem routerLink="/perfil/direcciones">Mis direcciones</a>
+          <a ngbDropdownItem routerLink="/mis-pedidos">Mis pedidos</a>
+          <div class="dropdown-divider"></div>
+          <button ngbDropdownItem type="button" class="text-danger" (click)="cerrarSesion()">
+            Salir
+          </button>
+        </div>
       </div>
     </header>
 
@@ -42,8 +50,20 @@
     <!-- Navegación para cajero y dueño -->
     <div class="staff-layout">
       <aside class="staff-sidebar bg-light border-end">
-        <div class="p-3 border-bottom">
+        <div class="p-3 border-bottom staff-encabezado">
           <a class="navbar-brand fw-semibold" routerLink="/"> La Bajada </a>
+
+          <!-- en pantallas chicas el menu se abre y cierra con ngbCollapse -->
+          <button
+            class="navbar-toggler d-md-none"
+            type="button"
+            aria-controls="menu-staff"
+            [attr.aria-expanded]="!menuColapsado()"
+            aria-label="Abrir menú"
+            (click)="menuColapsado.set(!menuColapsado())"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
 
           <div class="small text-muted mt-2">
             {{ usuarioActual.nombre }}
@@ -54,7 +74,12 @@
           </span>
         </div>
 
-        <nav class="nav flex-column p-3 gap-2">
+        <nav
+          id="menu-staff"
+          class="nav flex-column p-3 gap-2 menu-staff"
+          [ngbCollapse]="menuColapsado()"
+          (click)="cerrarMenu()"
+        >
           @if (usuarioActual.rol === 'dueno') {
             <a
               class="nav-link"
@@ -113,6 +138,23 @@
     <div class="container">
       <a class="navbar-brand fw-semibold" routerLink="/"> La Bajada </a>
 
+      <button
+        class="navbar-toggler"
+        type="button"
+        aria-controls="menu-publico"
+        [attr.aria-expanded]="!menuColapsado()"
+        aria-label="Abrir menú"
+        (click)="menuColapsado.set(!menuColapsado())"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div
+        id="menu-publico"
+        class="collapse navbar-collapse"
+        [ngbCollapse]="menuColapsado()"
+        (click)="cerrarMenu()"
+      >
       <div class="navbar-nav ms-auto">
         <a
           class="nav-link"
@@ -129,6 +171,7 @@
 
         <a class="nav-link" routerLink="/registro" routerLinkActive="active"> Registrarse </a>
       </div>
+      </div>
     </div>
   </nav>
 
@@ -136,3 +179,6 @@
     <router-outlet />
   </main>
 }
+
+<!-- avisos cortos (NgbToast) de NotificacionesService -->
+<app-toasts />

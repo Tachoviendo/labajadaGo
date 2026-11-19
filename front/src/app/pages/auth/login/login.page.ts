@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { email, form, FormField, required, submit } from '@angular/forms/signals';
+import { NgbAlert } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 
 import { Rol } from '../../../models/auth.model';
@@ -16,7 +17,7 @@ const INICIO_POR_ROL: Record<Rol, string> = {
 
 @Component({
   selector: 'app-login',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, NgbAlert],
   templateUrl: './login.page.html',
   styleUrl: './login.page.css',
 })

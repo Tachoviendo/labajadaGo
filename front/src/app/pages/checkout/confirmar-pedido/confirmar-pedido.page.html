@@ -7,15 +7,26 @@
     <p class="text-muted mb-0">Revisá los datos de tu pedido antes de confirmarlo.</p>
   </div>
 
-  <!-- Cargando -->
-  <div *ngIf="cargando" class="loading-container">
-    <div class="spinner-border text-primary" role="status"></div>
-    <p class="mt-3 text-muted">Cargando información...</p>
-  </div>
-
-  <ng-container *ngIf="!cargando">
+  @if (cargando()) {
+    <div class="loading-container">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="mt-3 text-muted">Cargando información...</p>
+    </div>
+  } @else if (carrito.error() || direcciones.error()) {
+    <div class="alert alert-danger" role="alert">
+      No se pudo cargar la información del pedido.
+      {{ mensajeDeError(carrito.error() ?? direcciones.error()) }}
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-danger ms-2"
+        (click)="carrito.reload(); direcciones.reload()"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else if (pedidoCreado(); as pedido) {
     <!-- Pedido confirmado -->
-    <div *ngIf="pedidoCreado as pedido" class="success-container">
+    <div class="success-container">
       <div class="success-icon">
         <i class="bi bi-check-lg"></i>
       </div>
@@ -44,17 +55,20 @@
 
       <a routerLink="/mis-pedidos" class="btn btn-primary mt-4"> Ver mis pedidos </a>
     </div>
+  } @else if (carrito.hasValue()) {
+    @let c = carrito.value();
+    @let lista = direcciones.hasValue() ? direcciones.value() : [];
 
     <!-- Checkout -->
-    <div *ngIf="!pedidoCreado && carrito">
-      <div *ngIf="carrito.items.length === 0" class="empty-container">
+    @if (c.items.length === 0) {
+      <div class="empty-container">
         <i class="bi bi-cart-x"></i>
         <h3>Tu carrito está vacío</h3>
         <p class="text-muted">Agregá productos antes de continuar con la compra.</p>
         <a routerLink="/productos" class="btn btn-primary"> Ver productos </a>
       </div>
-
-      <div *ngIf="carrito.items.length > 0" class="row g-4">
+    } @else {
+      <div class="row g-4">
         <!-- Columna principal -->
         <div class="col-lg-8">
           <!-- Dirección -->
@@ -69,129 +83,75 @@
               </div>
             </div>
 
-            <div *ngIf="direcciones.length > 0" class="address-list">
-              <label
-                *ngFor="let direccion of direcciones"
-                class="address-option"
-                [class.selected]="direccionSeleccionadaId === direccion.id"
-              >
-                <input
-                  type="radio"
-                  name="direccion"
-                  [value]="direccion.id"
-                  [(ngModel)]="direccionSeleccionadaId"
-                />
+            @if (lista.length > 0) {
+              <div class="address-list" role="radiogroup" aria-label="Dirección de entrega">
+                @for (direccion of lista; track direccion.id) {
+                  <label
+                    class="address-option"
+                    [class.selected]="direccionSeleccionadaId() === direccion.id"
+                  >
+                    <input
+                      type="radio"
+                      name="direccion"
+                      [value]="direccion.id"
+                      [checked]="direccionSeleccionadaId() === direccion.id"
+                      (change)="seleccionarDireccion(direccion.id)"
+                    />
 
-                <div class="address-content">
-                  <strong>
-                    {{ direccion.calle }}
-                    {{ direccion.numero ? direccion.numero : '' }}
-                  </strong>
-                  <span>{{ direccion.ciudad }}</span>
+                    <div class="address-content">
+                      <strong>
+                        {{ direccion.calle }}
+                        {{ direccion.numero ? direccion.numero : '' }}
+                      </strong>
+                      <span>{{ direccion.ciudad }}</span>
 
-                  <small *ngIf="direccion.referencia">
-                    {{ direccion.referencia }}
-                  </small>
+                      @if (direccion.referencia) {
+                        <small>{{ direccion.referencia }}</small>
+                      }
 
-                  <small *ngIf="!tieneUbicacion(direccion)" class="text-danger">
-                    Sin ubicación en el mapa:
-                    <a routerLink="/perfil/direcciones">marcala en Mis direcciones</a>
-                  </small>
-                </div>
+                      @if (!tieneUbicacion(direccion)) {
+                        <small class="text-danger">
+                          Sin ubicación en el mapa:
+                          <a routerLink="/perfil/direcciones">marcala en Mis direcciones</a>
+                        </small>
+                      }
+                    </div>
 
-                <i class="bi bi-check-circle-fill selected-icon"></i>
-              </label>
-            </div>
-
-            <div *ngIf="direcciones.length === 0" class="no-address">
-              <i class="bi bi-info-circle"></i>
-              Todavía no tenés direcciones guardadas.
-            </div>
+                    <i class="bi bi-check-circle-fill selected-icon"></i>
+                  </label>
+                }
+              </div>
+            } @else {
+              <div class="no-address">
+                <i class="bi bi-info-circle"></i>
+                Todavía no tenés direcciones guardadas.
+              </div>
+            }
 
             <button
               type="button"
               class="btn btn-outline-primary add-address-btn"
-              (click)="mostrarFormularioDireccion = !mostrarFormularioDireccion"
+              aria-controls="nueva-direccion"
+              [attr.aria-expanded]="!formularioColapsado()"
+              (click)="formularioColapsado.set(!formularioColapsado())"
             >
               <i class="bi bi-plus-lg"></i>
-              {{ mostrarFormularioDireccion ? 'Cancelar' : 'Agregar dirección' }}
+              {{ formularioColapsado() ? 'Agregar dirección' : 'Cancelar' }}
             </button>
 
-            <!-- Formulario nueva dirección -->
-            <div *ngIf="mostrarFormularioDireccion" class="address-form">
-              <h3>Nueva dirección</h3>
-
-              <div class="row g-3">
-                <div class="col-md-8">
-                  <label class="form-label">Calle *</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    name="calle"
-                    [(ngModel)]="nuevaDireccion.calle"
-                    placeholder="Ej. Uruguay"
-                    maxlength="150"
+            <!-- Formulario nueva dirección (NgbCollapse) -->
+            <div id="nueva-direccion" [ngbCollapse]="formularioColapsado()">
+              <div class="address-form">
+                <h3>Nueva dirección</h3>
+                @if (!formularioColapsado()) {
+                  <app-formulario-direccion
+                    textoGuardar="Guardar dirección"
+                    [guardando]="guardandoDireccion()"
+                    (guardado)="crearDireccion($event)"
+                    (cancelado)="formularioColapsado.set(true)"
                   />
-                </div>
-
-                <div class="col-md-4">
-                  <label class="form-label">Número</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    name="numero"
-                    [(ngModel)]="nuevaDireccion.numero"
-                    placeholder="Ej. 1234"
-                    maxlength="20"
-                  />
-                </div>
-
-                <div class="col-12">
-                  <label class="form-label">Ciudad *</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    name="ciudad"
-                    [(ngModel)]="nuevaDireccion.ciudad"
-                    placeholder="Ej. Salto"
-                    maxlength="100"
-                  />
-                </div>
-
-                <div class="col-12">
-                  <label class="form-label">Referencia</label>
-                  <textarea
-                    class="form-control"
-                    name="referencia"
-                    [(ngModel)]="nuevaDireccion.referencia"
-                    placeholder="Indicaciones adicionales para encontrar tu dirección"
-                    rows="2"
-                    maxlength="200"
-                  ></textarea>
-                </div>
-
-                <div class="col-12">
-                  <label class="form-label">Ubicación en el mapa *</label>
-                  <app-mapa-selector
-                    [lat]="nuevaDireccion.lat"
-                    [lng]="nuevaDireccion.lng"
-                    (puntoCambiado)="marcarPunto($event)"
-                  />
-                </div>
+                }
               </div>
-
-              <button
-                type="button"
-                class="btn btn-primary mt-3"
-                (click)="crearDireccion()"
-                [disabled]="guardandoDireccion"
-              >
-                <span
-                  *ngIf="guardandoDireccion"
-                  class="spinner-border spinner-border-sm me-2"
-                ></span>
-                {{ guardandoDireccion ? 'Guardando...' : 'Guardar dirección' }}
-              </button>
             </div>
           </section>
 
@@ -208,7 +168,7 @@
             </div>
 
             <label class="payment-option selected">
-              <input type="radio" name="metodoPago" value="pos" [(ngModel)]="metodoPago" disabled />
+              <input type="radio" name="metodoPago" value="pos" checked disabled />
 
               <div class="payment-content">
                 <strong>Pago al recibir el pedido</strong>
@@ -228,7 +188,8 @@
             <h2>Resumen del pedido</h2>
 
             <div class="summary-products">
-              <div *ngFor="let item of carrito.items" class="summary-product">
+              @for (item of c.items; track item.id) {
+              <div class="summary-product">
                 <div class="product-info">
                   <strong>{{ item.producto.nombre }}</strong>
                   <span>
@@ -241,13 +202,14 @@
                   {{ item.subtotal | currency: 'UYU' : 'symbol' : '1.0-0' }}
                 </strong>
               </div>
+              }
             </div>
 
             <div class="summary-divider"></div>
 
             <div class="summary-row">
               <span>Productos</span>
-              <strong>{{ cantidadProductos }}</strong>
+              <strong>{{ cantidadProductos() }}</strong>
             </div>
 
             <div class="summary-row">
@@ -258,24 +220,29 @@
             <div class="summary-total">
               <span>Total</span>
               <strong>
-                {{ carrito.total | currency: 'UYU' : 'symbol' : '1.0-0' }}
+                {{ c.total | currency: 'UYU' : 'symbol' : '1.0-0' }}
               </strong>
             </div>
 
-            <div *ngIf="error" class="alert alert-danger mt-3 mb-0">
-              {{ error }}
-            </div>
+            @if (error(); as mensaje) {
+              <ngb-alert type="danger" class="mt-3 mb-0" (closed)="error.set(null)">
+                {{ mensaje }}
+              </ngb-alert>
+            }
 
             <button
               type="button"
               class="btn btn-primary confirm-button w-100 mt-4"
               (click)="confirmarPedido()"
-              [disabled]="confirmandoPedido || !direccionSeleccionadaId"
+              [disabled]="confirmandoPedido() || !direccionSeleccionadaId()"
             >
-              <span *ngIf="confirmandoPedido" class="spinner-border spinner-border-sm me-2"></span>
-
-              {{ confirmandoPedido ? 'Confirmando pedido...' : 'Confirmar pedido' }}
-              <i *ngIf="!confirmandoPedido" class="bi bi-arrow-right ms-2"></i>
+              @if (confirmandoPedido()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Confirmando pedido...
+              } @else {
+                Confirmar pedido
+                <i class="bi bi-arrow-right ms-2"></i>
+              }
             </button>
 
             <p class="secure-note">
@@ -285,6 +252,6 @@
           </aside>
         </div>
       </div>
-    </div>
-  </ng-container>
+    }
+  }
 </div>

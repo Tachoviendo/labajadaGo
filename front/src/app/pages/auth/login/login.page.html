@@ -10,9 +10,7 @@
       </div>
 
       @if (mensajeError()) {
-        <div class="alert alert-danger" role="alert">
-          {{ mensajeError() }}
-        </div>
+        <ngb-alert type="danger" (closed)="mensajeError.set(null)">{{ mensajeError() }}</ngb-alert>
       }
 
       <form novalidate (submit)="iniciarSesion($event)">

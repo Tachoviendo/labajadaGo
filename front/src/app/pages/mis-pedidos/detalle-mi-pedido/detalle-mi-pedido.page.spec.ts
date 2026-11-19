@@ -16,6 +16,8 @@ describe('DetalleMiPedidoPage', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(DetalleMiPedidoPage);
+    //el :id de la ruta llega como input (withComponentInputBinding)
+    fixture.componentRef.setInput('id', 1);
     component = fixture.componentInstance;
   });
 

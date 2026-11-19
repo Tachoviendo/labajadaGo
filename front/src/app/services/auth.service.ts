@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, map, of, tap } from 'rxjs';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthResponse, LoginBody, RegisterBody, Rol, Usuario } from '../models/auth.model';
 
@@ -10,19 +10,18 @@ const ROLES: Rol[] = ['cliente', 'cajero', 'dueno'];
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly authSubject = new BehaviorSubject<AuthResponse | null>(
-    this.readStoredAuth(),
-  );
+  //estado de la sesion como signal: los componentes leen usuario() y se actualizan solos
+  readonly #auth = signal<AuthResponse | null>(this.readStoredAuth());
 
-  readonly auth$ = this.authSubject.asObservable();
-  readonly usuario$ = this.auth$.pipe(map((auth) => auth?.usuario ?? null));
+  readonly auth = this.#auth.asReadonly();
+  readonly usuario = computed(() => this.#auth()?.usuario ?? null);
 
   get usuarioActual(): Usuario | null {
-    return this.authSubject.value?.usuario ?? null;
+    return this.usuario();
   }
 
   get tokenActual(): string | null {
-    return this.authSubject.value?.token ?? null;
+    return this.#auth()?.token ?? null;
   }
 
   get estaAutenticado(): boolean {
@@ -66,7 +65,7 @@ export class AuthService {
   //refresca los datos del usuario guardados en la sesion (ej: despues de editar
   //el perfil), asi el saludo del header muestra el nombre nuevo sin volver a loguearse
   actualizarUsuarioActual(usuario: Usuario): void {
-    const auth = this.authSubject.value;
+    const auth = this.#auth();
     if (!auth || auth.usuario.id !== usuario.id) return;
     this.saveAuth({ ...auth, usuario: { ...auth.usuario, ...usuario } });
   }
@@ -82,7 +81,7 @@ export class AuthService {
     } else {
       localStorage.removeItem(STORAGE_KEY);
     }
-    this.authSubject.next(auth);
+    this.#auth.set(auth);
   }
 
   private readStoredAuth(): AuthResponse | null {

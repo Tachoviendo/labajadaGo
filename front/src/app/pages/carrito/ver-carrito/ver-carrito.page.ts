@@ -1,117 +1,90 @@
-import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { Component, computed, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { UrlPublicaPipe } from '../../../pipes/url-publica.pipe';
+import { firstValueFrom } from 'rxjs';
+import { NgbAlert } from '@ng-bootstrap/ng-bootstrap';
 
-import { CartService, Carrito, ItemCarrito } from '../../../services/cart.service';
+import { UrlPublicaPipe } from '../../../pipes/url-publica.pipe';
+import { mensajeDeError } from '../../../services/api-error';
+import { CartService, ItemCarrito } from '../../../services/cart.service';
+import { ConfirmacionService } from '../../../components/confirmacion/confirmacion.service';
 
 @Component({
   selector: 'app-ver-carrito',
-  standalone: true,
-  imports: [CommonModule, CurrencyPipe, RouterLink, UrlPublicaPipe],
+  imports: [CurrencyPipe, RouterLink, UrlPublicaPipe, NgbAlert],
   templateUrl: './ver-carrito.page.html',
   styleUrl: './ver-carrito.page.css',
 })
-export class VerCarritoPage implements OnInit {
-  private readonly cartService = inject(CartService);
-  private readonly cdr = inject(ChangeDetectorRef);
+export class VerCarritoPage {
+  readonly #cartService = inject(CartService);
+  readonly #confirmacion = inject(ConfirmacionService);
 
-  carrito: Carrito | null = null;
-  cargando = true;
-  error = '';
+  protected readonly imagenPorDefecto = '/imagenes/imagendeproductos.png';
 
-  actualizandoId: number | null = null;
-  eliminandoId: number | null = null;
+  protected readonly carrito = rxResource({
+    stream: () => this.#cartService.obtener(),
+  });
 
-  ngOnInit(): void {
-    this.cargarCarrito();
-  }
+  //error de una accion (cambiar cantidad o eliminar), el de la carga lo tiene el resource
+  protected readonly errorAccion = signal<string | null>(null);
 
-  cargarCarrito(): void {
-    this.cargando = true;
-    this.error = '';
-    this.cdr.markForCheck();
+  protected readonly actualizandoId = signal<number | null>(null);
+  protected readonly eliminandoId = signal<number | null>(null);
+  protected readonly ocupado = computed(
+    () => this.actualizandoId() !== null || this.eliminandoId() !== null,
+  );
 
-    this.cartService.obtener().subscribe({
-      next: (carrito) => {
-        this.carrito = carrito;
-        this.cargando = false;
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error al cargar el carrito:', error);
+  protected readonly cantidadProductos = computed(
+    () =>
+      this.carrito.hasValue()
+        ? this.carrito.value().items.reduce((total, item) => total + item.cantidad, 0)
+        : 0,
+  );
 
-        this.error = error?.error?.message ?? 'No se pudo cargar tu carrito.';
+  protected readonly mensajeDeError = mensajeDeError;
 
-        this.cargando = false;
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  cambiarCantidad(item: ItemCarrito, cambio: number): void {
-    if (this.actualizandoId !== null || this.eliminandoId !== null) {
-      return;
-    }
-
+  protected async cambiarCantidad(item: ItemCarrito, cambio: number): Promise<void> {
     const nuevaCantidad = item.cantidad + cambio;
-
-    if (nuevaCantidad < 1 || nuevaCantidad > item.producto.stock) {
+    if (this.ocupado() || nuevaCantidad < 1 || nuevaCantidad > item.producto.stock) {
       return;
     }
 
-    this.actualizandoId = item.producto.id;
-    this.cdr.markForCheck();
-
-    this.cartService.actualizar(item.producto.id, nuevaCantidad).subscribe({
-      next: () => {
-        this.actualizandoId = null;
-        this.cdr.markForCheck();
-        this.cargarCarrito();
-      },
-      error: (error) => {
-        console.error('Error al actualizar cantidad:', error);
-
-        this.error = error?.error?.message ?? 'No se pudo actualizar la cantidad.';
-
-        this.actualizandoId = null;
-        this.cdr.markForCheck();
-      },
-    });
+    this.actualizandoId.set(item.producto.id);
+    this.errorAccion.set(null);
+    try {
+      await firstValueFrom(this.#cartService.actualizar(item.producto.id, nuevaCantidad));
+      this.carrito.reload();
+    } catch (error) {
+      this.errorAccion.set(mensajeDeError(error));
+    } finally {
+      this.actualizandoId.set(null);
+    }
   }
 
-  eliminar(item: ItemCarrito): void {
-    if (this.actualizandoId !== null || this.eliminandoId !== null) {
+  protected async eliminar(item: ItemCarrito): Promise<void> {
+    if (this.ocupado()) {
       return;
     }
 
-    this.eliminandoId = item.producto.id;
-    this.error = '';
-    this.cdr.markForCheck();
-
-    this.cartService.eliminar(item.producto.id).subscribe({
-      next: () => {
-        this.eliminandoId = null;
-        this.cdr.markForCheck();
-        this.cargarCarrito();
-      },
-      error: (error) => {
-        console.error('Error al eliminar producto:', error);
-
-        this.error = error?.error?.message ?? 'No se pudo eliminar el producto.';
-
-        this.eliminandoId = null;
-        this.cdr.markForCheck();
-      },
+    const confirmado = await this.#confirmacion.confirmar({
+      titulo: 'Quitar producto',
+      mensaje: `¿Quitar ${item.producto.nombre} del carrito?`,
+      textoConfirmar: 'Quitar',
+      peligro: true,
     });
-  }
+    if (!confirmado) return;
 
-  get cantidadProductos(): number {
-    return this.carrito?.items.reduce((total, item) => total + item.cantidad, 0) ?? 0;
-  }
-
-  get imagenProducto(): string {
-    return '/imagenes/imagendeproductos.png';
+    this.eliminandoId.set(item.producto.id);
+    this.errorAccion.set(null);
+    try {
+      await firstValueFrom(this.#cartService.eliminar(item.producto.id));
+      this.carrito.reload();
+    } catch (error) {
+      this.errorAccion.set(mensajeDeError(error));
+    } finally {
+      this.eliminandoId.set(null);
+    }
   }
 }
 

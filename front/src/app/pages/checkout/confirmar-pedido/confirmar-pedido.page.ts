@@ -1,204 +1,127 @@
-import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { CurrencyPipe } from '@angular/common';
+import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { NgbAlert, NgbCollapse } from '@ng-bootstrap/ng-bootstrap';
 
-import { CartService, Carrito } from '../../../services/cart.service';
+import { CartService } from '../../../services/cart.service';
 import {
   AddressesService,
-  Direccion,
   CrearDireccionBody,
+  Direccion,
   tieneUbicacion,
 } from '../../../services/addresses.service';
-import {
-  MapaSelectorComponent,
-  PuntoMapa,
-} from '../../../components/mapa-selector/mapa-selector.component';
 import { OrdersService, Pedido } from '../../../services/orders.service';
+import { mensajeDeError } from '../../../services/api-error';
+import { FormularioDireccionComponent } from '../../../components/formulario-direccion/formulario-direccion.component';
 
 @Component({
   selector: 'app-confirmar-pedido',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MapaSelectorComponent],
+  imports: [CurrencyPipe, RouterLink, NgbAlert, NgbCollapse, FormularioDireccionComponent],
   templateUrl: './confirmar-pedido.page.html',
   styleUrl: './confirmar-pedido.page.css',
 })
-export class ConfirmarPedidoPage implements OnInit {
-  private readonly cartService = inject(CartService);
-  private readonly addressesService = inject(AddressesService);
-  private readonly ordersService = inject(OrdersService);
-  private readonly router = inject(Router);
-  private readonly cdr = inject(ChangeDetectorRef);
+export class ConfirmarPedidoPage {
+  readonly #cartService = inject(CartService);
+  readonly #addressesService = inject(AddressesService);
+  readonly #ordersService = inject(OrdersService);
 
-  carrito: Carrito | null = null;
-  direcciones: Direccion[] = [];
+  protected readonly tieneUbicacion = tieneUbicacion;
+  protected readonly mensajeDeError = mensajeDeError;
 
-  direccionSeleccionadaId: number | null = null;
+  protected readonly carrito = rxResource({ stream: () => this.#cartService.obtener() });
+  protected readonly direcciones = rxResource({ stream: () => this.#addressesService.listar() });
 
-  mostrarFormularioDireccion = false;
+  protected readonly cargando = computed(
+    () =>
+      (this.carrito.isLoading() && !this.carrito.hasValue()) ||
+      (this.direcciones.isLoading() && !this.direcciones.hasValue()),
+  );
 
-  readonly tieneUbicacion = tieneUbicacion;
-
-  //lat/lng arrancan en null hasta que el cliente marca el punto en el mapa
-  nuevaDireccion: Omit<CrearDireccionBody, 'lat' | 'lng'> & { lat: number | null; lng: number | null } = {
-    calle: '',
-    numero: '',
-    ciudad: 'Salto',
-    referencia: '',
-    lat: null,
-    lng: null,
-  };
-
-  metodoPago: 'pos' = 'pos';
-
-  cargando = true;
-  guardandoDireccion = false;
-  confirmandoPedido = false;
-
-  error = '';
-  pedidoCreado: Pedido | null = null;
+  //se preselecciona la primera con el punto en el mapa. si la lista cambia se mantiene
+  //la elegida mientras siga existiendo
+  protected readonly direccionSeleccionadaId = linkedSignal<Direccion[] | undefined, number | null>({
+    //value() tira error si el resource fallo, por eso se chequea hasValue antes
+    source: () => (this.direcciones.hasValue() ? this.direcciones.value() : undefined),
+    computation: (lista, anterior) => {
+      if (anterior?.value != null && lista?.some((d) => d.id === anterior.value)) {
+        return anterior.value;
+      }
+      return lista?.find(tieneUbicacion)?.id ?? null;
+    },
+  });
 
   //cantidad de unidades, igual que en el carrito y en mis pedidos
-  get cantidadProductos(): number {
-    return this.carrito?.items.reduce((total, item) => total + item.cantidad, 0) ?? 0;
+  protected readonly cantidadProductos = computed(
+    () =>
+      this.carrito.hasValue()
+        ? this.carrito.value().items.reduce((total, item) => total + item.cantidad, 0)
+        : 0,
+  );
+
+  //el formulario de nueva direccion se abre y cierra con NgbCollapse
+  protected readonly formularioColapsado = signal(true);
+  protected readonly guardandoDireccion = signal(false);
+  protected readonly confirmandoPedido = signal(false);
+
+  protected readonly error = signal<string | null>(null);
+  protected readonly pedidoCreado = signal<Pedido | null>(null);
+
+  protected seleccionarDireccion(id: number): void {
+    this.direccionSeleccionadaId.set(id);
   }
 
-  ngOnInit(): void {
-    this.cargarCarrito();
-    this.cargarDirecciones();
+  protected async crearDireccion(datos: CrearDireccionBody): Promise<void> {
+    this.error.set(null);
+    this.guardandoDireccion.set(true);
+    try {
+      const direccion = await firstValueFrom(this.#addressesService.crear(datos));
+      this.direcciones.value.update((lista) => [...(lista ?? []), direccion]);
+      this.direccionSeleccionadaId.set(direccion.id);
+      this.formularioColapsado.set(true);
+    } catch (error) {
+      this.error.set(mensajeDeError(error));
+    } finally {
+      this.guardandoDireccion.set(false);
+    }
   }
 
-  cargarCarrito(): void {
-    this.cartService.obtener().subscribe({
-      next: (carrito) => {
-        this.carrito = carrito;
-        this.cargando = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.error = 'No se pudo cargar el carrito.';
-        this.cargando = false;
-        this.cdr.markForCheck();
-      },
-    });
-  }
+  protected async confirmarPedido(): Promise<void> {
+    this.error.set(null);
 
-  cargarDirecciones(): void {
-    this.addressesService.listar().subscribe({
-      next: (direcciones) => {
-        this.direcciones = direcciones;
-
-        //se preselecciona la primera que tenga el punto en el mapa
-        const conUbicacion = direcciones.find(tieneUbicacion);
-        if (conUbicacion) {
-          this.direccionSeleccionadaId = conUbicacion.id;
-        }
-
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.error = 'No se pudieron cargar tus direcciones.';
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  crearDireccion(): void {
-    this.error = '';
-
-    const calle = this.nuevaDireccion.calle.trim();
-    const ciudad = this.nuevaDireccion.ciudad.trim();
-
-    if (!calle || !ciudad) {
-      this.error = 'La calle y la ciudad son obligatorias.';
+    const carrito = this.carrito.hasValue() ? this.carrito.value() : undefined;
+    if (!carrito || carrito.items.length === 0) {
+      this.error.set('Tu carrito está vacío.');
       return;
     }
 
-    const { lat, lng } = this.nuevaDireccion;
-    if (lat === null || lng === null) {
-      this.error = 'Marcá en el mapa dónde querés recibir el pedido.';
+    const direccionId = this.direccionSeleccionadaId();
+    if (!direccionId) {
+      this.error.set('Seleccioná una dirección de entrega.');
       return;
     }
 
-    const datos: CrearDireccionBody = {
-      calle,
-      ciudad,
-      numero: this.nuevaDireccion.numero?.trim() || undefined,
-      referencia: this.nuevaDireccion.referencia?.trim() || undefined,
-      lat,
-      lng,
-    };
-
-    this.guardandoDireccion = true;
-
-    this.addressesService.crear(datos).subscribe({
-      next: (direccion) => {
-        this.direcciones = [...this.direcciones, direccion];
-        this.direccionSeleccionadaId = direccion.id;
-        this.mostrarFormularioDireccion = false;
-        this.guardandoDireccion = false;
-
-        this.nuevaDireccion = {
-          calle: '',
-          numero: '',
-          ciudad: 'Salto',
-          referencia: '',
-          lat: null,
-          lng: null,
-        };
-
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        this.guardandoDireccion = false;
-        this.error = err.error?.message || 'No se pudo guardar la dirección.';
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  marcarPunto(punto: PuntoMapa): void {
-    this.nuevaDireccion = { ...this.nuevaDireccion, lat: punto.lat, lng: punto.lng };
-    this.cdr.markForCheck();
-  }
-
-  confirmarPedido(): void {
-    this.error = '';
-
-    if (!this.carrito || this.carrito.items.length === 0) {
-      this.error = 'Tu carrito está vacío.';
-      return;
-    }
-
-    if (!this.direccionSeleccionadaId) {
-      this.error = 'Seleccioná una dirección de entrega.';
-      return;
-    }
-
-    const seleccionada = this.direcciones.find((d) => d.id === this.direccionSeleccionadaId);
+    const seleccionada = this.direcciones.hasValue()
+      ? this.direcciones.value().find((d) => d.id === direccionId)
+      : undefined;
     if (seleccionada && !tieneUbicacion(seleccionada)) {
-      this.error = 'Esa dirección no tiene la ubicación marcada en el mapa. Editala en Mis direcciones.';
+      this.error.set(
+        'Esa dirección no tiene la ubicación marcada en el mapa. Editala en Mis direcciones.',
+      );
       return;
     }
 
-    this.confirmandoPedido = true;
-
-    this.ordersService
-      .crear({
-        direccionId: this.direccionSeleccionadaId,
-        metodoPago: this.metodoPago,
-      })
-      .subscribe({
-        next: (pedido) => {
-          this.pedidoCreado = pedido;
-          this.confirmandoPedido = false;
-          this.cdr.markForCheck();
-        },
-        error: (err) => {
-          this.confirmandoPedido = false;
-          this.error = err.error?.message || 'No se pudo confirmar el pedido.';
-          this.cdr.markForCheck();
-        },
-      });
+    this.confirmandoPedido.set(true);
+    try {
+      const pedido = await firstValueFrom(
+        this.#ordersService.crear({ direccionId, metodoPago: 'pos' }),
+      );
+      this.pedidoCreado.set(pedido);
+    } catch (error) {
+      this.error.set(mensajeDeError(error));
+    } finally {
+      this.confirmandoPedido.set(false);
+    }
   }
 }

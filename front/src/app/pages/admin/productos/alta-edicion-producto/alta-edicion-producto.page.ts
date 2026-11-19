@@ -1,5 +1,7 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Component, DestroyRef, computed, inject, input, linkedSignal, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
+import { NgbAlert } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 
 import { Producto } from '../../../../models/product.model';
@@ -15,18 +17,39 @@ const PLACEHOLDER = '/imagenes/imagendeproductos.png';
 //el formulario de alta y edicion de datos queda pendiente
 @Component({
   selector: 'app-alta-edicion-producto',
-  imports: [RouterLink],
+  imports: [RouterLink, NgbAlert],
   templateUrl: './alta-edicion-producto.page.html',
   styleUrl: './alta-edicion-producto.page.css',
 })
-export class AltaEdicionProductoPage implements OnInit {
-  private readonly route = inject(ActivatedRoute);
+export class AltaEdicionProductoPage {
   private readonly productsService = inject(ProductsService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly producto = signal<Producto | null>(null);
-  readonly esNuevo = signal(false);
-  readonly cargando = signal(true);
+  //:id de la ruta (withComponentInputBinding). en /admin/productos/nuevo no viene
+  readonly id = input<string | undefined>(undefined);
+
+  readonly esNuevo = computed(() => !this.id());
+  readonly idNumerico = computed(() => Number(this.id()));
+  readonly idValido = computed(
+    () => Number.isInteger(this.idNumerico()) && this.idNumerico() > 0,
+  );
+
+  readonly productoResource = rxResource({
+    params: () => (this.idValido() ? this.idNumerico() : undefined),
+    stream: ({ params: id }) => this.productsService.obtener(id),
+  });
+
+  //copia editable: despues de subir la imagen se reemplaza por el producto actualizado
+  //(value() tira error si el resource fallo, por eso se chequea hasValue antes)
+  readonly producto = linkedSignal<Producto | null>(() =>
+    this.productoResource.hasValue() ? this.productoResource.value() : null,
+  );
+  readonly cargando = computed(() => this.productoResource.isLoading());
+  readonly errorCarga = computed(() => {
+    if (!this.esNuevo() && !this.idValido()) return 'El identificador del producto no es válido.';
+    const error = this.productoResource.error();
+    return error ? mensajeDeError(error) : '';
+  });
   readonly subiendo = signal(false);
   readonly archivo = signal<File | null>(null);
   readonly error = signal('');
@@ -43,30 +66,6 @@ export class AltaEdicionProductoPage implements OnInit {
 
   constructor() {
     this.destroyRef.onDestroy(() => this.liberarPreview());
-  }
-
-  async ngOnInit(): Promise<void> {
-    const parametro = this.route.snapshot.paramMap.get('id');
-    if (!parametro) {
-      this.esNuevo.set(true);
-      this.cargando.set(false);
-      return;
-    }
-
-    const id = Number(parametro);
-    if (!Number.isInteger(id) || id <= 0) {
-      this.error.set('El identificador del producto no es válido.');
-      this.cargando.set(false);
-      return;
-    }
-
-    try {
-      this.producto.set(await firstValueFrom(this.productsService.obtener(id)));
-    } catch (error) {
-      this.error.set(mensajeDeError(error));
-    } finally {
-      this.cargando.set(false);
-    }
   }
 
   elegirArchivo(event: Event): void {

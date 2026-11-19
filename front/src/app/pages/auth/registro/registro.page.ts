@@ -10,6 +10,7 @@ import {
   submit,
   validate,
 } from '@angular/forms/signals';
+import { NgbAlert } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 
 import { RegisterBody } from '../../../models/auth.model';
@@ -18,7 +19,7 @@ import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-registro',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, NgbAlert],
   templateUrl: './registro.page.html',
   styleUrl: './registro.page.css',
 })

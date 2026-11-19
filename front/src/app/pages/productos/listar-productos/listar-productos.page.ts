@@ -1,164 +1,99 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { form, FormField } from '@angular/forms/signals';
+import { firstValueFrom } from 'rxjs';
+import { NgbPagination } from '@ng-bootstrap/ng-bootstrap';
 
-import {
-  Categoria,
-  FiltrosProductos,
-  Producto,
-  ProductosPaginados,
-} from '../../../models/product.model';
+import { FiltrosProductos, Producto } from '../../../models/product.model';
 
 import { ProductsService } from '../../../services/products.service';
 import { CategoriesService } from '../../../services/categories.service';
 import { CartService } from '../../../services/cart.service';
 import { AuthService } from '../../../services/auth.service';
+import { NotificacionesService } from '../../../services/notificaciones.service';
+import { mensajeDeError } from '../../../services/api-error';
 import { UrlPublicaPipe } from '../../../pipes/url-publica.pipe';
+
+const LIMITE = 8;
 
 @Component({
   selector: 'app-listar-productos',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CurrencyPipe, UrlPublicaPipe],
+  imports: [FormField, RouterLink, CurrencyPipe, UrlPublicaPipe, NgbPagination],
   templateUrl: './listar-productos.page.html',
   styleUrl: './listar-productos.page.css',
 })
-export class ListarProductosPage implements OnInit {
-  private readonly productsService = inject(ProductsService);
-  private readonly categoriesService = inject(CategoriesService);
-  private readonly cartService = inject(CartService);
-  private readonly authService = inject(AuthService);
-  private readonly cdr = inject(ChangeDetectorRef);
+export class ListarProductosPage {
+  readonly #productsService = inject(ProductsService);
+  readonly #categoriesService = inject(CategoriesService);
+  readonly #cartService = inject(CartService);
+  readonly #authService = inject(AuthService);
+  readonly #notificaciones = inject(NotificacionesService);
 
-  productos: Producto[] = [];
-  categorias: Categoria[] = [];
+  protected readonly limite = LIMITE;
+  protected readonly mensajeDeError = mensajeDeError;
 
-  busqueda = '';
-  categoriaSeleccionada = '';
+  protected readonly esCliente = computed(() => this.#authService.usuario()?.rol === 'cliente');
 
-  paginaActual = 1;
-  limite = 8;
-  totalProductos = 0;
-  totalPaginas = 0;
+  //formulario de filtros (signal forms). la categoria filtra apenas cambia;
+  //la busqueda se aplica al tocar "Buscar" o Enter, para no pedir a la api en cada tecla
+  protected readonly filtrosModel = signal({ busqueda: '', categoriaId: '' });
+  protected readonly filtrosForm = form(this.filtrosModel);
 
-  cargando = false;
-  error = '';
-  mensajeCarrito = '';
-  productoAgregandoId: number | null = null;
+  protected readonly busquedaAplicada = signal('');
 
-  get esCliente(): boolean {
-    return this.authService.tieneRol('cliente');
-  }
+  //si cambia un filtro se vuelve a la pagina 1 (linkedSignal se resetea cuando cambia su source)
+  protected readonly pagina = linkedSignal({
+    source: () => [this.busquedaAplicada(), this.filtrosModel().categoriaId],
+    computation: () => 1,
+  });
 
-  ngOnInit(): void {
-    this.cargarCategorias();
-    this.cargarProductos();
-  }
+  protected readonly categorias = rxResource({
+    stream: () => this.#categoriesService.listar(),
+  });
 
-  cargarCategorias(): void {
-    this.categoriesService.listar().subscribe({
-      next: (categorias) => {
-        this.categorias = categorias;
-
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.error = 'No se pudieron cargar las categorías.';
-
-        this.cdr.detectChanges();
-      },
-    });
-  }
-
-  cargarProductos(): void {
-    this.cargando = true;
-    this.error = '';
-    this.cdr.detectChanges();
-
-    const filtros: FiltrosProductos = {
-      page: this.paginaActual,
-      limit: this.limite,
+  //filtrado y paginacion del lado del servidor: el resource vuelve a pedir
+  //cada vez que cambian sus params (busqueda, categoria o pagina)
+  protected readonly productos = rxResource({
+    params: (): FiltrosProductos => ({
+      page: this.pagina(),
+      limit: LIMITE,
       sort: 'nombre_asc',
-    };
+      nombre: this.busquedaAplicada() || undefined,
+      categoriaId: this.filtrosModel().categoriaId
+        ? Number(this.filtrosModel().categoriaId)
+        : undefined,
+    }),
+    stream: ({ params }) => this.#productsService.listar(params),
+  });
 
-    if (this.busqueda.trim()) {
-      filtros.nombre = this.busqueda.trim();
-    }
+  protected readonly productoAgregandoId = signal<number | null>(null);
 
-    if (this.categoriaSeleccionada) {
-      filtros.categoriaId = Number(this.categoriaSeleccionada);
-    }
-
-    console.log('Solicitando productos...', filtros);
-
-    this.productsService.listar(filtros).subscribe({
-      next: (respuesta) => {
-        console.log('Respuesta recibida:', respuesta);
-
-        this.productos = respuesta.data;
-        this.paginaActual = respuesta.pagination.page;
-        this.totalProductos = respuesta.pagination.total;
-        this.totalPaginas = respuesta.pagination.totalPages;
-        this.cargando = false;
-
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        console.error('Error al cargar productos:', error);
-
-        this.error = 'No se pudieron cargar los productos. Intentá nuevamente.';
-        this.cargando = false;
-
-        this.cdr.detectChanges();
-      },
-    });
+  protected buscar(event?: Event): void {
+    event?.preventDefault();
+    this.busquedaAplicada.set(this.filtrosModel().busqueda.trim());
   }
 
-  buscar(): void {
-    this.paginaActual = 1;
-    this.cargarProductos();
+  protected limpiarFiltros(): void {
+    this.filtrosModel.set({ busqueda: '', categoriaId: '' });
+    this.busquedaAplicada.set('');
   }
 
-  cambiarCategoria(): void {
-    this.paginaActual = 1;
-    this.cargarProductos();
-  }
-
-  cambiarPagina(pagina: number): void {
-    if (pagina < 1 || pagina > this.totalPaginas || pagina === this.paginaActual) {
+  protected async agregarAlCarrito(producto: Producto): Promise<void> {
+    if (!this.esCliente() || producto.stock <= 0) {
       return;
     }
 
-    this.paginaActual = pagina;
-    this.cargarProductos();
-  }
-
-  agregarAlCarrito(producto: Producto): void {
-    if (!this.esCliente || producto.stock <= 0) {
-      return;
+    this.productoAgregandoId.set(producto.id);
+    try {
+      await firstValueFrom(this.#cartService.agregar(producto.id, 1));
+      this.#notificaciones.exito(`${producto.nombre} se agregó al carrito.`);
+    } catch (error) {
+      this.#notificaciones.error(mensajeDeError(error));
+    } finally {
+      this.productoAgregandoId.set(null);
     }
-
-    this.productoAgregandoId = producto.id;
-    this.mensajeCarrito = '';
-
-    this.cartService.agregar(producto.id, 1).subscribe({
-      next: () => {
-        this.mensajeCarrito = `${producto.nombre} se agregó al carrito.`;
-        this.productoAgregandoId = null;
-
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        this.mensajeCarrito = error?.error?.message ?? 'No se pudo agregar el producto al carrito.';
-        this.productoAgregandoId = null;
-
-        this.cdr.detectChanges();
-      },
-    });
-  }
-
-  obtenerPaginas(): number[] {
-    return Array.from({ length: this.totalPaginas }, (_, indice) => indice + 1);
   }
 }
 

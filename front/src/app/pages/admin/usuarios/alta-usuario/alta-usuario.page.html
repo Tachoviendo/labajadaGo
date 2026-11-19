@@ -44,7 +44,7 @@
   </div>
 
   @if (errorApi()) {
-    <p class="error">{{ errorApi() }}</p>
+    <ngb-alert type="danger" (closed)="errorApi.set(null)">{{ errorApi() }}</ngb-alert>
   }
 
   <button type="submit">Crear usuario</button>

@@ -1,5 +1,7 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, resource, signal } from '@angular/core';
+import { Component, inject, linkedSignal, resource, signal } from '@angular/core';
+import { form, FormField } from '@angular/forms/signals';
+import { NgbAlert, NgbPagination } from '@ng-bootstrap/ng-bootstrap';
 import { RouterLink } from '@angular/router';
 
 import { Rol, Usuario } from '../../../../models/auth.model';
@@ -7,16 +9,22 @@ import { ActualizarAdminBody } from '../../../../models/usuario.model';
 import { mensajeDeError } from '../../../../services/api-error';
 import { AuthService } from '../../../../services/auth.service';
 import { UsuariosService } from '../../../../services/usuarios.service';
+import { ConfirmacionService } from '../../../../components/confirmacion/confirmacion.service';
+
+const LIMITE = 10;
 
 @Component({
   selector: 'app-usuarios-internos',
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, FormField, NgbAlert, NgbPagination],
   templateUrl: './usuarios-internos.page.html',
   styleUrl: './usuarios-internos.page.css',
 })
 export class UsuariosInternosPage {
   readonly #usuariosService = inject(UsuariosService);
   readonly #authService = inject(AuthService);
+  readonly #confirmacion = inject(ConfirmacionService);
+
+  protected readonly limite = LIMITE;
 
   //el dueño no puede desactivarse ni darse de baja a si mismo desde aca
   protected readonly idPropio = this.#authService.usuarioActual?.id ?? null;
@@ -24,19 +32,21 @@ export class UsuariosInternosPage {
   protected readonly mensajeExito = signal<string | null>(null);
   protected readonly mensajeError = signal<string | null>(null);
 
-  //'' es "todos los roles"
-  protected readonly filtroRol = signal<Rol | ''>('');
+  //filtro (signal forms). rol '' es "todos los roles"
+  protected readonly filtroModel = signal<{ rol: Rol | '' }>({ rol: '' });
+  protected readonly filtroForm = form(this.filtroModel);
 
-  //se vuelve a pedir solo cuando cambia el filtro
-  protected readonly usuarios = resource({
-    params: () => ({ rol: this.filtroRol() || undefined }),
-    loader: ({ params }) => this.#usuariosService.listar(params),
+  //al cambiar el filtro se vuelve a la pagina 1
+  protected readonly pagina = linkedSignal({
+    source: () => this.filtroModel().rol,
+    computation: () => 1,
   });
 
-  protected cambiarFiltro(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    this.filtroRol.set(select.value as Rol | '');
-  }
+  //filtrado y paginacion en la api: se vuelve a pedir cuando cambia el rol o la pagina
+  protected readonly usuarios = resource({
+    params: () => ({ rol: this.filtroModel().rol || undefined, page: this.pagina(), limit: LIMITE }),
+    loader: ({ params }) => this.#usuariosService.listar(params),
+  });
 
   //la api anonimiza a los dados de baja con un email @labajada.invalid (ver users.service.js)
   protected estaEliminado(usuario: Usuario) {
@@ -49,9 +59,17 @@ export class UsuariosInternosPage {
     this.actualizarAdmin(usuario, { rol }, `Ahora ${usuario.nombre} es ${rol}.`);
   }
 
-  protected cambiarActivo(usuario: Usuario) {
-    if (usuario.activo && !confirm(`¿Desactivar a ${usuario.nombre}? No va a poder iniciar sesión.`)) {
-      return;
+  protected async cambiarActivo(usuario: Usuario) {
+    if (usuario.activo) {
+      const confirmado = await this.#confirmacion.confirmar({
+        titulo: 'Desactivar usuario',
+        mensaje: `¿Desactivar a ${usuario.nombre}? No va a poder iniciar sesión.`,
+        textoConfirmar: 'Desactivar',
+        peligro: true,
+      });
+      if (!confirmado) {
+        return;
+      }
     }
     const mensaje = usuario.activo ? 'desactivado' : 'activado';
     this.actualizarAdmin(usuario, { activo: !usuario.activo }, `${usuario.nombre} fue ${mensaje}.`);
@@ -59,9 +77,12 @@ export class UsuariosInternosPage {
 
   //ley 18331: borra los datos personales; los pedidos se conservan
   protected async darDeBaja(usuario: Usuario) {
-    const confirmado = confirm(
-      `¿Dar de baja a ${usuario.nombre}? Se borran sus datos personales y no se puede deshacer.`,
-    );
+    const confirmado = await this.#confirmacion.confirmar({
+      titulo: 'Dar de baja',
+      mensaje: `¿Dar de baja a ${usuario.nombre}? Se borran sus datos personales y no se puede deshacer.`,
+      textoConfirmar: 'Dar de baja',
+      peligro: true,
+    });
     if (!confirmado) return;
 
     this.limpiarMensajes();
