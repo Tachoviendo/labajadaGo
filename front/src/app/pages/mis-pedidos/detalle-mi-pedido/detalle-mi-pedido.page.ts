@@ -1,14 +1,23 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  numberAttribute,
+  signal,
+  untracked,
+} from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { RouterLink } from '@angular/router';
 
 import { EstadoPedido, OrdersService, Pedido } from '../../../services/orders.service';
 import {
   ConexionSeguimiento,
   EventoEstado,
   PuntoRecorrido,
-  Recorrido,
   SeguimientoService,
 } from '../../../services/seguimiento.service';
 import { mensajeDeError } from '../../../services/api-error';
@@ -40,34 +49,62 @@ const CLASES_ESTADO: Record<EstadoPedido, string> = {
   templateUrl: './detalle-mi-pedido.page.html',
   styleUrl: './detalle-mi-pedido.page.css',
 })
-export class DetalleMiPedidoPage implements OnInit {
-  private readonly route = inject(ActivatedRoute);
-  private readonly ordersService = inject(OrdersService);
-  private readonly seguimientoService = inject(SeguimientoService);
-  private readonly destroyRef = inject(DestroyRef);
+export class DetalleMiPedidoPage {
+  readonly #ordersService = inject(OrdersService);
+  readonly #seguimientoService = inject(SeguimientoService);
 
-  readonly pedido = signal<Pedido | null>(null);
-  readonly recorrido = signal<Recorrido | null>(null);
-  readonly puntos = signal<PuntoRecorrido[]>([]);
-  readonly cargando = signal(true);
-  readonly error = signal('');
-  readonly conexion = signal<ConexionSeguimiento | null>(null);
+  //:id de la ruta (withComponentInputBinding)
+  readonly id = input.required({ transform: numberAttribute });
 
-  readonly nombreEstado = computed(() => {
-    const pedido = this.pedido();
-    return pedido ? NOMBRES_ESTADO[pedido.estado] : '';
+  protected readonly idValido = computed(() => Number.isInteger(this.id()) && this.id() > 0);
+  protected readonly mensajeDeError = mensajeDeError;
+
+  protected readonly pedidoResource = rxResource({
+    params: () => (this.idValido() ? this.id() : undefined),
+    stream: ({ params: id }) => this.#ordersService.obtener(id),
   });
-  readonly claseEstado = computed(() => {
-    const pedido = this.pedido();
-    return pedido ? CLASES_ESTADO[pedido.estado] : '';
+
+  //copia editable del pedido: el websocket le cambia el estado y la foto sin volver a pedirlo
+  protected readonly pedido = linkedSignal<Pedido | null>(
+    //value() tira error si el resource fallo, por eso se chequea hasValue antes
+    () => (this.pedidoResource.hasValue() ? this.pedidoResource.value() : null),
+  );
+
+  protected readonly estado = computed(() => this.pedido()?.estado);
+  protected readonly enVivo = computed(() => this.estado() === 'en_reparto');
+
+  //el recorrido solo existe en reparto o entregado. como el estado es parte de los params,
+  //cuando llega "entregado" por websocket se vuelve a pedir y queda el recorrido final
+  protected readonly recorrido = rxResource({
+    params: () => {
+      const estado = this.estado();
+      return estado === 'en_reparto' || estado === 'entregado'
+        ? { id: this.id(), estado }
+        : undefined;
+    },
+    stream: ({ params }) => this.#seguimientoService.recorrido(params.id),
   });
-  readonly muestraMapa = computed(() => {
-    const estado = this.pedido()?.estado;
-    return (estado === 'en_reparto' || estado === 'entregado') && this.recorrido() !== null;
+
+  //puntos del recorrido + los que van llegando por websocket
+  protected readonly puntos = linkedSignal<PuntoRecorrido[]>(
+    () => (this.recorrido.hasValue() ? this.recorrido.value().puntos : []),
+  );
+
+  protected readonly conexion = signal<ConexionSeguimiento | null>(null);
+
+  protected readonly nombreEstado = computed(() => {
+    const estado = this.estado();
+    return estado ? NOMBRES_ESTADO[estado] : '';
   });
-  readonly enVivo = computed(() => this.pedido()?.estado === 'en_reparto');
-  readonly ultimaUbicacion = computed(() => this.puntos().at(-1) ?? null);
-  readonly textoConexion = computed(() => {
+  protected readonly claseEstado = computed(() => {
+    const estado = this.estado();
+    return estado ? CLASES_ESTADO[estado] : '';
+  });
+  protected readonly muestraMapa = computed(
+    () => (this.estado() === 'en_reparto' || this.estado() === 'entregado') && this.recorrido.hasValue(),
+  );
+  protected readonly ultimaUbicacion = computed(() => this.puntos().at(-1) ?? null);
+  protected readonly textoConexion = computed(() => {
     const conexion = this.conexion();
     if (!conexion) return '';
     switch (conexion.estado()) {
@@ -83,48 +120,28 @@ export class DetalleMiPedidoPage implements OnInit {
   });
 
   constructor() {
-    this.destroyRef.onDestroy(() => this.conexion()?.cerrar());
-  }
+    //websocket abierto solo mientras el pedido esta en reparto (y ya se cargo el recorrido,
+    //para no perder puntos). cuando cambia el estado o se sale de la pagina, se cierra
+    effect((onCleanup) => {
+      if (!this.enVivo() || !this.recorrido.hasValue()) return;
 
-  async ngOnInit(): Promise<void> {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    if (!Number.isInteger(id) || id <= 0) {
-      this.error.set('El número de pedido no es válido.');
-      this.cargando.set(false);
-      return;
-    }
+      const id = this.id();
+      const conexion = untracked(() =>
+        this.#seguimientoService.conectar(id, {
+          onUbicacion: (punto) => this.puntos.update((puntos) => [...puntos, punto]),
+          onEstado: (evento) => this.cambioDeEstado(evento),
+        }),
+      );
+      this.conexion.set(conexion);
 
-    try {
-      const pedido = await firstValueFrom(this.ordersService.obtener(id));
-      this.pedido.set(pedido);
-      if (pedido.estado === 'en_reparto' || pedido.estado === 'entregado') {
-        await this.cargarRecorrido(id);
-      }
-      if (pedido.estado === 'en_reparto') {
-        this.seguirEnVivo(id);
-      }
-    } catch (error) {
-      this.error.set(mensajeDeError(error));
-    } finally {
-      this.cargando.set(false);
-    }
-  }
-
-  private async cargarRecorrido(id: number): Promise<void> {
-    const recorrido = await firstValueFrom(this.seguimientoService.recorrido(id));
-    this.recorrido.set(recorrido);
-    this.puntos.set(recorrido.puntos);
-  }
-
-  private seguirEnVivo(id: number): void {
-    const conexion = this.seguimientoService.conectar(id, {
-      onUbicacion: (punto) => this.puntos.update((puntos) => [...puntos, punto]),
-      onEstado: (evento) => this.cambioDeEstado(id, evento),
+      onCleanup(() => {
+        conexion.cerrar();
+        this.conexion.set(null);
+      });
     });
-    this.conexion.set(conexion);
   }
 
-  private async cambioDeEstado(id: number, evento: EventoEstado): Promise<void> {
+  private cambioDeEstado(evento: EventoEstado): void {
     this.pedido.update((pedido) =>
       pedido
         ? {
@@ -135,17 +152,6 @@ export class DetalleMiPedidoPage implements OnInit {
           }
         : pedido,
     );
-
-    //entregado: ya no hay mas ubicaciones. se corta el websocket y se trae el recorrido final
-    if (evento.estado === 'entregado') {
-      this.conexion()?.cerrar();
-      this.conexion.set(null);
-      try {
-        await this.cargarRecorrido(id);
-      } catch {
-        //se queda con los puntos que ya tenia
-      }
-    }
   }
 }
 

@@ -9,7 +9,6 @@ import { registerLocaleData } from '@angular/common';
 import localeEsUy from '@angular/common/locales/es-UY';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { provideIonicAngular } from '@ionic/angular/standalone';
 import { routes } from './app.routes';
 import { authInterceptor } from './services/auth.interceptor';
 import { provideServiceWorker } from '@angular/service-worker';
@@ -28,7 +27,6 @@ export const appConfig: ApplicationConfig = {
     //withComponentInputBinding: los parametros de la ruta (ej :id_pedido) llegan a la pagina
     //como input() del componente, sin inyectar ActivatedRoute
     provideRouter(routes, withComponentInputBinding()),
-    provideIonicAngular(),
     //PWA: el service worker cachea el front para abrirlo instalado y sin conexion.
     //solo en el build de produccion de la web (no en ng serve ni en la app de Android)
     provideServiceWorker('ngsw-worker.js', {

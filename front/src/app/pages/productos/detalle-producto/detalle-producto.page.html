@@ -1,39 +1,51 @@
 <div class="container py-4 detail-container">
   <a routerLink="/productos" class="back-link"> ← Volver a productos </a>
 
-  @if (cargando) {
+  @if (!idValido()) {
+    <div class="alert alert-danger mt-4" role="alert">
+      El identificador del producto no es válido.
+      <div class="mt-3">
+        <a routerLink="/productos" class="btn btn-outline-danger"> Volver al catálogo </a>
+      </div>
+    </div>
+  } @else if (producto.isLoading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Cargando...</span>
       </div>
       <p class="text-secondary mt-2">Cargando producto...</p>
     </div>
-  } @else if (error) {
+  } @else if (producto.error(); as error) {
     <div class="alert alert-danger mt-4" role="alert">
-      {{ error }}
+      No se pudo cargar el producto. {{ mensajeDeError(error) }}
       <div class="mt-3">
         <a routerLink="/productos" class="btn btn-outline-danger"> Volver al catálogo </a>
       </div>
     </div>
-  } @else if (producto) {
+  } @else if (producto.hasValue()) {
+    @let p = producto.value();
     <div class="row g-4 g-lg-5 mt-2">
       <div class="col-12 col-md-6">
         <div class="detail-image-container">
-          <img [src]="imagenProducto" [alt]="producto.nombre" class="detail-image" />
+          <img
+            [src]="(p.imagenUrl | urlPublica) || '/imagenes/imagendeproductos.png'"
+            [alt]="p.nombre"
+            class="detail-image"
+          />
         </div>
       </div>
 
       <div class="col-12 col-md-6">
         <span class="text-secondary small">
-          {{ producto.categoria.nombre }}
+          {{ p.categoria.nombre }}
         </span>
 
         <h1 class="detail-title mt-2">
-          {{ producto.nombre }}
+          {{ p.nombre }}
         </h1>
 
         <p class="detail-price">
-          {{ producto.precio | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
+          {{ p.precio | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
         </p>
 
         <hr />
@@ -41,37 +53,37 @@
         <h2 class="section-title">Descripción</h2>
 
         <p class="text-secondary">
-          {{ producto.descripcion || 'No hay una descripción disponible para este producto.' }}
+          {{ p.descripcion || 'No hay una descripción disponible para este producto.' }}
         </p>
 
         <div class="stock-information mb-4">
-          @if (producto.stock > 0) {
+          @if (p.stock > 0) {
             <span class="text-success fw-semibold"> Disponible </span>
-            <span class="text-secondary small ms-2"> {{ producto.stock }} unidades en stock </span>
+            <span class="text-secondary small ms-2"> {{ p.stock }} unidades en stock </span>
           } @else {
             <span class="text-danger fw-semibold"> Sin stock disponible </span>
           }
         </div>
 
-        @if (mensaje) {
-          <div class="alert alert-info" role="status">
-            {{ mensaje }}
-            @if (mensaje.includes('agregó')) {
+        @if (mensaje(); as m) {
+          <ngb-alert [type]="m.tipo" (closed)="mensaje.set(null)">
+            {{ m.texto }}
+            @if (m.tipo === 'success') {
               <div class="mt-2">
                 <a routerLink="/carrito" class="btn btn-sm btn-outline-primary"> Ir al carrito </a>
               </div>
             }
-          </div>
+          </ngb-alert>
         }
 
-        @if (esCliente) {
+        @if (esCliente()) {
           <button
             type="button"
             class="btn btn-primary btn-add-cart w-100"
-            [disabled]="producto.stock <= 0 || agregando"
+            [disabled]="p.stock <= 0 || agregando()"
             (click)="agregarAlCarrito()"
           >
-            @if (agregando) {
+            @if (agregando()) {
               Agregando...
             } @else {
               Agregar al carrito

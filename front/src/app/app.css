@@ -89,6 +89,26 @@
   font-weight: 600;
 }
 
+/* En pantallas grandes el menu del personal siempre se ve (ngbCollapse solo aplica en el celular) */
+
+.staff-encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.staff-encabezado > div {
+  flex-basis: 100%;
+}
+
+@media (min-width: 768px) {
+  .menu-staff.collapse:not(.show) {
+    display: flex !important;
+  }
+}
+
 /* Adaptación para pantallas pequeñas */
 
 @media (max-width: 767.98px) {

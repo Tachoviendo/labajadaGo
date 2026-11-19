@@ -4,7 +4,7 @@
     <p class="text-secondary mb-0">Encontrá lo que necesitás para tu día.</p>
   </div>
 
-  <div class="row g-3 mb-4">
+  <form class="row g-3 mb-4" novalidate (submit)="buscar($event)">
     <div class="col-12 col-md-7">
       <label for="busqueda" class="form-label">Buscar producto</label>
       <div class="input-group">
@@ -16,47 +16,32 @@
           type="search"
           class="form-control"
           placeholder="Escribí el nombre de un producto..."
-          [(ngModel)]="busqueda"
-          (keyup.enter)="buscar()"
+          [formField]="filtrosForm.busqueda"
         />
-        <button class="btn btn-primary" type="button" (click)="buscar()">Buscar</button>
+        <button class="btn btn-primary" type="submit">Buscar</button>
       </div>
     </div>
 
     <div class="col-12 col-md-5">
       <label for="categoria" class="form-label">Categoría</label>
-      <select
-        id="categoria"
-        class="form-select"
-        [(ngModel)]="categoriaSeleccionada"
-        (ngModelChange)="cambiarCategoria()"
-      >
+      <select id="categoria" class="form-select" [formField]="filtrosForm.categoriaId">
         <option value="">Todas las categorías</option>
-        @for (categoria of categorias; track categoria.id) {
+        @for (categoria of categorias.hasValue() ? categorias.value() : []; track categoria.id) {
           <option [value]="categoria.id">
             {{ categoria.nombre }}
           </option>
         }
       </select>
+      @if (categorias.error()) {
+        <div class="text-danger small mt-1">No se pudieron cargar las categorías.</div>
+      }
     </div>
-  </div>
+  </form>
 
-  @if (mensajeCarrito) {
-    <div class="alert alert-info alert-dismissible" role="status">
-      {{ mensajeCarrito }}
-      <button
-        type="button"
-        class="btn-close"
-        aria-label="Cerrar"
-        (click)="mensajeCarrito = ''"
-      ></button>
-    </div>
-  }
-
-  @if (error) {
+  @if (productos.error(); as error) {
     <div class="alert alert-danger" role="alert">
-      {{ error }}
-      <button class="btn btn-sm btn-outline-danger ms-2" (click)="cargarProductos()">
+      No se pudieron cargar los productos. {{ mensajeDeError(error) }}
+      <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="productos.reload()">
         Reintentar
       </button>
     </div>
@@ -64,30 +49,32 @@
 
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="results-title mb-0">Productos</h2>
-    <span class="text-secondary small"> {{ totalProductos }} productos encontrados </span>
+    <span class="text-secondary small"> {{ productos.hasValue() ? productos.value().pagination.total : 0 }} productos encontrados </span>
   </div>
 
-  @if (cargando) {
+  @if (productos.isLoading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Cargando...</span>
       </div>
       <p class="text-secondary mt-2">Cargando productos...</p>
     </div>
-  } @else if (productos.length === 0) {
+  } @else if (productos.hasValue() && productos.value().data.length === 0) {
     <div class="empty-state text-center py-5">
       <h3>No encontramos productos</h3>
       <p class="text-secondary">Probá con otra búsqueda o seleccioná otra categoría.</p>
       <button
         class="btn btn-outline-primary"
-        (click)="busqueda = ''; categoriaSeleccionada = ''; buscar()"
+        type="button"
+        (click)="limpiarFiltros()"
       >
         Limpiar filtros
       </button>
     </div>
-  } @else {
+  } @else if (productos.hasValue()) {
+    @let resultado = productos.value();
     <div class="row g-3 g-md-4">
-      @for (producto of productos; track producto.id) {
+      @for (producto of resultado.data; track producto.id) {
         <div class="col-6 col-md-4 col-lg-3">
           <article class="product-card h-100">
             <a
@@ -134,14 +121,14 @@
                 Ver producto
               </a>
 
-              @if (esCliente) {
+              @if (esCliente()) {
                 <button
                   type="button"
                   class="btn btn-primary w-100"
-                  [disabled]="producto.stock <= 0 || productoAgregandoId === producto.id"
+                  [disabled]="producto.stock <= 0 || productoAgregandoId() === producto.id"
                   (click)="agregarAlCarrito(producto)"
                 >
-                  @if (productoAgregandoId === producto.id) {
+                  @if (productoAgregandoId() === producto.id) {
                     Agregando...
                   } @else {
                     Agregar al carrito
@@ -154,37 +141,17 @@
       }
     </div>
 
-    @if (totalPaginas > 1) {
-      <nav class="mt-4" aria-label="Paginación de productos">
-        <ul class="pagination justify-content-center flex-wrap">
-          <li class="page-item" [class.disabled]="paginaActual === 1">
-            <button
-              class="page-link"
-              (click)="cambiarPagina(paginaActual - 1)"
-              [disabled]="paginaActual === 1"
-            >
-              Anterior
-            </button>
-          </li>
-
-          @for (pagina of obtenerPaginas(); track pagina) {
-            <li class="page-item" [class.active]="pagina === paginaActual">
-              <button class="page-link" (click)="cambiarPagina(pagina)">
-                {{ pagina }}
-              </button>
-            </li>
-          }
-
-          <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
-            <button
-              class="page-link"
-              (click)="cambiarPagina(paginaActual + 1)"
-              [disabled]="paginaActual === totalPaginas"
-            >
-              Siguiente
-            </button>
-          </li>
-        </ul>
+    @if (resultado.pagination.totalPages > 1) {
+      <nav class="mt-4 d-flex justify-content-center" aria-label="Paginación de productos">
+        <ngb-pagination
+          [collectionSize]="resultado.pagination.total"
+          [pageSize]="limite"
+          [page]="pagina()"
+          (pageChange)="pagina.set($event)"
+          [maxSize]="5"
+          [rotate]="true"
+          [boundaryLinks]="true"
+        />
       </nav>
     }
   }

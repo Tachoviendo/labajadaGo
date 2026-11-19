@@ -1,12 +1,19 @@
 <div class="container py-4 detalle-pedido">
   <a routerLink="/mis-pedidos" class="btn btn-link px-0 mb-2">&larr; Volver a mis pedidos</a>
 
-  @if (cargando()) {
+  @if (!idValido()) {
+    <div class="alert alert-danger" role="alert">El número de pedido no es válido.</div>
+  } @else if (pedidoResource.isLoading() && !pedido()) {
     <div class="text-center py-5">
       <div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div>
     </div>
-  } @else if (error()) {
-    <div class="alert alert-danger" role="alert">{{ error() }}</div>
+  } @else if (pedidoResource.error(); as error) {
+    <div class="alert alert-danger" role="alert">
+      No se pudo cargar el pedido. {{ mensajeDeError(error) }}
+      <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="pedidoResource.reload()">
+        Reintentar
+      </button>
+    </div>
   } @else if (pedido(); as p) {
     <header class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
       <div>
@@ -39,8 +46,8 @@
           </div>
 
           <app-mapa-seguimiento
-            [origen]="recorrido()?.origen ?? null"
-            [destino]="recorrido()?.destino ?? null"
+            [origen]="recorrido.hasValue() ? recorrido.value().origen : null"
+            [destino]="recorrido.hasValue() ? recorrido.value().destino : null"
             [puntos]="puntos()"
           />
 

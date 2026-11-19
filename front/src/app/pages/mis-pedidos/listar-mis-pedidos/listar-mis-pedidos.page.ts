@@ -1,126 +1,101 @@
-import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
-import { OrdersService, Pedido, EstadoPedido } from '../../../services/orders.service';
-import { ConfirmacionService } from '../../../services/confirmacion.service';
+import { CurrencyPipe, DatePipe, NgClass } from '@angular/common';
+import { Component, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { NgbAlert, NgbCollapse } from '@ng-bootstrap/ng-bootstrap';
+
+import { OrdersService, Pedido, EstadoPedido } from '../../../services/orders.service';
+import { mensajeDeError } from '../../../services/api-error';
+import { NotificacionesService } from '../../../services/notificaciones.service';
+import { ConfirmacionService } from '../../../services/confirmacion.service';
+
+const NOMBRES_ESTADO: Record<EstadoPedido, string> = {
+  realizado: 'Realizado',
+  preparando: 'Preparando',
+  en_reparto: 'En reparto',
+  entregado: 'Entregado',
+  cancelado: 'Cancelado',
+};
+
+const CLASES_ESTADO: Record<EstadoPedido, string> = {
+  realizado: 'estado-realizado',
+  preparando: 'estado-preparando',
+  en_reparto: 'estado-reparto',
+  entregado: 'estado-entregado',
+  cancelado: 'estado-cancelado',
+};
 
 @Component({
   selector: 'app-listar-mis-pedidos',
-  standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [RouterLink, CurrencyPipe, DatePipe, NgClass, NgbAlert, NgbCollapse],
   templateUrl: './listar-mis-pedidos.page.html',
   styleUrl: './listar-mis-pedidos.page.css',
 })
-export class ListarMisPedidosPage implements OnInit {
-  private readonly ordersService = inject(OrdersService);
-  private readonly cdr = inject(ChangeDetectorRef);
-  private readonly confirmacion = inject(ConfirmacionService);
+export class ListarMisPedidosPage {
+  readonly #ordersService = inject(OrdersService);
+  readonly #confirmacion = inject(ConfirmacionService);
+  readonly #notificaciones = inject(NotificacionesService);
 
-  pedidos: Pedido[] = [];
-  cargando = true;
-  error = '';
-  mensajeExito = '';
-  pedidoSeleccionadoId: number | null = null;
-  cancelandoId: number | null = null;
+  protected readonly mensajeDeError = mensajeDeError;
 
-  ngOnInit(): void {
-    this.cargarPedidos();
+  protected readonly pedidos = rxResource({
+    stream: () => this.#ordersService.listar(),
+  });
+
+  protected readonly errorAccion = signal<string | null>(null);
+  //pedido con el detalle desplegado (NgbCollapse)
+  protected readonly pedidoSeleccionadoId = signal<number | null>(null);
+  protected readonly cancelandoId = signal<number | null>(null);
+
+  protected toggleDetalle(pedidoId: number): void {
+    this.pedidoSeleccionadoId.update((actual) => (actual === pedidoId ? null : pedidoId));
   }
 
-  cargarPedidos(): void {
-    this.cargando = true;
-    this.error = '';
-
-    this.ordersService.listar().subscribe({
-      next: (pedidos) => {
-        this.pedidos = pedidos;
-        this.cargando = false;
-        this.cdr.markForCheck();
-      },
-      error: (error: HttpErrorResponse) => {
-        this.error = error.error?.message || 'No se pudieron cargar tus pedidos.';
-        this.cargando = false;
-        this.cdr.markForCheck();
-      },
-    });
+  protected puedeCancelar(pedido: Pedido): boolean {
+    return pedido.estado === 'realizado' || pedido.estado === 'preparando';
   }
 
-  toggleDetalle(pedidoId: number): void {
-    this.pedidoSeleccionadoId = this.pedidoSeleccionadoId === pedidoId ? null : pedidoId;
-  }
-
-  estaExpandido(pedidoId: number): boolean {
-    return this.pedidoSeleccionadoId === pedidoId;
-  }
-
-  puedeCancelar(pedido: Pedido): boolean {
-    return ['realizado', 'preparando'].includes(pedido.estado);
-  }
-
-  async cancelarPedido(pedido: Pedido): Promise<void> {
-    if (!this.puedeCancelar(pedido) || this.cancelandoId !== null) {
+  protected async cancelarPedido(pedido: Pedido): Promise<void> {
+    if (!this.puedeCancelar(pedido) || this.cancelandoId() !== null) {
       return;
     }
 
-    const confirmar = await this.confirmacion.preguntar({
+    const confirmado = await this.#confirmacion.preguntar({
       titulo: `¿Cancelar el pedido #${pedido.id}?`,
       mensaje: 'No se puede deshacer.',
       textoConfirmar: 'Sí, cancelar',
       textoCancelar: 'No',
       peligro: true,
     });
+    if (!confirmado) return;
 
-    if (!confirmar) return;
-
-    this.cancelandoId = pedido.id;
-    this.error = '';
-    this.mensajeExito = '';
-
-    this.ordersService.cancelar(pedido.id).subscribe({
-      next: () => {
-        this.cancelandoId = null;
-        this.mensajeExito = `El pedido #${pedido.id} fue cancelado.`;
-        this.cargarPedidos();
-        this.cdr.markForCheck();
-      },
-      error: (error: HttpErrorResponse) => {
-        this.cancelandoId = null;
-        this.error = error.error?.message || 'No se pudo cancelar el pedido.';
-        this.cdr.markForCheck();
-      },
-    });
+    this.cancelandoId.set(pedido.id);
+    this.errorAccion.set(null);
+    try {
+      await firstValueFrom(this.#ordersService.cancelar(pedido.id));
+      this.#notificaciones.exito(`El pedido #${pedido.id} fue cancelado.`);
+      this.pedidos.reload();
+    } catch (error) {
+      this.errorAccion.set(mensajeDeError(error));
+    } finally {
+      this.cancelandoId.set(null);
+    }
   }
 
-  nombreEstado(estado: EstadoPedido): string {
-    const nombres: Record<EstadoPedido, string> = {
-      realizado: 'Realizado',
-      preparando: 'Preparando',
-      en_reparto: 'En reparto',
-      entregado: 'Entregado',
-      cancelado: 'Cancelado',
-    };
-
-    return nombres[estado];
+  protected nombreEstado(estado: EstadoPedido): string {
+    return NOMBRES_ESTADO[estado];
   }
 
-  claseEstado(estado: EstadoPedido): string {
-    const clases: Record<EstadoPedido, string> = {
-      realizado: 'estado-realizado',
-      preparando: 'estado-preparando',
-      en_reparto: 'estado-reparto',
-      entregado: 'estado-entregado',
-      cancelado: 'estado-cancelado',
-    };
-
-    return clases[estado];
+  protected claseEstado(estado: EstadoPedido): string {
+    return CLASES_ESTADO[estado];
   }
 
-  nombreMetodoPago(metodo: Pedido['metodoPago']): string {
+  protected nombreMetodoPago(metodo: Pedido['metodoPago']): string {
     return metodo === 'pos' ? 'Pago al recibir el pedido' : 'MercadoPago';
   }
 
-  calcularCantidadProductos(pedido: Pedido): number {
+  protected calcularCantidadProductos(pedido: Pedido): number {
     return pedido.items.reduce((total, item) => total + item.cantidad, 0);
   }
 }
