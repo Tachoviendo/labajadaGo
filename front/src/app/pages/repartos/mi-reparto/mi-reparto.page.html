@@ -1,1 +1,136 @@
-<p>mi-reparto route works!</p>
+<section class="pagina">
+  <a routerLink="/repartos/tablero" class="volver">← Volver al tablero</a>
+
+  @if (pedido.hasValue()) {
+    @let p = pedido.value();
+
+    <header class="encabezado">
+      <h1>Pedido #{{ p.id }}</h1>
+      <app-estado-pedido [estado]="p.estado" />
+    </header>
+
+    <!-- a donde va y que cobrar -->
+    <section class="tarjeta">
+      <h2>Entregar en</h2>
+      <p class="direccion">
+        {{ p.direccion.calle }} {{ p.direccion.numero }}, {{ p.direccion.ciudad }}
+        @if (p.direccion.referencia) {
+          <small class="ayuda">{{ p.direccion.referencia }}</small>
+        }
+      </p>
+
+      <p class="cobro" [class.cobrar]="p.metodoPago === 'pos'">
+        @if (p.metodoPago === 'pos') {
+          Cobrar con POS: <strong>{{ p.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</strong>
+        } @else {
+          Ya está pago con MercadoPago ({{ p.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }})
+        }
+      </p>
+
+      <ul class="items">
+        @for (item of p.items; track item.id) {
+          <li>{{ item.cantidad }} × {{ item.nombreProducto }}</li>
+        }
+      </ul>
+
+      @if (linkNavegacion(); as link) {
+        <a class="btn btn-outline-primary btn-sm" [href]="link" target="_blank" rel="noopener">
+          Abrir en Google Maps
+        </a>
+      }
+    </section>
+
+    @if (p.estado === 'en_reparto') {
+      <!-- mapa en vivo -->
+      <section class="tarjeta">
+        <header class="tarjeta-encabezado">
+          <h2>Recorrido</h2>
+          <span class="conexion" [class.en-vivo]="conexion()?.estado() === 'conectado'" role="status">
+            {{ textoConexion() }}
+          </span>
+        </header>
+
+        @if (errorUbicacion(); as mensaje) {
+          <ngb-alert type="warning" [dismissible]="false" class="mb-0">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+              <span>{{ mensaje }}</span>
+              <button type="button" class="btn btn-sm btn-warning" (click)="reintentarUbicacion()">
+                Reintentar
+              </button>
+            </div>
+          </ngb-alert>
+        }
+
+        @if (recorrido.hasValue()) {
+          <app-mapa-seguimiento
+            [origen]="recorrido.value().origen"
+            [destino]="recorrido.value().destino"
+            [puntos]="puntos()"
+            etiquetaRepartidor="Vos"
+          />
+        } @else if (recorrido.error()) {
+          <p class="ayuda">No se pudo cargar el mapa: {{ mensajeDeError(recorrido.error()) }}</p>
+        } @else {
+          <p class="ayuda">Cargando mapa…</p>
+        }
+      </section>
+
+      <!-- entrega con foto -->
+      <section class="tarjeta">
+        <h2>Entregar</h2>
+        <p class="ayuda">Sacale una foto al pedido en la puerta. Le llega al cliente como comprobante.</p>
+
+        @if (vistaPrevia(); as vista) {
+          <img class="vista-previa" [src]="vista" alt="Foto de la entrega" />
+          <button
+            type="button"
+            class="btn btn-outline-secondary elegir-foto"
+            [disabled]="entregando()"
+            (click)="cambiarFoto(null)"
+          >
+            Sacar otra foto
+          </button>
+        } @else {
+          <!-- camara en vivo (getUserMedia): web, PWA y app de Android -->
+          <app-camara (capturada)="cambiarFoto($event)" />
+        }
+
+        @if (errorEntrega(); as mensaje) {
+          <ngb-alert type="danger" class="mb-0" (closed)="errorEntrega.set(null)">{{ mensaje }}</ngb-alert>
+        }
+
+        <button
+          type="button"
+          class="btn btn-success btn-lg"
+          [disabled]="!foto() || entregando()"
+          (click)="entregar()"
+        >
+          @if (entregando()) {
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            Entregando…
+          } @else {
+            Confirmar entrega
+          }
+        </button>
+      </section>
+    } @else if (p.estado === 'entregado') {
+      <section class="tarjeta">
+        <h2>Entregado</h2>
+        @if (p.fotoEntregaUrl) {
+          <img class="vista-previa" [src]="p.fotoEntregaUrl | urlPublica" alt="Foto de la entrega" />
+        }
+      </section>
+    } @else {
+      <ngb-alert type="info" [dismissible]="false">
+        Este pedido no está en reparto. Recogelo desde el tablero para empezar.
+      </ngb-alert>
+    }
+  } @else if (pedido.error()) {
+    <ngb-alert type="danger" [dismissible]="false">{{ mensajeDeError(pedido.error()) }}</ngb-alert>
+  } @else {
+    <div class="d-flex align-items-center gap-2 text-body-secondary">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Cargando pedido…
+    </div>
+  }
+</section>

@@ -1,0 +1,122 @@
+/* pensada para el celular: una columna, botones grandes */
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 42rem;
+  padding: 1rem;
+}
+
+.volver {
+  color: #173b68;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #173b68;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #1f2937;
+}
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #dde3ec;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.tarjeta-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ayuda {
+  display: block;
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.direccion {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.cobro {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.4rem;
+  background: #dff5e7;
+  color: #176b3a;
+}
+
+/* hay que cobrar en la puerta: se resalta */
+.cobro.cobrar {
+  background: #fff1cc;
+  color: #8a5700;
+}
+
+.items {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+}
+
+.conexion {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.conexion.en-vivo {
+  color: #176b3a;
+  font-weight: 600;
+}
+
+.conexion.en-vivo::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+  background: #2e9457;
+  animation: latido 1.5s ease-in-out infinite;
+}
+
+@keyframes latido {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.elegir-foto {
+  align-self: flex-start;
+}
+
+.vista-previa {
+  width: 100%;
+  max-height: 20rem;
+  object-fit: contain;
+  border-radius: 0.4rem;
+  background: #f5f7fa;
+}

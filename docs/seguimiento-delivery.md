@@ -84,8 +84,10 @@ Solo rol `repartidor`. Devuelve un array de pedidos (formato abajo).
 
 ### `GET /api/pedidos`
 
-Con rol `repartidor` lista **sus** repartos (en curso y entregados). Acepta los filtros
-de siempre (`estado`, `page`, `limit`, `sort`).
+Con rol `repartidor` lista **sus** repartos (en curso y entregados) y, para el tablero,
+los que todavía no tienen repartidor (`realizado` y `preparando`). Los que lleva otro
+repartidor no aparecen. Acepta los filtros de siempre (`estado`, `activos`, `page`,
+`limit`, `sort`).
 
 ### `GET /api/pedidos/:id`
 
