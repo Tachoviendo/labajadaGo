@@ -10,6 +10,12 @@ import repartosRoutes from "./repartos.routes.js";
 import seguimientoRoutes from "./seguimiento.routes.js";
 
 export default async function routes(app) {
+  //GET /api/health: lo usan el healthcheck de docker y el deploy. prueba tambien la base
+  app.get("/health", { schema: { hide: true } }, async () => {
+    await app.pg.query("SELECT 1");
+    return { status: "ok" };
+  });
+
   await app.register(userRoutes);
   await app.register(categoryRoutes);
   await app.register(productRoutes);
