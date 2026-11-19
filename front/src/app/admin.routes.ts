@@ -21,7 +21,8 @@ export const adminRoutes: Routes = [
     loadComponent: () => import('./pages/admin/pedidos/pedidos-entrantes/pedidos-entrantes.page'),
   },
   {
-    path: 'pedidos/:id',
+    //:id_pedido llega como input() a la pagina (withComponentInputBinding en app.config)
+    path: 'pedidos/:id_pedido',
     title: 'Gestionar pedido',
     loadComponent: () => import('./pages/admin/pedidos/gestionar-pedido/gestionar-pedido.page'),
   },

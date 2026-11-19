@@ -53,7 +53,7 @@ export const OrderStatusChangeBody = Type.Object({
   estado: EstadoPedidoEnum,
 });
 
-//historial de estado. auditoria
+//historial de estado. auditoria: GET /pedidos/:id/historial
 export const OrderStatusHistorySchema = Type.Object({
   id: Type.Integer(),
   pedidoId: Type.Integer(),
@@ -62,6 +62,40 @@ export const OrderStatusHistorySchema = Type.Object({
   usuarioId: Type.Union([Type.Integer(), Type.Null()], {
     description: "Quién hizo el cambio; puede ser null si fue automático",
   }),
+  usuario: Type.Union(
+    [
+      Type.Object({
+        nombre: Type.String(),
+        rol: Type.String(),
+        telefono: Type.Union([Type.String(), Type.Null()]),
+      }),
+      Type.Null(),
+    ],
+    { description: "Datos de quién hizo el cambio (el primero, 'realizado', es el cliente)" },
+  ),
+});
+
+export const OrderStatusHistoryListSchema = Type.Array(OrderStatusHistorySchema, {
+  examples: [
+    [
+      {
+        id: 1,
+        pedidoId: 3,
+        estado: "realizado",
+        fecha: "2026-11-17T11:47:00.000Z",
+        usuarioId: 3,
+        usuario: { nombre: "Juan Perez", rol: "cliente", telefono: "099333333" },
+      },
+      {
+        id: 7,
+        pedidoId: 3,
+        estado: "preparando",
+        fecha: "2026-11-17T11:52:00.000Z",
+        usuarioId: 2,
+        usuario: { nombre: "Lucia Cajera", rol: "cajero", telefono: "099222222" },
+      },
+    ],
+  ],
 });
 
 //historial del cliente y listado para cajero/dueño.

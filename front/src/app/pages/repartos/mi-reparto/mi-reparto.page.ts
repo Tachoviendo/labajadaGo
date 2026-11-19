@@ -91,14 +91,6 @@ export class MiRepartoPage {
     }
   });
 
-  //link para abrir la navegacion en el celular (google maps)
-  protected readonly linkNavegacion = computed(() => {
-    const destino = this.recorrido.hasValue() ? this.recorrido.value().destino : null;
-    return destino
-      ? `https://www.google.com/maps/dir/?api=1&destination=${destino.lat},${destino.lng}`
-      : null;
-  });
-
   //foto de la entrega (jpeg ya achicado por app-camara)
   protected readonly foto = signal<Blob | null>(null);
   protected readonly vistaPrevia = computed(() => {

@@ -1,1 +1,157 @@
-<p>Gestionar pedido route works!</p>
+<section class="pagina">
+  <a routerLink="/admin/pedidos" class="volver">← Volver al tablero</a>
+
+  @if (pedido.hasValue()) {
+    @let p = pedido.value();
+
+    <header class="encabezado">
+      <div>
+        <h1>Pedido #{{ p.id }}</h1>
+        <p class="ayuda">Hecho el {{ p.fechaCreacion | date: "dd/MM/yyyy 'a las' HH:mm" }}</p>
+      </div>
+      <app-estado-pedido [estado]="p.estado" />
+    </header>
+
+    @if (mensajeExito(); as mensaje) {
+      <ngb-alert type="success" class="mb-0" (closed)="mensajeExito.set(null)">{{ mensaje }}</ngb-alert>
+    }
+    @if (mensajeError(); as mensaje) {
+      <ngb-alert type="danger" class="mb-0" (closed)="mensajeError.set(null)">{{ mensaje }}</ngb-alert>
+    }
+
+    <!-- acciones segun el rol (ver ../movimientos.ts) -->
+    @if (movimientos().length || sePuedeCancelar()) {
+      <section class="tarjeta acciones">
+        @for (movimiento of movimientos(); track movimiento.destino) {
+          <button type="button" class="btn btn-primary" [disabled]="ocupado()" (click)="mover(movimiento)">
+            {{ movimiento.texto }}
+          </button>
+        }
+        @if (sePuedeCancelar()) {
+          <button
+            type="button"
+            class="btn btn-outline-danger ms-auto"
+            [disabled]="ocupado()"
+            (click)="confirmarCancelacion(modalCancelar)"
+          >
+            Cancelar pedido
+          </button>
+        }
+      </section>
+    }
+
+    <div class="grilla">
+      <!-- cliente y entrega -->
+      <section class="tarjeta">
+        <h2>Cliente</h2>
+        @if (cliente(); as c) {
+          <p class="dato-principal">{{ c.nombre }}</p>
+          @if (c.telefono) {
+            <a class="link" [href]="'tel:' + c.telefono">📞 {{ c.telefono }}</a>
+          }
+        } @else if (historial.isLoading()) {
+          <p class="ayuda">Cargando…</p>
+        }
+
+        <h2>Entregar en</h2>
+        <p class="dato-principal">
+          {{ p.direccion.calle }} {{ p.direccion.numero }}, {{ p.direccion.ciudad }}
+        </p>
+        @if (p.direccion.referencia) {
+          <p class="ayuda">{{ p.direccion.referencia }}</p>
+        }
+
+        @if (repartidor(); as r) {
+          <h2>Repartidor</h2>
+          <p class="dato-principal">{{ r.nombre }}</p>
+          @if (r.telefono) {
+            <a class="link" [href]="'tel:' + r.telefono">📞 {{ r.telefono }}</a>
+          }
+        }
+      </section>
+
+      <!-- productos y pago -->
+      <section class="tarjeta">
+        <h2>Productos ({{ cantidadProductos(p) }})</h2>
+        <table class="items">
+          <tbody>
+            @for (item of p.items; track item.id) {
+              <tr>
+                <td class="cantidad">{{ item.cantidad }}×</td>
+                <td>{{ item.nombreProducto }}</td>
+                <td class="importe">{{ item.subtotal | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2">Total</td>
+              <td class="importe">{{ p.total | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+        <p class="pago">
+          @if (p.metodoPago === 'mercadopago') {
+            Pago con MercadoPago
+          } @else if (p.estado === 'entregado') {
+            Cobrado con POS en la entrega
+          } @else {
+            Se cobra con POS al entregar
+          }
+        </p>
+      </section>
+    </div>
+
+    @if (p.fotoEntregaUrl) {
+      <section class="tarjeta">
+        <h2>Foto de la entrega</h2>
+        <img class="foto" [src]="p.fotoEntregaUrl | urlPublica" alt="Foto de la entrega del pedido" />
+      </section>
+    }
+
+    <!-- historial: quien hizo cada cambio -->
+    <section class="tarjeta">
+      <h2>Historial</h2>
+      @if (historial.hasValue()) {
+        <ol class="historial">
+          @for (cambio of historial.value(); track cambio.id) {
+            <li>
+              <app-estado-pedido [estado]="cambio.estado" />
+              <span class="ayuda">{{ cambio.fecha | date: 'dd/MM HH:mm' }}</span>
+              <span>{{ cambio.usuario ? cambio.usuario.nombre + ' (' + cambio.usuario.rol + ')' : 'Automático' }}</span>
+            </li>
+          }
+        </ol>
+      } @else if (historial.error()) {
+        <p class="ayuda">{{ mensajeDeError(historial.error()) }}</p>
+      } @else {
+        <p class="ayuda">Cargando…</p>
+      }
+    </section>
+
+    <!-- modal de confirmacion (NgbModal) -->
+    <ng-template #modalCancelar let-modal>
+      <div class="modal-header">
+        <h2 class="modal-title fs-5">¿Cancelar el pedido #{{ p.id }}?</h2>
+        <button type="button" class="btn-close" aria-label="Cerrar" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">
+          El cliente lo va a ver cancelado en sus pedidos y los productos vuelven al stock.
+          No se puede deshacer.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">No, volver</button>
+        <button type="button" class="btn btn-danger" (click)="modal.close()">Sí, cancelar</button>
+      </div>
+    </ng-template>
+  } @else if (pedido.error()) {
+    <ngb-alert type="danger" [dismissible]="false">{{ mensajeDeError(pedido.error()) }}</ngb-alert>
+  } @else {
+    <div class="d-flex align-items-center gap-2 text-body-secondary">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Cargando pedido…
+    </div>
+  }
+</section>

@@ -32,12 +32,6 @@
           <li>{{ item.cantidad }} × {{ item.nombreProducto }}</li>
         }
       </ul>
-
-      @if (linkNavegacion(); as link) {
-        <a class="btn btn-outline-primary btn-sm" [href]="link" target="_blank" rel="noopener">
-          Abrir en Google Maps
-        </a>
-      }
     </section>
 
     @if (p.estado === 'en_reparto') {

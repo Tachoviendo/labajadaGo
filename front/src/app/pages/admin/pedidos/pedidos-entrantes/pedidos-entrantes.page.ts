@@ -7,55 +7,19 @@ import { firstValueFrom } from 'rxjs';
 import { mensajeDeError } from '../../../../services/api-error';
 import { RolInterno } from '../../../../models/usuario.model';
 import { AuthService } from '../../../../services/auth.service';
-import { EstadoPedido, OrdersService, Pedido } from '../../../../services/orders.service';
+import { OrdersService, Pedido } from '../../../../services/orders.service';
 import { RepartosService } from '../../../../services/repartos.service';
+import { EstadoTablero, movimientosPara } from '../movimientos';
 
 //cada cuanto se vuelve a pedir el tablero (polling)
 const INTERVALO_MS = 15_000;
 //cuantos entregados de hoy se muestran como maximo
 const MAX_ENTREGADOS = 30;
 
-type EstadoTablero = Exclude<EstadoPedido, 'cancelado'>;
-
 type Columna = {
   estado: EstadoTablero;
   titulo: string;
   ayuda: string;
-};
-
-type Movimiento = { destino: EstadoTablero; texto: string };
-
-//movimientos que la api le permite al cajero (ver changeStatus en orders.service.js).
-//salir a reparto y entregar lo hace el repartidor
-const MOVIMIENTOS_CAJERO: Partial<Record<EstadoTablero, Movimiento[]>> = {
-  realizado: [{ destino: 'preparando', texto: 'Empezar a preparar' }],
-  preparando: [{ destino: 'realizado', texto: 'Volver a entrantes' }],
-  en_reparto: [{ destino: 'preparando', texto: 'Volver a preparando' }],
-};
-
-//el dueño puede todo lo del cajero y ademas sacar a reparto y marcar entregado a mano
-const MOVIMIENTOS_DUENO: Partial<Record<EstadoTablero, Movimiento[]>> = {
-  realizado: MOVIMIENTOS_CAJERO.realizado,
-  preparando: [
-    ...MOVIMIENTOS_CAJERO.preparando!,
-    { destino: 'en_reparto', texto: 'Sacar a reparto' },
-  ],
-  en_reparto: [
-    ...MOVIMIENTOS_CAJERO.en_reparto!,
-    { destino: 'entregado', texto: 'Marcar entregado' },
-  ],
-};
-
-//el repartidor solo recoge (POST /pedidos/:id/recoger). entregar necesita la foto,
-//asi que eso se hace desde su pantalla de reparto (ver linkDetalle)
-const MOVIMIENTOS_REPARTIDOR: Partial<Record<EstadoTablero, Movimiento[]>> = {
-  preparando: [{ destino: 'en_reparto', texto: 'Recoger' }],
-};
-
-const MOVIMIENTOS_POR_ROL: Record<RolInterno, Partial<Record<EstadoTablero, Movimiento[]>>> = {
-  cajero: MOVIMIENTOS_CAJERO,
-  dueno: MOVIMIENTOS_DUENO,
-  repartidor: MOVIMIENTOS_REPARTIDOR,
 };
 
 //YYYY-MM-DD en la hora local (la api filtra por dia con fecha_creacion::date)
@@ -79,7 +43,6 @@ export class PedidosEntrantesPage {
   //esta pantalla se usa en /admin/pedidos (cajero y dueño) y en /repartos/tablero (repartidor).
   //el rol no cambia mientras se esta en la pantalla
   protected readonly rol = (inject(AuthService).usuarioActual?.rol ?? 'cajero') as RolInterno;
-  readonly #movimientosPorEstado = MOVIMIENTOS_POR_ROL[this.rol];
 
   protected readonly columnas: Columna[] = [
     { estado: 'realizado', titulo: 'Entrantes', ayuda: 'Pedidos nuevos para preparar' },
@@ -152,7 +115,7 @@ export class PedidosEntrantesPage {
   }
 
   protected movimientos(pedido: Pedido) {
-    return pedido.estado === 'cancelado' ? [] : (this.#movimientosPorEstado[pedido.estado] ?? []);
+    return movimientosPara(this.rol, pedido);
   }
 
   //a donde lleva el boton de la tarjeta. el repartidor solo tiene detalle de lo que esta

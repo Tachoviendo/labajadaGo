@@ -90,6 +90,35 @@ export async function getById(app, id, usuario) {
   }
 }
 
+//cambios de estado del pedido, del mas viejo al mas nuevo, con quien los hizo
+export async function statusHistory(app, id) {
+  const client = await app.pg.connect();
+  try {
+    await loadOrder(client, id); //404 si no existe
+    const { rows } = await client.query(
+      `SELECT h.id, h.pedido_id, h.estado, h.fecha, h.usuario_id,
+              u.nombre, u.rol, u.telefono
+       FROM pedido_estado_historial h
+       LEFT JOIN usuario u ON u.id = h.usuario_id
+       WHERE h.pedido_id = $1
+       ORDER BY h.fecha, h.id`,
+      [id],
+    );
+    return rows.map((row) => ({
+      id: row.id,
+      pedidoId: row.pedido_id,
+      estado: row.estado,
+      fecha: row.fecha.toISOString(),
+      usuarioId: row.usuario_id,
+      usuario: row.usuario_id
+        ? { nombre: row.nombre, rol: row.rol, telefono: row.telefono }
+        : null,
+    }));
+  } finally {
+    client.release();
+  }
+}
+
 export async function listForUser(app, usuario, filters) {
   const client = await app.pg.connect();
   try {

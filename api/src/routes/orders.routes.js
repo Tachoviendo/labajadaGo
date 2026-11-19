@@ -3,6 +3,7 @@ import {
   OrderSchema,
   OrderFiltersQuery,
   OrderStatusChangeBody,
+  OrderStatusHistoryListSchema,
   SalesSummaryQuery,
   SalesSummarySchema,
   IdParam,
@@ -100,6 +101,26 @@ export default async function orderRoutes(app) {
     },
     async (request) =>
       ordersService.getById(app, request.params.id, request.user),
+  );
+
+  //historial de estados del pedido (quien y cuando) - cajero o dueño
+  app.get(
+    "/pedidos/:id/historial",
+    {
+      preHandler: [app.authenticate, app.authorize("cajero", "dueno")],
+      schema: {
+        tags: ["pedidos"],
+        security: [{ bearerAuth: [] }],
+        params: IdParam,
+        response: {
+          200: OrderStatusHistoryListSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+        },
+      },
+    },
+    async (request) => ordersService.statusHistory(app, request.params.id),
   );
 
   //cambiar estado del pedido - cajero o dueño (solo el dueño puede sacar a reparto y entregar)

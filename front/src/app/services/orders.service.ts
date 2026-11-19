@@ -78,6 +78,17 @@ export type ResumenVentas = {
   masVendidos: { productoId: number; nombre: string; cantidad: number; total: number }[];
 };
 
+//api/schemas/order.schema.js -> OrderStatusHistorySchema (GET /pedidos/:id/historial)
+export type CambioDeEstado = {
+  id: number;
+  pedidoId: number;
+  estado: EstadoPedido;
+  fecha: string;
+  usuarioId: number | null;
+  //quien hizo el cambio. el primero ('realizado') es el cliente
+  usuario: { nombre: string; rol: string; telefono: string | null } | null;
+};
+
 //arma los query params salteando los vacios (undefined, null, '')
 function aParams(filtros: object): HttpParams {
   let params = new HttpParams();
@@ -104,8 +115,14 @@ export class OrdersService {
     return this.http.get<Pedido[]>(this.apiUrl, { params: aParams(filtros) });
   }
 
+  //cajero o dueño: quien cambio el estado y cuando
+  historial(id: number): Observable<CambioDeEstado[]> {
+    return this.http.get<CambioDeEstado[]>(`${this.apiUrl}/${id}/historial`);
+  }
+
   //cajero o dueño. la api solo deja moverlo de a un paso (409 si no se puede).
-  //en_reparto y entregado los maneja el repartidor; el cajero puede volver en_reparto -> preparando
+  //'cancelado' solo desde realizado o preparando y si no esta pago.
+  //sacar a reparto y entregar: el dueño o el repartidor (con recoger/entregar)
   cambiarEstado(id: number, estado: EstadoPedido): Observable<Pedido> {
     return this.http.patch<Pedido>(`${this.apiUrl}/${id}/estado`, { estado });
   }
