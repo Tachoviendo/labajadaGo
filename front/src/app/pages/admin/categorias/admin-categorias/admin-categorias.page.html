@@ -1,1 +1,155 @@
-<p>Administrar categorías route works!</p>
+<section class="pagina">
+  <h1>Categorías</h1>
+
+  <!-- alta -->
+  @let n = nuevaForm;
+  <form class="tarjeta alta" novalidate (submit)="crear($event)">
+    <h2>Nueva categoría</h2>
+    <div class="campos">
+      <div class="campo">
+        <label class="form-label" for="nueva-nombre">Nombre</label>
+        <input
+          id="nueva-nombre"
+          type="text"
+          class="form-control"
+          [class.is-invalid]="n.nombre().touched() && n.nombre().invalid()"
+          [formField]="n.nombre"
+        />
+        @if (n.nombre().touched() && n.nombre().errors().length) {
+          <small class="invalid-feedback d-block">{{ n.nombre().errors()[0].message }}</small>
+        }
+      </div>
+      <div class="campo ancho">
+        <label class="form-label" for="nueva-descripcion">Descripción <span class="opcional">(opcional)</span></label>
+        <input
+          id="nueva-descripcion"
+          type="text"
+          class="form-control"
+          [class.is-invalid]="n.descripcion().touched() && n.descripcion().invalid()"
+          [formField]="n.descripcion"
+        />
+        @if (n.descripcion().touched() && n.descripcion().errors().length) {
+          <small class="invalid-feedback d-block">{{ n.descripcion().errors()[0].message }}</small>
+        }
+      </div>
+      <button type="submit" class="btn btn-primary" [disabled]="creando()">
+        {{ creando() ? 'Creando…' : 'Crear' }}
+      </button>
+    </div>
+  </form>
+
+  @if (mensajeExito(); as mensaje) {
+    <ngb-alert type="success" class="mb-0" (closed)="mensajeExito.set(null)">{{ mensaje }}</ngb-alert>
+  }
+  @if (mensajeError(); as mensaje) {
+    <ngb-alert type="danger" class="mb-0" (closed)="mensajeError.set(null)">{{ mensaje }}</ngb-alert>
+  }
+
+  <!-- listado -->
+  @if (categorias.hasValue()) {
+    <div class="barra">
+      <input
+        type="search"
+        class="form-control buscar"
+        placeholder="Buscar categoría"
+        aria-label="Buscar categoría"
+        (input)="buscar($event)"
+      />
+      <span class="ayuda">{{ filtradas().length }} de {{ categorias.value().length }}</span>
+    </div>
+
+    <div class="tarjeta tabla-contenedor">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th><span class="visually-hidden">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (categoria of filtradas(); track categoria.id) {
+            @if (editandoId() === categoria.id) {
+              <!-- fila en edicion -->
+              @let e = edicionForm;
+              <tr class="editando">
+                <td>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    aria-label="Nombre"
+                    [class.is-invalid]="e.nombre().invalid()"
+                    [formField]="e.nombre"
+                    (keydown.escape)="cancelarEdicion()"
+                  />
+                  @if (e.nombre().errors().length) {
+                    <small class="invalid-feedback d-block">{{ e.nombre().errors()[0].message }}</small>
+                  }
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    aria-label="Descripción"
+                    [class.is-invalid]="e.descripcion().invalid()"
+                    [formField]="e.descripcion"
+                    (keydown.escape)="cancelarEdicion()"
+                  />
+                  @if (e.descripcion().errors().length) {
+                    <small class="invalid-feedback d-block">{{ e.descripcion().errors()[0].message }}</small>
+                  }
+                </td>
+                <td>
+                  <div class="acciones">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelarEdicion()">
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm"
+                      [disabled]="guardando()"
+                      (click)="guardar($event, categoria)"
+                    >
+                      {{ guardando() ? 'Guardando…' : 'Guardar' }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @else {
+              <tr>
+                <td><strong>{{ categoria.nombre }}</strong></td>
+                <td class="descripcion">{{ categoria.descripcion || '—' }}</td>
+                <td>
+                  <div class="acciones">
+                    <button
+                      type="button"
+                      class="btn btn-outline-primary btn-sm"
+                      [disabled]="editandoId() !== null"
+                      (click)="empezarEdicion(categoria)"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td colspan="3" class="vacio">No hay categorías{{ busqueda() ? ' con ese nombre' : '' }}.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (categorias.error()) {
+    <div class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert">
+      <span>{{ mensajeDeError(categorias.error()) }}</span>
+      <button type="button" class="btn btn-outline-danger btn-sm" (click)="categorias.reload()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="d-flex align-items-center gap-2 text-body-secondary">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Cargando categorías…
+    </div>
+  }
+</section>
