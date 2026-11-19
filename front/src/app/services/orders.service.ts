@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -47,6 +47,48 @@ export type Pedido = {
   fotoEntregaUrl: string | null;
 };
 
+//api/schemas/order.schema.js -> OrderFiltersQuery.
+//el cliente solo ve los suyos y el repartidor los que tiene asignados (lo resuelve la api)
+export type FiltrosPedidos = {
+  estado?: EstadoPedido;
+  //true: solo realizado, preparando y en_reparto (pantalla de pedidos entrantes)
+  activos?: boolean;
+  fechaDesde?: string; //YYYY-MM-DD
+  fechaHasta?: string;
+  sort?: 'fecha_asc' | 'fecha_desc';
+  page?: number;
+  limit?: number;
+};
+
+//api/schemas/order.schema.js -> SalesSummaryQuery
+export type FiltrosResumen = {
+  fechaDesde?: string; //YYYY-MM-DD
+  fechaHasta?: string;
+  top?: number;
+};
+
+//api/schemas/order.schema.js -> SalesSummarySchema (GET /pedidos/resumen, solo dueño)
+export type ResumenVentas = {
+  fechaDesde: string | null;
+  fechaHasta: string | null;
+  totalVendido: number;
+  cantidadPedidos: number;
+  ticketPromedio: number;
+  porEstado: { estado: EstadoPedido; cantidad: number }[];
+  masVendidos: { productoId: number; nombre: string; cantidad: number; total: number }[];
+};
+
+//arma los query params salteando los vacios (undefined, null, '')
+function aParams(filtros: object): HttpParams {
+  let params = new HttpParams();
+  for (const [clave, valor] of Object.entries(filtros)) {
+    if (valor !== undefined && valor !== null && valor !== '') {
+      params = params.set(clave, String(valor));
+    }
+  }
+  return params;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -58,8 +100,19 @@ export class OrdersService {
     return this.http.post<Pedido>(this.apiUrl, datos);
   }
 
-  listar(): Observable<Pedido[]> {
-    return this.http.get<Pedido[]>(this.apiUrl);
+  listar(filtros: FiltrosPedidos = {}): Observable<Pedido[]> {
+    return this.http.get<Pedido[]>(this.apiUrl, { params: aParams(filtros) });
+  }
+
+  //cajero o dueño. la api solo deja moverlo de a un paso (409 si no se puede).
+  //en_reparto y entregado los maneja el repartidor; el cajero puede volver en_reparto -> preparando
+  cambiarEstado(id: number, estado: EstadoPedido): Observable<Pedido> {
+    return this.http.patch<Pedido>(`${this.apiUrl}/${id}/estado`, { estado });
+  }
+
+  //solo dueño, para el panel
+  resumen(filtros: FiltrosResumen = {}): Observable<ResumenVentas> {
+    return this.http.get<ResumenVentas>(`${this.apiUrl}/resumen`, { params: aParams(filtros) });
   }
 
   obtener(id: number): Observable<Pedido> {

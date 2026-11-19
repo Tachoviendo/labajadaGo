@@ -3,7 +3,7 @@ import { Component, inject, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { Rol, Usuario } from '../../../../models/auth.model';
-import { ActualizarAdminBody } from '../../../../models/usuario.model';
+import { ActualizarAdminBody, RolInterno } from '../../../../models/usuario.model';
 import { mensajeDeError } from '../../../../services/api-error';
 import { AuthService } from '../../../../services/auth.service';
 import { UsuariosService } from '../../../../services/usuarios.service';
@@ -45,7 +45,7 @@ export class UsuariosInternosPage {
 
   protected cambiarRol(usuario: Usuario, event: Event) {
     const select = event.target as HTMLSelectElement;
-    const rol = select.value as 'cajero' | 'dueno';
+    const rol = select.value as RolInterno;
     this.actualizarAdmin(usuario, { rol }, `Ahora ${usuario.nombre} es ${rol}.`);
   }
 

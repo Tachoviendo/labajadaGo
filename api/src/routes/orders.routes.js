@@ -3,6 +3,8 @@ import {
   OrderSchema,
   OrderFiltersQuery,
   OrderStatusChangeBody,
+  SalesSummaryQuery,
+  SalesSummarySchema,
   IdParam,
 } from "../../schemas/index.js";
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
@@ -29,6 +31,28 @@ export default async function orderRoutes(app) {
     },
     async (request) =>
       ordersService.listForUser(app, request.user, request.query),
+  );
+
+  //resumen de ventas para el panel - solo dueño.
+  //ruta estatica: fastify la resuelve antes que /pedidos/:id, no choca
+  app.get(
+    "/pedidos/resumen",
+    {
+      preHandler: [app.authenticate, app.authorize("dueno")],
+      schema: {
+        tags: ["pedidos"],
+        summary: "Resumen de ventas (panel del dueño)",
+        security: [{ bearerAuth: [] }],
+        querystring: SalesSummaryQuery,
+        response: {
+          200: SalesSummarySchema,
+          400: ErrorResponseSchema,
+          401: ErrorResponseSchema,
+          403: ErrorResponseSchema,
+        },
+      },
+    },
+    async (request) => ordersService.salesSummary(app, request.query),
   );
 
   //crear pedido - cliente logueado (checkout)

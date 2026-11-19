@@ -16,6 +16,7 @@
     <option value="cliente">Cliente</option>
     <option value="cajero">Cajero</option>
     <option value="dueno">Dueño</option>
+    <option value="repartidor">Repartidor</option>
   </select>
 </div>
 
@@ -55,6 +56,7 @@
               <select (change)="cambiarRol(usuario, $event)">
                 <option value="cajero" [selected]="usuario.rol === 'cajero'">cajero</option>
                 <option value="dueno" [selected]="usuario.rol === 'dueno'">dueno</option>
+                <option value="repartidor" [selected]="usuario.rol === 'repartidor'">repartidor</option>
               </select>
             }
           </td>

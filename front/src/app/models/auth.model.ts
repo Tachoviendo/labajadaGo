@@ -2,7 +2,7 @@
 //si cambia algun schema de la api hay que cambiarlo aca tambien
 
 //api/schemas/enums.schema.js -> RolEnum (dueno sin ñ)
-export type Rol = 'cliente' | 'cajero' | 'dueno';
+export type Rol = 'cliente' | 'cajero' | 'dueno' | 'repartidor';
 
 //api/schemas/user.schema.js -> UserSchema, nunca trae la password
 export type Usuario = {

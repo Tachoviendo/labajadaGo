@@ -104,6 +104,9 @@ export async function listForUser(app, usuario, filters) {
     //el repartidor lista sus repartos; los disponibles salen de GET /repartos/disponibles
     if (usuario.rol === "repartidor") addFilter("p.repartidor_id =", usuario.id);
     if (filters.estado) addFilter("p.estado =", filters.estado);
+    if (filters.activos) {
+      conditions.push("p.estado IN ('realizado', 'preparando', 'en_reparto')");
+    }
     if (filters.fechaDesde)
       addFilter("p.fecha_creacion::date >=", filters.fechaDesde);
     if (filters.fechaHasta)
@@ -128,6 +131,88 @@ export async function listForUser(app, usuario, filters) {
         mapOrder(order, await loadItems(client, order.id)),
       ),
     );
+  } finally {
+    client.release();
+  }
+}
+
+const TODOS_LOS_ESTADOS = [...ORDEN_ESTADOS_PEDIDO, "cancelado"];
+
+//panel de ventas del dueño: total vendido, pedidos por estado, ticket promedio y
+//productos mas vendidos. los cancelados se cuentan en porEstado pero no suman ventas
+export async function salesSummary(app, { fechaDesde, fechaHasta, top = 5 }) {
+  if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
+    throw new BadRequestError("fechaDesde no puede ser posterior a fechaHasta");
+  }
+
+  const conditions = [];
+  const values = [];
+  if (fechaDesde) {
+    values.push(fechaDesde);
+    conditions.push(`p.fecha_creacion::date >= $${values.length}`);
+  }
+  if (fechaHasta) {
+    values.push(fechaHasta);
+    conditions.push(`p.fecha_creacion::date <= $${values.length}`);
+  }
+  const rango = conditions.length ? `AND ${conditions.join(" AND ")}` : "";
+
+  const client = await app.pg.connect();
+  try {
+    const { rows: totales } = await client.query(
+      `SELECT COALESCE(SUM(p.total), 0)::int AS total_vendido,
+              COUNT(*)::int AS cantidad_pedidos
+       FROM pedido p
+       WHERE p.estado <> 'cancelado' ${rango}`,
+      values,
+    );
+
+    const { rows: estados } = await client.query(
+      `SELECT p.estado, COUNT(*)::int AS cantidad
+       FROM pedido p
+       WHERE TRUE ${rango}
+       GROUP BY p.estado`,
+      values,
+    );
+
+    const { rows: productos } = await client.query(
+      `SELECT i.producto_id, MAX(i.nombre_producto) AS nombre,
+              SUM(i.cantidad)::int AS cantidad,
+              SUM(i.cantidad * i.precio_unitario)::int AS total
+       FROM pedido_item i
+       JOIN pedido p ON p.id = i.pedido_id
+       WHERE p.estado <> 'cancelado' ${rango}
+       GROUP BY i.producto_id
+       ORDER BY cantidad DESC, total DESC, i.producto_id
+       LIMIT $${values.length + 1}`,
+      [...values, top],
+    );
+
+    const { total_vendido: totalVendido, cantidad_pedidos: cantidadPedidos } =
+      totales[0];
+    const cantidadPorEstado = new Map(
+      estados.map((fila) => [fila.estado, fila.cantidad]),
+    );
+
+    return {
+      fechaDesde: fechaDesde ?? null,
+      fechaHasta: fechaHasta ?? null,
+      totalVendido,
+      cantidadPedidos,
+      ticketPromedio: cantidadPedidos
+        ? Math.round(totalVendido / cantidadPedidos)
+        : 0,
+      porEstado: TODOS_LOS_ESTADOS.map((estado) => ({
+        estado,
+        cantidad: cantidadPorEstado.get(estado) ?? 0,
+      })),
+      masVendidos: productos.map((fila) => ({
+        productoId: fila.producto_id,
+        nombre: fila.nombre,
+        cantidad: fila.cantidad,
+        total: fila.total,
+      })),
+    };
   } finally {
     client.release();
   }

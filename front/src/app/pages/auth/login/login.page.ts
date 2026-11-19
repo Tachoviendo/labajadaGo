@@ -12,6 +12,7 @@ const INICIO_POR_ROL: Record<Rol, string> = {
   cliente: '/productos',
   cajero: '/admin/pedidos',
   dueno: '/admin',
+  repartidor: '/repartos',
 };
 
 @Component({
