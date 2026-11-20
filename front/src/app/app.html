@@ -54,16 +54,17 @@
         <div class="p-3 border-bottom staff-encabezado">
           <a class="navbar-brand fw-semibold" routerLink="/"> La Bajada </a>
 
-          <!-- en pantallas chicas el menu se abre y cierra con ngbCollapse -->
+          <!-- en pantallas chicas el menu se abre y cierra con ngbCollapse.
+               es un boton comun (no navbar-toggler): fuera de un .navbar Bootstrap no le
+               dibuja ni el borde ni las tres rayitas y quedaba invisible -->
           <button
-            class="navbar-toggler d-md-none"
+            class="btn btn-outline-secondary btn-sm d-md-none"
             type="button"
             aria-controls="menu-staff"
             [attr.aria-expanded]="!menuColapsado()"
-            aria-label="Abrir menú"
             (click)="menuColapsado.set(!menuColapsado())"
           >
-            <span class="navbar-toggler-icon"></span>
+            {{ menuColapsado() ? '☰ Menú' : '✕ Cerrar' }}
           </button>
 
           <div class="small text-muted mt-2">
