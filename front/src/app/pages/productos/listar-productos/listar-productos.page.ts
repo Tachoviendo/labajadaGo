@@ -1,4 +1,4 @@
-import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { Component, computed, inject, linkedSignal, signal, DestroyRef, effect, untracked } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -13,6 +13,7 @@ import { CategoriesService } from '../../../services/categories.service';
 import { CartService } from '../../../services/cart.service';
 import { AuthService } from '../../../services/auth.service';
 import { NotificacionesService } from '../../../services/notificaciones.service';
+import { StockService } from '../../../services/stock.service';
 import { mensajeDeError } from '../../../services/api-error';
 import { UrlPublicaPipe } from '../../../pipes/url-publica.pipe';
 
@@ -25,6 +26,17 @@ const LIMITE = 8;
   styleUrl: './listar-productos.page.css',
 })
 export class ListarProductosPage {
+  //stock en vivo por websocket (ver services/stock.service.ts)
+  protected readonly stock = inject(StockService);
+
+  constructor() {
+    this.stock.seguir(inject(DestroyRef));
+    //si se corto el websocket se pudieron perder avisos: se vuelve a pedir
+    effect(() => {
+      if (this.stock.reconexiones() > 0) untracked(() => this.productos.reload());
+    });
+  }
+
   readonly #productsService = inject(ProductsService);
   readonly #categoriesService = inject(CategoriesService);
   readonly #cartService = inject(CartService);
@@ -81,7 +93,7 @@ export class ListarProductosPage {
   }
 
   protected async agregarAlCarrito(producto: Producto): Promise<void> {
-    if (!this.esCliente() || producto.stock <= 0) {
+    if (!this.esCliente() || this.stock.de(producto) <= 0) {
       return;
     }
 

@@ -49,7 +49,12 @@
 
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="results-title mb-0">Productos</h2>
-    <span class="text-secondary small"> {{ productos.hasValue() ? productos.value().pagination.total : 0 }} productos encontrados </span>
+    <span class="text-secondary small">
+      @if (stock.enVivo()) {
+        <span class="badge text-bg-success me-2" title="El stock se actualiza solo">Stock en vivo</span>
+      }
+      {{ productos.hasValue() ? productos.value().pagination.total : 0 }} productos encontrados
+    </span>
   </div>
 
   @if (productos.isLoading()) {
@@ -106,9 +111,11 @@
                 {{ producto.precio | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}
               </div>
 
+              @let stockActual = stock.de(producto);
               <div class="product-stock">
-                @if (producto.stock > 0) {
+                @if (stockActual > 0) {
                   <span class="text-success">Disponible</span>
+                  <span class="text-secondary small"> · Quedan {{ stockActual }}</span>
                 } @else {
                   <span class="text-danger">Sin stock</span>
                 }
@@ -125,7 +132,7 @@
                 <button
                   type="button"
                   class="btn btn-primary w-100"
-                  [disabled]="producto.stock <= 0 || productoAgregandoId() === producto.id"
+                  [disabled]="stockActual <= 0 || productoAgregandoId() === producto.id"
                   (click)="agregarAlCarrito(producto)"
                 >
                   @if (productoAgregandoId() === producto.id) {

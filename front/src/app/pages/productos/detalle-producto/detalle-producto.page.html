@@ -24,6 +24,7 @@
     </div>
   } @else if (producto.hasValue()) {
     @let p = producto.value();
+    @let stockActual = stock.de(p);
     <div class="row g-4 g-lg-5 mt-2">
       <div class="col-12 col-md-6">
         <div class="detail-image-container">
@@ -57,9 +58,9 @@
         </p>
 
         <div class="stock-information mb-4">
-          @if (p.stock > 0) {
+          @if (stockActual > 0) {
             <span class="text-success fw-semibold"> Disponible </span>
-            <span class="text-secondary small ms-2"> {{ p.stock }} unidades en stock </span>
+            <span class="text-secondary small ms-2"> {{ stockActual }} unidades en stock </span>
           } @else {
             <span class="text-danger fw-semibold"> Sin stock disponible </span>
           }
@@ -80,7 +81,7 @@
           <button
             type="button"
             class="btn btn-primary btn-add-cart w-100"
-            [disabled]="p.stock <= 0 || agregando()"
+            [disabled]="stockActual <= 0 || agregando()"
             (click)="agregarAlCarrito()"
           >
             @if (agregando()) {

@@ -8,6 +8,7 @@ import addressRoutes from "./addresses.routes.js";
 import authRoutes from "./auth.routes.js";
 import repartosRoutes from "./repartos.routes.js";
 import seguimientoRoutes from "./seguimiento.routes.js";
+import stockRoutes from "./stock.routes.js";
 
 export default async function routes(app) {
   //GET /api/health: lo usan el healthcheck de docker y el deploy. prueba tambien la base
@@ -26,4 +27,5 @@ export default async function routes(app) {
   await app.register(authRoutes);
   await app.register(repartosRoutes);
   await app.register(seguimientoRoutes);
+  await app.register(stockRoutes);
 }
