@@ -90,8 +90,8 @@
                 </td>
                 <td>{{ producto.categoria.nombre }}</td>
                 <td class="numero">{{ producto.precio | currency: 'UYU' : 'symbol-narrow' : '1.0-0' }}</td>
-                <td class="numero" [class.stock-bajo]="producto.stock < stockBajo">
-                  {{ producto.stock }}
+                <td class="numero" [class.stock-bajo]="stock.de(producto) < stockBajo">
+                  {{ stock.de(producto) }}
                 </td>
                 <td>
                   <!-- el flex va en un div: en el <td> rompe el borde de la fila -->

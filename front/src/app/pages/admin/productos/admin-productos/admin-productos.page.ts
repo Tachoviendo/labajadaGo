@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, inject, linkedSignal, resource, signal } from '@angular/core';
+import { Component, computed, inject, linkedSignal, resource, signal, DestroyRef, effect, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormField, debounce, form } from '@angular/forms/signals';
 import { NgbAlert, NgbPagination } from '@ng-bootstrap/ng-bootstrap';
@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { FiltrosProductos, Producto } from '../../../../models/product.model';
 import { UrlPublicaPipe } from '../../../../pipes/url-publica.pipe';
+import { StockService } from '../../../../services/stock.service';
 import { mensajeDeError } from '../../../../services/api-error';
 import { CategoriesService } from '../../../../services/categories.service';
 import { ProductsService } from '../../../../services/products.service';
@@ -28,6 +29,17 @@ type Orden = NonNullable<FiltrosProductos['sort']>;
   styleUrl: './admin-productos.page.css',
 })
 export class AdminProductosPage {
+  //stock en vivo por websocket (ver services/stock.service.ts)
+  protected readonly stock = inject(StockService);
+
+  constructor() {
+    this.stock.seguir(inject(DestroyRef));
+    //si se corto el websocket se pudieron perder avisos: se vuelve a pedir
+    effect(() => {
+      if (this.stock.reconexiones() > 0) untracked(() => this.productos.reload());
+    });
+  }
+
   readonly #productsService = inject(ProductsService);
   readonly #categoriesService = inject(CategoriesService);
 

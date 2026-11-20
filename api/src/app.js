@@ -6,6 +6,7 @@ import jwtPlugin from "../plugins/jwt.js";
 import errorHandlerPlugin from "../plugins/errorHandler.js";
 import corsPlugin from "../plugins/cors.js";
 import seguimientoPlugin from "../plugins/seguimiento.js";
+import stockPlugin from "../plugins/stock.js";
 
 
 export function buildApp() {
@@ -20,6 +21,7 @@ export function buildApp() {
   app.register(errorHandlerPlugin);
   app.register(swaggerPlugin);
   app.register(seguimientoPlugin);
+  app.register(stockPlugin);
 
   app.register(routes, {
     prefix: "/api",

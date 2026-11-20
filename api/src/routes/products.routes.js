@@ -11,6 +11,7 @@ import * as productsService from "../../services/products.service.js";
 import * as bucketService from "../../services/bucket.service.js";
 import { leerImagenSubida } from "../../services/imagen.service.js";
 import fastifyMultipart from "@fastify/multipart";
+import { avisarStock } from "../../plugins/stock.js";
 
 const MAX_IMAGEN_MB = 2;
 
@@ -77,6 +78,7 @@ export default async function productRoutes(app) {
     },
     async (request, reply) => {
       const producto = await productsService.crear(app, request.body);
+      await avisarStock(app, [producto.id]);
 
       return reply.code(201).send(producto);
     },
@@ -101,7 +103,10 @@ export default async function productRoutes(app) {
     async (request) => {
       const { id } = request.params;
 
-      return productsService.actualizar(app, id, request.body);
+      const producto = await productsService.actualizar(app, id, request.body);
+      //el dueño puede cargar stock a mano
+      if (request.body.stock !== undefined) await avisarStock(app, [producto.id]);
+      return producto;
     },
   );
 

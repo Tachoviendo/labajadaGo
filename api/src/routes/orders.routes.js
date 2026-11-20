@@ -11,6 +11,7 @@ import {
 import { ErrorResponseSchema } from "../../schemas/errors.schema.js";
 import * as ordersService from "../../services/orders.service.js";
 import { avisarEstado } from "../../plugins/seguimiento.js";
+import { avisarStockDePedido } from "../../plugins/stock.js";
 
 export default async function orderRoutes(app) {
   //listar pedidos - cualquier rol logueado (el alcance cambia segun el rol, eso se resuelve en el service)
@@ -79,6 +80,8 @@ export default async function orderRoutes(app) {
         request.user.id,
         request.body,
       );
+      //el trigger desconto el stock: se avisa a los que miran el catalogo
+      await avisarStockDePedido(app, pedido.id);
       return reply.code(201).send(pedido);
     },
   );
@@ -151,6 +154,8 @@ export default async function orderRoutes(app) {
       );
       const pedido = await ordersService.getById(app, request.params.id, request.user);
       avisarEstado(app, pedido);
+      //al cancelar, el trigger repone el stock
+      if (request.body.estado === "cancelado") await avisarStockDePedido(app, pedido.id);
       return pedido;
     },
   );
@@ -174,6 +179,8 @@ export default async function orderRoutes(app) {
     },
     async (request, reply) => {
       await ordersService.cancelByUser(app, request.params.id, request.user.id);
+      //el trigger repuso el stock
+      await avisarStockDePedido(app, request.params.id);
       return reply.code(204).send();
     },
   );

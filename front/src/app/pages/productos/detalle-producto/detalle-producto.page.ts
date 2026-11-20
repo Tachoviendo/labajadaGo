@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, numberAttribute, signal } from '@angular/core';
+import { Component, computed, inject, input, numberAttribute, signal, DestroyRef, effect, untracked } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -8,6 +8,7 @@ import { NgbAlert } from '@ng-bootstrap/ng-bootstrap';
 import { ProductsService } from '../../../services/products.service';
 import { CartService } from '../../../services/cart.service';
 import { AuthService } from '../../../services/auth.service';
+import { StockService } from '../../../services/stock.service';
 import { mensajeDeError } from '../../../services/api-error';
 import { UrlPublicaPipe } from '../../../pipes/url-publica.pipe';
 
@@ -18,6 +19,17 @@ import { UrlPublicaPipe } from '../../../pipes/url-publica.pipe';
   styleUrl: './detalle-producto.page.css',
 })
 export class DetalleProductoPage {
+  //stock en vivo por websocket (ver services/stock.service.ts)
+  protected readonly stock = inject(StockService);
+
+  constructor() {
+    this.stock.seguir(inject(DestroyRef));
+    //si se corto el websocket se pudieron perder avisos: se vuelve a pedir
+    effect(() => {
+      if (this.stock.reconexiones() > 0) untracked(() => this.producto.reload());
+    });
+  }
+
   readonly #productsService = inject(ProductsService);
   readonly #cartService = inject(CartService);
   readonly #authService = inject(AuthService);
@@ -42,7 +54,7 @@ export class DetalleProductoPage {
 
   protected async agregarAlCarrito(): Promise<void> {
     const producto = this.producto.hasValue() ? this.producto.value() : undefined;
-    if (!producto || !this.esCliente() || producto.stock <= 0 || this.agregando()) {
+    if (!producto || !this.esCliente() || this.stock.de(producto) <= 0 || this.agregando()) {
       return;
     }
 
